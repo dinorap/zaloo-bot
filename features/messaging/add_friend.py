@@ -12,6 +12,7 @@ _safe_reconfigure()
 import json
 import time
 import requests
+from core.zalo import http as zalo_http
 from core.zalo.enc import zalo_encode
 from core.zalo.dec import zalo_decode
 from core.zalo.debugs import save
@@ -120,7 +121,7 @@ def send_friend_request(
     print("[add_friend] cookie_keys=", list(cookie_dict.keys()))
     print("[add_friend] proxy=", proxies)
 
-    response = requests.post(
+    response = zalo_http.post(
         url,
         params=query_params,
         data=f"params={params}",

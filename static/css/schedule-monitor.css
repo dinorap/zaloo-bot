@@ -471,6 +471,13 @@
 }
 .schedmon-search-field,
 .schedmon-select-field { display: block; position: relative; }
+body.schedmon-page label.schedmon-search-field,
+html body label.schedmon-search-field {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
 .schedmon-search-field svg {
     position: absolute;
     top: 50%;
@@ -478,12 +485,17 @@
     width: 16px;
     height: 16px;
     fill: none;
-    stroke: #718ca3;
+    stroke: #64748b;
     stroke-width: 2;
     transform: translateY(-50%);
     pointer-events: none;
+    z-index: 2;
 }
-.schedmon-search-field input { width: 100%; padding-left: 40px !important; }
+html body label.schedmon-search-field input:not([type="checkbox"]):not([type="radio"]),
+.schedmon-search-field input {
+    width: 100%;
+    padding: 9px 12px 9px 40px !important;
+}
 .schedmon-select-field > span { display: block; margin: 0 0 5px 2px; color: #748da4; font-size: 9px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
 .schedmon-select-field select { width: 100%; }
 .schedule-filter-bar input,
@@ -948,14 +960,15 @@ html[data-theme="light"] .schedmon-performance-grid strong { color: #182b3f; }
    ───────────────────────────────────────────────────────────────────────────── */
 
 body.schedmon-page .schedmon-shell {
-    width: calc(100vw - var(--ux-sidebar-width)) !important;
+    margin-left: 240px !important;
+    width: calc(100vw - 240px) !important;
     max-width: none !important;
     height: 100dvh !important;
     min-height: 0 !important;
     max-height: 100dvh !important;
-    padding: clamp(14px, 1.2vw, 22px) !important;
-    padding-bottom: clamp(14px, 1.2vw, 22px) !important;
-    gap: 12px !important;
+    padding: 22px 32px 28px 32px !important;
+    box-sizing: border-box !important;
+    gap: 14px !important;
     overflow: hidden !important;
 }
 

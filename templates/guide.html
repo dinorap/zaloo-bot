@@ -3,24 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giới thiệu Nexus</title>
+    <title>Giới thiệu Jimmy BOT CHAT</title>
     <link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=nexus-masterise-v10-20260728">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=nexus-masterise-v10-20260728">
     <style>
         /* Phần Tích hợp API: bảng tham số + khối lệnh mẫu, theo hệ màu sáng của guide */
-        .guide-api-table-wrap { overflow-x: auto; border: 1px solid #d7e1ec; border-radius: 12px; background: #fff; }
-        .guide-api-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px; color: #172033; }
-        .guide-api-table th, .guide-api-table td { padding: 10px 14px; border-bottom: 1px solid #e5ecf4; text-align: left; vertical-align: top; }
-        .guide-api-table thead th { background: #f4f7fb; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: #5b6b81; white-space: nowrap; }
+        .guide-api-table-wrap { overflow-x: auto; border: 1px solid #f0d9c4; border-radius: 12px; background: #fffdfa; }
+        .guide-api-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px; color: #2b1a10; }
+        .guide-api-table th, .guide-api-table td { padding: 10px 14px; border-bottom: 1px solid #f7e7d7; text-align: left; vertical-align: top; }
+        .guide-api-table thead th { background: #fff4e9; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: #a3805f; white-space: nowrap; }
         .guide-api-table tbody tr:last-child td { border-bottom: none; }
-        .guide-api-table code, .guide-api-note code { font-family: "Cascadia Code", Consolas, monospace; font-size: 12px; background: #eef3f9; border-radius: 5px; padding: 1px 6px; color: #14538c; white-space: nowrap; }
-        .guide-api-method { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(21,82,125,.1); color: #15527d; margin-right: 6px; }
-        .guide-api-code { background: #10202f; color: #dbe7f3; border-radius: 12px; padding: 14px 16px; font-family: "Cascadia Code", Consolas, monospace; font-size: 12.5px; line-height: 1.65; overflow-x: auto; white-space: pre; margin: 0; }
-        .guide-api-code .cmt { color: #7fa3c0; }
+        .guide-api-table code, .guide-api-note code { font-family: "Cascadia Code", Consolas, monospace; font-size: 12px; background: #fff4e9; border-radius: 5px; padding: 1px 6px; color: #c93a18; white-space: nowrap; }
+        .guide-api-method { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(255,117,66,.12); color: #c93a18; margin-right: 6px; }
+        .guide-api-code { background: #2b1a10; color: #ffe9d8; border-radius: 12px; padding: 14px 16px; font-family: "Cascadia Code", Consolas, monospace; font-size: 12.5px; line-height: 1.65; overflow-x: auto; white-space: pre; margin: 0; }
+        .guide-api-code .cmt { color: #d0a684; }
         .guide-api-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-top: 14px; }
-        .guide-api-note { font-size: 13px; color: #44546b; line-height: 1.6; margin: 10px 0 0; }
-        .guide-api-subtitle { margin: 22px 0 0; font-size: 14.5px; font-weight: 700; color: #172033; }
+        .guide-api-note { font-size: 13px; color: #5b4133; line-height: 1.6; margin: 10px 0 0; }
+        .guide-api-subtitle { margin: 22px 0 0; font-size: 14.5px; font-weight: 700; color: #2b1a10; }
 
         /* Bố cục nội dung: mục lục là CỘT DỌC dính bên trái, không che nội dung;
            các section chiếm phần còn lại bên phải. */
@@ -48,7 +48,7 @@
             font-weight: 800;
             letter-spacing: .1em;
             text-transform: uppercase;
-            color: #8194ab;
+            color: #a3805f;
             padding: 0 8px 8px;
         }
         .guide-anchor-items {
@@ -69,7 +69,7 @@
             border-radius: 10px !important;
             font-size: 12.5px !important;
             font-weight: 600 !important;
-            color: #44546b !important;
+            color: #5b4133 !important;
             background: transparent !important;
             border: 1px solid transparent !important;
             white-space: nowrap !important;
@@ -86,20 +86,20 @@
             border-radius: 999px;
             font-size: 10.5px;
             font-weight: 800;
-            background: #eef3f9;
-            color: #5b6b81;
+            background: #fff4e9;
+            color: #a3805f;
             flex: 0 0 auto;
             transition: background .15s ease, color .15s ease;
         }
         body.guide-page.guide-page-professional .guide-anchor-nav.guide-anchor-nav-v2 a[href]:hover {
-            color: #15527d !important;
-            background: #eff6ff !important;
-            border-color: #d3e3f5 !important;
+            color: #c93a18 !important;
+            background: #ffe4d1 !important;
+            border-color: #dfb894 !important;
         }
         body.guide-page.guide-page-professional .guide-anchor-nav.guide-anchor-nav-v2 a[href].active {
             color: #ffffff !important;
-            background: #15527d !important;
-            border-color: #15527d !important;
+            background: #ff7542 !important;
+            border-color: #e8451f !important;
         }
         body.guide-page.guide-page-professional .guide-anchor-nav.guide-anchor-nav-v2 a[href].active .guide-anchor-num {
             background: rgba(255,255,255,.18);
@@ -145,9 +145,9 @@
 <main class="page guide-shell">
     <section class="guide-hero-pro" aria-labelledby="guide-title">
         <div class="guide-hero-main">
-            <span class="guide-kicker">Nexus · Trung tâm vận hành</span>
+            <span class="guide-kicker">Jimmy BOT CHAT · Trung tâm vận hành</span>
             <h1 id="guide-title" class="guide-display-title">Dữ liệu rõ ràng.<br>Thao tác tinh gọn.</h1>
-            <p class="guide-hero-lead">Nexus đưa tài khoản, nhóm, thành viên và chiến dịch về một không gian thống nhất. Bảng dữ liệu luôn là khu vực trung tâm; các thao tác phụ chỉ xuất hiện khi bạn cần.</p>
+            <p class="guide-hero-lead">Jimmy BOT CHAT đưa tài khoản, nhóm, thành viên và chiến dịch về một không gian thống nhất. Bảng dữ liệu luôn là khu vực trung tâm; các thao tác phụ chỉ xuất hiện khi bạn cần.</p>
             <div class="guide-hero-actions">
                 <a class="btn btn-primary" href="{{ url_for('dashboard_page') }}">Vào trung tâm điều hành</a>
                 <a class="btn btn-secondary" href="{{ url_for('accounts_page') }}">Kết nối tài khoản</a>
@@ -216,7 +216,7 @@
     <section class="guide-section-pro" id="sec-api-gui-tin">
         <header class="guide-section-heading">
             <span class="guide-section-number">04</span>
-            <div><span class="guide-section-eyebrow">Dành cho hệ thống bên ngoài</span><h2>Tích hợp API gửi tin nhắn</h2><p>Nexus mở API HTTP tại <code style="font-family:Consolas,monospace">http://127.0.0.1:5000</code> khi ứng dụng đang chạy. Lấy <code style="font-family:Consolas,monospace">accountId</code> của tài khoản trạng thái Sẵn sàng từ <code style="font-family:Consolas,monospace">GET /api/accounts</code> rồi gọi các endpoint dưới đây.</p></div>
+            <div><span class="guide-section-eyebrow">Dành cho hệ thống bên ngoài</span><h2>Tích hợp API gửi tin nhắn</h2><p>Jimmy BOT CHAT mở API HTTP tại <code style="font-family:Consolas,monospace">http://127.0.0.1:5000</code> khi ứng dụng đang chạy. Lấy <code style="font-family:Consolas,monospace">accountId</code> của tài khoản trạng thái Sẵn sàng từ <code style="font-family:Consolas,monospace">GET /api/accounts</code> rồi gọi các endpoint dưới đây.</p></div>
         </header>
 
         <p class="guide-api-note" style="margin-top:0"><strong>Hành vi chung cho cả cá nhân và nhóm:</strong> ảnh luôn gửi trước, nội dung <code>message</code> gửi thành tin nhắn riêng ngay sau ảnh (không làm chú thích). Nội dung chứa link nhóm dạng <code>https://zalo.me/g/...</code> tự động gửi thành thẻ link có tên và ảnh nhóm (response có <code>sentAsLink: true</code>; nếu lỗi vẫn gửi văn bản thường). Ảnh tối đa 20MB; phải có ít nhất <code>message</code> hoặc <code>photo</code>.</p>

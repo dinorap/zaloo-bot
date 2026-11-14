@@ -1,123 +1,249 @@
-<link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-ux.css') }}?v=nexus-light-v3-20260728">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-viewport.css') }}?v=nexus-viewport-v4-20260905">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=nexus-light-v3-20260728">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-masterise.css') }}?v=nexus-masterise-v11-20260908">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-ux.css') }}?v=nexus-gap32">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-viewport.css') }}?v=nexus-gap32">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=nexus-gap32">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-masterise.css') }}?v=nexus-gap32">
+<!-- Layout sidebar (trích từ style inline cũ) — phải nằm trước theme màu -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-sidebar-layout.css') }}?v=jimmy-orange-v5">
+<!-- Jimmy BOT CHAT — bảng màu cam-vàng, load sau cùng để ghi đè mọi theme cũ -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/jimmy-bot-chat.css') }}?v=jimmy-orange-v6">
 <script src="{{ url_for('static', filename='js/theme.js') }}?v=nexus-light-v3-20260728"></script>
-<style id="nexusUpdaterButtonOnlyStyle">
-.nexus-visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
-.sidebar-updater.sidebar-updater-button-only{display:block!important;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
-.sidebar-updater.sidebar-updater-button-only #nexusUpdateBtn{width:100%!important;min-height:38px!important;padding:8px 10px!important;color:#111820!important;background:#fff!important;border:1px solid #b8c8d5!important;border-radius:10px!important;font-weight:800!important;white-space:nowrap!important;overflow:visible!important}
-.sidebar-updater.sidebar-updater-button-only #nexusUpdateBtn:hover{color:#fff!important;background:#226aa5!important;border-color:#226aa5!important}
-.sidebar-updater.sidebar-updater-button-only .nexus-update-label-row{display:flex!important;align-items:center!important;gap:6px!important;white-space:nowrap!important;overflow:visible!important}
-.sidebar-updater.sidebar-updater-button-only #nexusUpdateHint{display:block!important;font-size:9px!important;color:#273449!important;white-space:nowrap!important;overflow:visible!important}
-.sidebar-updater.sidebar-updater-button-only .nexus-update-version{display:block!important;margin:4px 2px 0!important;font-size:8px!important;color:#8190a2!important;white-space:nowrap!important}
-.nexus-update-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e53935;box-shadow:0 0 0 3px rgba(229,57,53,.15);flex:0 0 auto}
-</style>
-
 <div class="nexus-mobile-bar" aria-label="Điều hướng di động">
     <button type="button" class="nexus-mobile-menu-btn" data-sidebar-toggle aria-label="Mở menu" aria-expanded="false">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
     </button>
-    <a class="nexus-mobile-brand" data-nexus-workspace-nav href="{{ url_for('dashboard_page') }}">
+    <a class="nexus-mobile-brand" data-nexus-workspace-nav href="{{ default_nav_url or url_for('dashboard_page') }}">
         <img src="{{ url_for('static', filename='img/app-logo.svg') }}" alt="">
-        <span><strong>Nexus</strong><small>Trung tâm vận hành</small></span>
+        <span><strong>Jimmy BOT CHAT</strong><small>Trợ lý Zalo & Telegram</small></span>
     </a>
 </div>
 <div class="nexus-sidebar-scrim" data-sidebar-close aria-hidden="true"></div>
 
 <aside class="header app-sidebar" aria-label="Menu chính">
     <div class="header-content">
-        <a class="brand" data-nexus-workspace-nav href="{{ url_for('dashboard_page') }}" aria-label="Về trang tổng quan">
+        <a class="brand" data-nexus-workspace-nav href="{{ default_nav_url or url_for('dashboard_page') }}"
+            aria-label="Về trang chủ">
             <span class="brand-logo" aria-hidden="true">
                 <img src="{{ url_for('static', filename='img/app-logo.svg') }}" alt="">
             </span>
             <span class="brand-copy">
-                <h1>Nexus</h1>
-                <span class="brand-subtitle">Trung tâm vận hành Zalo</span>
+                <h1>Jimmy BOT CHAT</h1>
+                <span class="brand-subtitle">Trợ lý Zalo & Telegram</span>
+                {% if license_info and license_info.tierBadge %}
+                <span class="nav-license-badge" title="{{ license_info.tierName }}">{{ license_info.tierBadge }}</span>
+                {% endif %}
             </span>
         </a>
     </div>
 
     <nav class="header-nav">
+        {% if 'dashboard' in allowed_features %}
         <div class="nav-section-label">Điều hành</div>
-        <a data-nexus-workspace-nav href="{{ url_for('dashboard_page') }}" data-nav-color="blue" class="{% if active_page == 'dashboard' %}active{% endif %}" {% if active_page == 'dashboard' %}aria-current="page"{% endif %}>
-            <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></span>
-            <span class="nav-copy"><strong>Tổng quan</strong><small>Trung tâm điều hành</small></span>
+        <a data-nexus-workspace-nav href="{{ url_for('dashboard_page') }}"
+            class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" {% if active_page=='dashboard'
+            %}aria-current="page" {% endif %}>
+            <span class="nav-icon"><svg viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="2" />
+                    <rect x="14" y="3" width="7" height="7" rx="2" />
+                    <rect x="3" y="14" width="7" height="7" rx="2" />
+                    <rect x="14" y="14" width="7" height="7" rx="2" />
+                </svg></span>
+            <span class="nav-text">Tổng quan</span>
         </a>
+        {% endif %}
 
-        <div class="nav-section-label">Dữ liệu</div>
-        <a data-nexus-workspace-nav href="{{ url_for('accounts_page') }}" data-nav-color="violet" class="{% if active_page == 'accounts' %}active{% endif %}" {% if active_page == 'accounts' %}aria-current="page"{% endif %}>
-            <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
-            <span class="nav-copy"><strong>Tài khoản</strong><small>Kết nối và quản lý Zalo</small></span>
+        <div class="nav-section-label">Dữ liệu & Khách hàng</div>
+        {% if 'accounts' in allowed_features %}
+        <a data-nexus-workspace-nav href="{{ url_for('accounts_page') }}"
+            class="nav-item {% if active_page == 'accounts' %}active{% endif %}" {% if active_page=='accounts'
+            %}aria-current="page" {% endif %}>
+            <span class="nav-icon"><svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4 21a8 8 0 0 1 16 0" />
+                </svg></span>
+            <span class="nav-text">Tài khoản</span>
         </a>
-        <a data-nexus-workspace-nav href="{{ url_for('groups_page') }}" data-nav-color="green" class="{% if active_page == 'groups' %}active{% endif %}" {% if active_page == 'groups' %}aria-current="page"{% endif %}>
-            <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M14 15.5a5 5 0 0 1 7 4.5"/></svg></span>
-            <span class="nav-copy"><strong>Nhóm Zalo</strong><small>Đồng bộ nhóm đang có</small></span>
+        {% endif %}
+
+        {% if 'inbox' in allowed_features %}
+        <a data-nexus-workspace-nav href="{{ url_for('inbox_page') }}"
+            class="nav-item {% if active_page == 'inbox' %}active{% endif %}" {% if active_page=='inbox'
+            %}aria-current="page" {% endif %}>
+            <span class="nav-icon"><svg viewBox="0 0 24 24">
+                    <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />
+                    <path d="M8 9h8M8 13h5" />
+                </svg></span>
+            <span class="nav-text">Inbox chung</span>
+            <span class="nav-badge-pill">CSKH</span>
         </a>
-        <a data-nexus-workspace-nav href="{{ url_for('members_page') }}" data-nav-color="amber" class="{% if active_page == 'members' %}active{% endif %}" {% if active_page == 'members' %}aria-current="page"{% endif %}>
-            <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M11 8v6M8 11h6"/></svg></span>
-            <span class="nav-copy"><strong>Thành viên</strong><small>Lấy danh sách từ nhóm</small></span>
+        {% endif %}
+
+        {% if 'groups' in allowed_features %}
+        <a data-nexus-workspace-nav href="{{ url_for('groups_page') }}"
+            class="nav-item {% if active_page == 'groups' %}active{% endif %}" {% if active_page=='groups'
+            %}aria-current="page" {% endif %}>
+            <span class="nav-icon"><svg viewBox="0 0 24 24">
+                    <circle cx="9" cy="8" r="3" />
+                    <circle cx="17" cy="9" r="2.5" />
+                    <path d="M3 20a6 6 0 0 1 12 0M14 15.5a5 5 0 0 1 7 4.5" />
+                </svg></span>
+            <span class="nav-text">Nhóm Zalo</span>
         </a>
-        <a data-nexus-workspace-nav href="{{ url_for('friends_page') }}" data-nav-color="pink" class="{% if active_page == 'friends' %}active{% endif %}" {% if active_page == 'friends' %}aria-current="page"{% endif %}>
-            <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M19 8v6M22 11h-6"/></svg></span>
-            <span class="nav-copy"><strong>Bạn bè</strong><small>Danh sách bạn bè tài khoản</small></span>
+        {% endif %}
+
+        {% if 'members' in allowed_features %}
+        <a data-nexus-workspace-nav href="{{ url_for('members_page') }}"
+            class="nav-item {% if active_page == 'members' %}active{% endif %}" {% if active_page=='members'
+            %}aria-current="page" {% endif %}>
+            <span class="nav-icon"><svg viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-4-4M11 8v6M8 11h6" />
+                </svg></span>
+            <span class="nav-text">Thành viên nhóm</span>
         </a>
-        <a data-nexus-workspace-nav href="{{ url_for('messages_page') }}" data-nav-color="rose" class="{% if active_page == 'messages' %}active{% endif %}" {% if active_page == 'messages' %}aria-current="page"{% endif %}>
-            <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg></span>
-            <span class="nav-copy"><strong>Tin nhắn <span class="nav-beta-tag" title="Tính năng đang trong giai đoạn phát triển">Beta</span></strong><small>Tin nhóm mới</small></span>
+        {% endif %}
+
+        {% if 'friends' in allowed_features %}
+        <a data-nexus-workspace-nav href="{{ url_for('friends_page') }}"
+            class="nav-item {% if active_page == 'friends' %}active{% endif %}" {% if active_page=='friends'
+            %}aria-current="page" {% endif %}>
+            <span class="nav-icon"><svg viewBox="0 0 24 24">
+                    <circle cx="9" cy="8" r="4" />
+                    <path d="M2 21a7 7 0 0 1 14 0" />
+                    <path d="M19 8v6M22 11h-6" />
+                </svg></span>
+            <span class="nav-text">Bạn bè</span>
         </a>
+        {% endif %}
+
+        {% if 'chatbot' in allowed_features %}
+        <a data-nexus-workspace-nav href="{{ url_for('chatbot_page') }}"
+            class="nav-item nav-item-stack {% if active_page == 'chatbot' %}active{% endif %}" {% if active_page=='chatbot'
+            %}aria-current="page" {% endif %}>
+            <span class="nav-icon"><svg viewBox="0 0 24 24">
+                    <rect x="4" y="7" width="16" height="12" rx="3" />
+                    <path d="M12 7V4M8 12h.01M12 12h.01M16 12h.01M9 16.5h6" />
+                </svg></span>
+            <span class="nav-text nav-text-stack">
+                <strong>Chatbot</strong>
+                <small>Zalo + Telegram</small>
+            </span>
+        </a>
+        {% endif %}
+
+        {% if 'gateway' in allowed_features %}
+        <a data-nexus-workspace-nav href="{{ url_for('gateway_page') }}"
+            class="nav-item {% if active_page == 'gateway' %}active{% endif %}"
+            {% if active_page=='gateway' %}aria-current="page" {% endif %}>
+            <span class="nav-icon"><svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" />
+                </svg></span>
+            <span class="nav-text">Chia sẻ (Gateway)</span>
+        </a>
+        {% endif %}
 
         <div class="nav-section-label">Chiến dịch</div>
-        <a data-nexus-workspace-nav href="{{ url_for('marketing_group_page') }}" data-nav-color="cyan" class="{% if active_page in ['marketing_group', 'marketing_phone'] %}active{% endif %}" {% if active_page in ['marketing_group', 'marketing_phone'] %}aria-current="page"{% endif %}>
-            <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 13.5V10a2 2 0 0 1 2-2h2l9-4v15l-9-4H6a2 2 0 0 1-2-1.5Z"/><path d="M8 15v4a2 2 0 0 0 2 2h1"/></svg></span>
-            <span class="nav-copy"><strong>Chiến dịch</strong><small>Gửi theo nhóm hoặc số điện thoại</small></span>
+        {% if 'marketing_campaign' in allowed_features %}
+        <a data-nexus-workspace-nav href="{{ url_for('marketing_group_page') }}"
+            class="nav-item {% if active_page in ['marketing_group', 'marketing_phone'] %}active{% endif %}"
+            {% if active_page in ['marketing_group', 'marketing_phone' ]
+            %}aria-current="page" {% endif %}>
+            <span class="nav-icon"><svg viewBox="0 0 24 24">
+                    <path d="M4 13.5V10a2 2 0 0 1 2-2h2l9-4v15l-9-4H6a2 2 0 0 1-2-1.5Z" />
+                    <path d="M8 15v4a2 2 0 0 0 2 2h1" />
+                </svg></span>
+            <span class="nav-text">Chiến dịch gửi tin</span>
         </a>
-        <a data-nexus-workspace-nav href="{{ url_for('marketing_group_copy_page') }}" data-nav-color="teal" class="{% if active_page == 'group_copy' %}active{% endif %}" {% if active_page == 'group_copy' %}aria-current="page"{% endif %}>
-            <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></span>
-            <span class="nav-copy"><strong>Sao chép nhóm</strong><small>Chuyển thành viên theo kế hoạch</small></span>
+        {% endif %}
+
+        {% if 'group_copy' in allowed_features %}
+        <a data-nexus-workspace-nav href="{{ url_for('marketing_group_copy_page') }}"
+            class="nav-item {% if active_page == 'group_copy' %}active{% endif %}"
+            {% if active_page=='group_copy' %}aria-current="page" {% endif %}>
+            <span class="nav-icon"><svg viewBox="0 0 24 24">
+                    <rect x="8" y="8" width="12" height="12" rx="3" />
+                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                </svg></span>
+            <span class="nav-text">Sao chép nhóm</span>
         </a>
-        <a data-nexus-workspace-nav href="{{ url_for('marketing_schedules_page') }}" data-nav-color="indigo" class="{% if active_page == 'schedules' %}active{% endif %}" {% if active_page == 'schedules' %}aria-current="page"{% endif %}>
-            <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3M8 18h6"/></svg></span>
-            <span class="nav-copy"><strong>Lịch hoạt động</strong><small>Tiến độ và kết quả công việc</small></span>
+        {% endif %}
+
+        {% if 'schedules' in allowed_features %}
+        <a data-nexus-workspace-nav href="{{ url_for('marketing_schedules_page') }}"
+            class="nav-item {% if active_page == 'schedules' %}active{% endif %}"
+            {% if active_page=='schedules' %}aria-current="page" {% endif %}>
+            <span class="nav-icon"><svg viewBox="0 0 24 24">
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M16 3v4M8 3v4M3 10h18M8 14h3M8 18h6" />
+                </svg></span>
+            <span class="nav-text">Lịch hoạt động</span>
         </a>
+        {% endif %}
     </nav>
 
     <div class="sidebar-bottom">
-        <div class="sidebar-support-links">
-            <a class="sidebar-mini-link {% if active_page == 'guide' %}active{% endif %}" data-nexus-workspace-nav href="{{ url_for('guide_page') }}">
-                <span><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span>
-                <div><strong><span>Giới</span><span>thiệu</span></strong><small>Bắt đầu cùng Nexus</small></div>
+        <div class="sidebar-footer-links">
+            <a class="sidebar-link-item {% if active_page == 'guide' %}active{% endif %}" {% if active_page=='guide'
+                %}aria-current="page" {% endif %} data-nexus-workspace-nav href="{{ url_for('guide_page') }}">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 16v-4M12 8h.01" />
+                </svg>
+                <span>Giới thiệu</span>
             </a>
-            <a class="sidebar-mini-link {% if active_page == 'activation' %}active{% endif %}" href="{{ url_for('activation_page') }}">
-                <span><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4M12 15v2"/></svg></span>
-                <div><strong><span>Kích</span><span>hoạt</span></strong><small>Bản quyền và thời hạn</small></div>
+            <a class="sidebar-link-item {% if active_page == 'activation' %}active{% endif %}" {% if
+                active_page=='activation' %}aria-current="page" {% endif %} href="{{ url_for('activation_page') }}">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                        d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8Zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                </svg>
+                <span>Kích hoạt</span>
+            </a>
+            <a class="sidebar-link-item {% if active_page == 'policy' %}active{% endif %}" {% if active_page=='policy'
+                %}aria-current="page" {% endif %} href="{{ url_for('policy_page') }}">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6l7-3Z" />
+                    <path d="m9 12 2 2 4-4" />
+                </svg>
+                <span>Chính sách</span>
             </a>
         </div>
-
-        <a class="sidebar-policy-link" href="{{ url_for('policy_page') }}">
-            <span><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span>
-            <div><strong>Chính sách sử dụng</strong><small>Quy định vận hành an toàn</small></div>
-        </a>
 
         <div class="sidebar-updater sidebar-updater-button-only">
-            <div class="nexus-update-label-row"><strong id="nexusUpdateHint" aria-live="polite">Kiểm tra phiên bản</strong><span id="nexusUpdateDot" class="nexus-update-dot" hidden aria-label="Có bản cập nhật mới"></span></div>
-            <button type="button" id="nexusUpdateBtn" onclick="NexusUpdater.checkAndOpen()">Kiểm tra phiên bản</button>
-            <small id="nexusUpdateVersion" class="nexus-update-version" aria-live="polite">Đang kiểm tra phiên bản…</small>
+            <button type="button" id="nexusUpdateBtn" onclick="NexusUpdater.checkAndOpen()" class="nexus-update-pill"
+                title="Kiểm tra bản cập nhật mới">
+                <span class="nexus-update-head-row">
+                    <svg class="nexus-update-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                        <path d="M21 3v6h-6" />
+                    </svg>
+                    <span id="nexusUpdateHint" class="nexus-update-text">Kiểm tra phiên bản</span>
+                    <span id="nexusUpdateDot" class="nexus-update-dot" hidden aria-label="Có bản cập nhật mới"></span>
+                </span>
+                <span id="nexusUpdateVersion" class="nexus-update-ver-label">Bấm để kiểm tra</span>
+            </button>
         </div>
-        <div class="sidebar-footer">Nexus · Trung tâm vận hành Zalo</div>
     </div>
 </aside>
 
 <div class="nexus-update-backdrop" id="nexusUpdateBackdrop" aria-hidden="true">
     <div class="nexus-update-modal" role="dialog" aria-modal="true" aria-labelledby="nexusUpdateTitle">
         <div class="nexus-update-head">
-            <div><h3 id="nexusUpdateTitle">Cập nhật Nexus</h3><p id="nexusUpdateSubtitle">Kiểm tra bản phát hành mới nhất từ GitHub.</p></div>
+            <div>
+                <h3 id="nexusUpdateTitle">Cập nhật Jimmy BOT CHAT</h3>
+                <p id="nexusUpdateSubtitle">Kiểm tra bản phát hành mới nhất từ GitHub.</p>
+            </div>
             <button type="button" class="nexus-update-close" onclick="NexusUpdater.close()" aria-label="Đóng">×</button>
         </div>
-        <div class="nexus-update-body"><div class="nexus-update-status" id="nexusUpdateStatus">Sẵn sàng kiểm tra cập nhật.</div></div>
+        <div class="nexus-update-body">
+            <div class="nexus-update-status" id="nexusUpdateStatus">Sẵn sàng kiểm tra cập nhật.</div>
+        </div>
         <div class="nexus-update-actions">
             <button type="button" class="btn btn-secondary" onclick="NexusUpdater.close()">Đóng</button>
-            <button type="button" class="btn btn-primary" id="nexusApplyUpdateBtn" onclick="NexusUpdater.apply()" disabled>Tải và cập nhật</button>
+            <button type="button" class="btn btn-primary" id="nexusApplyUpdateBtn" onclick="NexusUpdater.apply()"
+                disabled>Tải và cập nhật</button>
         </div>
     </div>
 </div>
@@ -125,43 +251,77 @@
 <!-- Thông báo tự động khi phát hiện bản cập nhật mới (chỉ báo, không tự tải) -->
 <div class="nexus-update-toast" id="nexusUpdateToast" hidden role="status" aria-live="polite">
     <span class="nexus-update-toast-icon" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 8v4M12 15h.01"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            <path d="M12 8v4M12 15h.01" />
+        </svg>
     </span>
     <span class="nexus-update-toast-text" id="nexusUpdateToastText">Đã có bản cập nhật mới.</span>
     <button type="button" class="nexus-update-toast-btn" onclick="NexusUpdater.openFromToast()">Xem</button>
-    <button type="button" class="nexus-update-toast-close" onclick="NexusUpdater.dismissToast()" aria-label="Bỏ qua thông báo">×</button>
+    <button type="button" class="nexus-update-toast-close" onclick="NexusUpdater.dismissToast()"
+        aria-label="Bỏ qua thông báo">×</button>
 </div>
 
-<script src="{{ url_for('static', filename='js/updater.js') }}?v=nexus-premium-v16-20260908"></script>
-<script src="{{ url_for('static', filename='js/nexus-interactions.js') }}?v=nexus-premium-v15-20260728"></script>
+<script src="{{ url_for('static', filename='js/updater.js') }}?v=nexus-premium-v18-20261112"></script>
+<script src="{{ url_for('static', filename='js/nexus-interactions.js') }}?v=nexus-premium-v18-20261112"></script>
 
 <script>
-(function () {
-    'use strict';
+    (function () {
+        'use strict';
 
-    function mountNexusWorkspaceThemeV15() {
-        ['nexusContrastV11', 'nexusThemeV12', 'nexusThemeV13', 'nexusThemeV14', 'nexusThemeV15'].forEach(function (id) {
-            var old = document.getElementById(id);
-            if (old) old.remove();
-        });
+        function mountJimmyTheme() {
+            ['nexusContrastV11', 'nexusThemeV12', 'nexusThemeV13', 'nexusThemeV14', 'nexusThemeV15', 'jimmyBotChatTheme'].forEach(function (id) {
+                var old = document.getElementById(id);
+                if (old) old.remove();
+            });
 
-        document.querySelectorAll('link[href*="nexus-contrast-v11.css"], link[href*="nexus-theme-v12.css"], link[href*="nexus-theme-v13-light.css"], link[href*="nexus-theme-v14-blacktext.css"], link[href*="nexus-theme-v15-workspace.css"]').forEach(function (old) {
-            old.remove();
-        });
+            document.querySelectorAll('link[href*="nexus-contrast-v11.css"], link[href*="nexus-theme-v12.css"], link[href*="nexus-theme-v13-light.css"], link[href*="nexus-theme-v14-blacktext.css"], link[href*="nexus-theme-v15-workspace.css"], link[href*="jimmy-bot-chat.css"]').forEach(function (old) {
+                old.remove();
+            });
 
-        var link = document.createElement('link');
-        link.id = 'nexusThemeV15';
-        link.rel = 'stylesheet';
-        link.href = "{{ url_for('static', filename='css/nexus-theme-v15-workspace.css') }}?v=nexus-theme-v15-workspace-20260728";
-        document.head.appendChild(link);
-    }
+            // Cac stylesheet cu trong <body> (do _nav.html include) van dung sau <head>,
+            // nen phai noi chung vao CUOI body de bao dam theme Jimmy la noi cuoi cung.
+            // QUAN TRONG: phai noi TRUOC marker #nexusWorkspaceStart, vi khi dieu huong
+            // SPA moi xoa toan bo node nam SAU marker (ke ca stylesheet) -> mat theme.
+            var host = document.body;
+            var marker = document.getElementById('nexusWorkspaceStart');
+            function appendTheme(node) {
+                if (marker && marker.parentNode === host) {
+                    host.insertBefore(node, marker);
+                } else {
+                    host.appendChild(node);
+                }
+            }
 
-    if (document.readyState === 'complete') {
-        mountNexusWorkspaceThemeV15();
-    } else {
-        window.addEventListener('load', mountNexusWorkspaceThemeV15, { once: true });
-    }
-})();
+            // Theme layout v15 giu nguyen (chi lay phan bo cuc, khong lay mau).
+            var link = document.createElement('link');
+            link.id = 'nexusThemeV15';
+            link.rel = 'stylesheet';
+            link.href = "{{ url_for('static', filename='css/nexus-theme-v15-workspace.css') }}?v=nexus-theme-v15-workspace-20261112fix5";
+            appendTheme(link);
+
+            // Bang mau cam-vang cua Jimmy BOT CHAT phai noi sau cung de ghi de mau xanh.
+            var jimmy = document.createElement('link');
+            jimmy.id = 'jimmyBotChatTheme';
+            jimmy.rel = 'stylesheet';
+            jimmy.href = "{{ url_for('static', filename='css/jimmy-bot-chat.css') }}?v=jimmy-orange-v5";
+            appendTheme(jimmy);
+
+            // Lop sua loi tuong phan (hover chu trang, thead chu trang, vien kep o tim kiem).
+            // Phai noi CUOI CUNG de dung quy tac `!important` cua theme.
+            var fix = document.createElement('link');
+            fix.id = 'jimmyContrastFix';
+            fix.rel = 'stylesheet';
+            fix.href = "{{ url_for('static', filename='css/jimmy-contrast-fix.css') }}?v=jimmy-contrast-fix-20261113";
+            appendTheme(fix);
+        }
+
+        if (document.readyState === 'complete') {
+            mountJimmyTheme();
+        } else {
+            window.addEventListener('load', mountJimmyTheme, { once: true });
+        }
+    })();
 </script>
 
 <div id="nexusWorkspaceLoader" class="nexus-workspace-loader" data-nexus-shared aria-hidden="true">

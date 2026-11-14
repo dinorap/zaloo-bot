@@ -1132,10 +1132,11 @@ body::after { display: none !important; }
 
 /* Main surfaces */
 .page {
-    margin-left: var(--nexus-sidebar) !important;
-    width: calc(100% - var(--nexus-sidebar)) !important;
+    margin-left: var(--nexus-sidebar, 240px) !important;
+    width: calc(100vw - var(--nexus-sidebar, 240px)) !important;
     max-width: none !important;
-    padding: 18px 20px !important;
+    padding: 20px 28px 24px 28px !important;
+    box-sizing: border-box !important;
     color: #172033 !important;
     background: transparent !important;
 }

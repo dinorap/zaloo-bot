@@ -11,12 +11,12 @@ Response: {"error_code":0, "data":{"msgId":...}}
 import json
 import time
 
-import requests
 
 from core.zalo.enc import zalo_encode
 from core.zalo.dec import zalo_decode
 from core.zalo.zalo_config import get_zpw_ver
 from core.zalo.zalo_headers import zalo_mobile_headers
+from core.zalo import http as zalo_http
 
 QUOTE_USER_URL = "https://tt-chat2-wpa.chat.zalo.me/api/message/quote"
 QUOTE_GROUP_URL = "https://tt-group-wpa.chat.zalo.me/api/group/quote"
@@ -107,7 +107,7 @@ def quote_message(
     plaintext = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     params = zalo_encode(plaintext, zpw_enk, url_encode=False)
 
-    response = requests.post(
+    response = zalo_http.post(
         url,
         params={"zpw_ver": get_zpw_ver(zpw_ver), "zpw_type": "30", "nretry": "0"},
         data={"params": params},

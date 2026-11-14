@@ -17,8 +17,8 @@ import re
 import time
 from typing import Optional, Tuple
 
-import requests
 
+from core.zalo import http as zalo_http
 from core.zalo.enc import zalo_encode
 from core.zalo.dec import zalo_decode
 from core.zalo.zalo_config import get_zpw_ver
@@ -93,7 +93,7 @@ def parse_link_info(link: str, zpw_enk: str, cookies: str, imei: str,
         zpw_enk,
         url_encode=False,
     )
-    response = requests.get(
+    response = zalo_http.get(
         PARSELINK_URL,
         params={"zpw_ver": zpw_ver, "zpw_type": "30", "params": enc_params},
         headers=zalo_mobile_headers(),
@@ -136,7 +136,7 @@ def _fetch_link_og_tags(link: str, cookies: str, timeout: int = 10) -> dict:
     """
     tags = {}
     try:
-        response = requests.get(
+        response = zalo_http.get(
             link,
             headers={"User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -252,7 +252,7 @@ def send_link_message(
         zpw_enk,
         url_encode=False,
     )
-    response = requests.post(
+    response = zalo_http.post(
         url,
         params={"zpw_ver": zpw_ver, "zpw_type": "30", "nretry": "0"},
         data={"params": enc_params},
@@ -265,6 +265,8 @@ def send_link_message(
     except Exception as exc:
         raise RuntimeError(f"Response sendlink không phải JSON: {response.text[:300]}") from exc
     decoded = _decode_data_field(resp_json, zpw_enk)
+    if isinstance(decoded, dict):
+        decoded.setdefault("_clientId", client_id)
     return resp_json, decoded
 
 
@@ -277,6 +279,7 @@ def send_message_smart(
     is_group: bool = False,
     zpw_ver: str = None,
     link_info: dict = None,
+    link: str = None,
 ) -> dict:
     """Gửi tin nhắn thông minh: nội dung chứa link nhóm Zalo -> gửi link card
     (lấy thông tin nhóm trước); không có link hoặc lỗi -> gửi text thường.
@@ -284,10 +287,15 @@ def send_message_smart(
     link_info: kết quả resolve_group_link_info đã cache (dùng cho worker gửi
     hàng loạt cùng một nội dung, tránh gọi ginfo lặp lại từng người nhận).
 
+    link: ép link dùng cho thẻ card. Khi nội dung có nhiều link (link nhóm +
+        link phụ), thẻ card PHẢI là link nhóm đích nên caller truyền rõ vào đây
+        thay vì để hàm tự dò link đầu tiên trong nội dung.
+
     Trả: {ok, sentAsLink, error, decoded}
     """
     message = str(message or "")
-    link = extract_zalo_group_link(message)
+    # Ưu tiên link được ép truyền vào; nếu không thì mới dò trong nội dung.
+    link = str(link or "").strip() or extract_zalo_group_link(message)
 
     if link:
         try:
@@ -307,7 +315,7 @@ def send_message_smart(
                 )
                 code = decoded.get("error_code", -1) if isinstance(decoded, dict) else -1
                 if code == 0:
-                    return {"ok": True, "sentAsLink": True, "error": "", "decoded": decoded}
+                    return {"ok": True, "sentAsLink": True, "error": "", "decoded": decoded, "clientId": decoded.get("_clientId")}
                 print(f"[send_link] sendlink lỗi error_code={code}, fallback gửi text thường", flush=True)
             else:
                 print(f"[send_link] Không lấy được info nhóm từ link ({info.get('message')}), fallback text", flush=True)
@@ -327,4 +335,5 @@ def send_message_smart(
         "sentAsLink": False,
         "error": "" if code == 0 else f"Error code: {code}",
         "decoded": decoded,
+        "clientId": decoded.get("_clientId") if isinstance(decoded, dict) else None,
     }

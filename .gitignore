@@ -17,6 +17,7 @@ logs/
 
 # Test / dữ liệu phân tích cục bộ
 test/
+_*.json
 
 # Zip / archives
 *.zip

@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lấy thành viên - Nexus</title>
+    <title>Lấy thành viên - Jimmy BOT CHAT</title>
     <link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=members-role-col-v1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/overlay.css') }}?v=9999">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=nexus-light-v3-20260728">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-masterise.css') }}?v=nexus-masterise-v6-20260728">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=members-gap32">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/overlay.css') }}?v=members-gap32">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=members-gap32">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-masterise.css') }}?v=members-gap32">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jimmy-bot-chat.css') }}?v=jimmy-orange-v5">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/members.css') }}?v=members-modern-v2">
 </head>
 <body class="members-page">
 
@@ -118,7 +120,7 @@
         <div class="overlay-header">
             <div class="overlay-user-info">
                 <span class="overlay-name" id="memberFetchTitle">Lấy thành viên nhóm</span>
-                <span class="overlay-uid">Chọn tài khoản, nhập link hoặc ID nhóm rồi bắt đầu quét.</span>
+                <span class="overlay-uid">Chọn tài khoản, chọn nhóm có sẵn hoặc nhập link nhóm để quét thành viên.</span>
             </div>
             <button class="overlay-close" type="button" onclick="closeMemberFetchOverlay()" aria-label="Đóng">×</button>
         </div>
@@ -129,9 +131,58 @@
                     <div id="memberAccountDropdown" class="account-dropdown"></div>
                     <input type="hidden" id="memberAccountId">
                 </div>
-                <div class="form-group compact-field group-link-field">
-                    <label>Link nhóm Zalo hoặc ID nhóm</label>
-                    <input type="text" id="groupLinkInput" placeholder="Ví dụ: https://zalo.me/g/abcd... hoặc ID nhóm">
+
+                <!-- Chế độ chọn nhóm: Nhóm có sẵn / Dán link nhóm -->
+                <div class="form-group mf-mode-field">
+                    <label>Cách chọn nhóm</label>
+                    <div class="mf-segmented">
+                        <button type="button" class="mf-seg-btn active" id="mfModeExistingBtn" onclick="setMemberFetchMode('existing')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            Nhóm có sẵn (<span id="mfGroupCount">0</span>)
+                        </button>
+                        <button type="button" class="mf-seg-btn" id="mfModeLinkBtn" onclick="setMemberFetchMode('link')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                            Dán link / ID nhóm
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 1: Danh sách nhóm có sẵn -->
+                <div id="mfExistingWrap" class="mf-section">
+                    <div class="mf-search-row">
+                        <div class="mf-search-input-wrap">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" id="mfGroupSearch" placeholder="Tìm theo tên nhóm hoặc Group ID..." oninput="filterMemberFetchGroups()">
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm mf-refresh-btn" id="mfRefreshGroupsBtn" onclick="refreshMemberFetchGroups()" title="Làm mới danh sách nhóm">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                            <span>Làm mới</span>
+                        </button>
+                    </div>
+                    <div id="mfGroupList" class="mf-group-list">
+                        <!-- Danh sách nhóm render động -->
+                    </div>
+                </div>
+
+                <!-- Tab 2: Dán link nhóm hoặc ID nhóm -->
+                <div id="mfLinkWrap" class="mf-section" style="display:none">
+                    <div class="form-group compact-field group-link-field">
+                        <label>Link nhóm Zalo hoặc ID nhóm</label>
+                        <input type="text" id="groupLinkInput" placeholder="Ví dụ: https://zalo.me/g/abcd... hoặc ID nhóm" oninput="onMfGroupLinkInput()">
+                        <span class="gc-hint" style="margin-top:6px;display:block">
+                            Bạn có thể dán link mời tham gia nhóm <b>https://zalo.me/g/...</b> hoặc ID nhóm (dãy số 19 chữ số).
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Banner nhóm đã chọn -->
+                <div id="mfSelectedGroupNotice" class="mf-selected-notice" style="display:none">
+                    <div class="mf-selected-info">
+                        <span class="mf-selected-tag">Nhóm chọn:</span>
+                        <strong id="mfSelectedGroupName">-</strong>
+                        <small id="mfSelectedGroupId" class="mono">-</small>
+                    </div>
+                    <span class="mf-selected-check">✓ Đã sẵn sàng</span>
                 </div>
             </div>
         </div>
@@ -553,6 +604,6 @@
 
 <script src="{{ url_for('static', filename='js/avatar-preview.js') }}?v=107"></script>
 <script src="{{ url_for('static', filename='js/app.js') }}?v=send-photo-v1"></script>
-<script src="{{ url_for('static', filename='js/members.js') }}?v=members-role-col-v1"></script>
+<script src="{{ url_for('static', filename='js/members.js') }}?v=members-group-picker-v3"></script>
 </body>
 </html>

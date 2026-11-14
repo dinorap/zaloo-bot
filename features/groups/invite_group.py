@@ -15,10 +15,9 @@ import sys
 import time
 from typing import Any, Iterable
 
-import requests
-
 from core.zalo.dec import zalo_decode
 from core.zalo.enc import zalo_encode
+from core.zalo import http as zalo_http
 from core.zalo.zalo_config import get_zpw_ver
 from core.zalo.zalo_headers import zalo_mobile_headers
 
@@ -40,6 +39,69 @@ INVITE_CODE_WAITING_APPROVAL = 240
 INVITE_CODE_EXISTED_WAITING_APPROVAL = 252
 INVITE_CODE_ALREADY_INV_BOX = 262
 INVITE_CODE_SENT_INV_BOX = 263
+# 314 MAX_QUOTA_INVITE_STRANGER_PHONEID: batch có chứa người chưa kết bạn bị Zalo
+# từ chối. 269: "danh sách mời có người lạ" (trả về trong grid_message_map của
+# /invite/multi). Cả hai đều là giới hạn phía server, không bypass được.
+INVITE_CODE_STRANGER_QUOTA = 314
+INVITE_CODE_STRANGER_IN_LIST = 269
+# 245 STRANGER, 244 NOT_IN_PHONEBOOK: người dùng không phải bạn bè của tài khoản.
+INVITE_CODE_STRANGER = 245
+INVITE_CODE_NOT_IN_PHONEBOOK = 244
+# 122 BLOCKED_STRANGER_USER: người nhận đã chặn tin từ người lạ.
+INVITE_CODE_BLOCKED_STRANGER = 122
+# 188 BLOCKED_STRANGER_TO_COMMUNITY: người nhận đã chặn tin từ cộng đồng/nhóm.
+INVITE_CODE_BLOCKED_TO_COMMUNITY = 188
+# 166 NOT_PERMISSION: tài khoản không đủ quyền (không phải chủ nhóm/admin).
+INVITE_CODE_NOT_PERMISSION = 166
+# 170 NOT_IN_PENDING_LIST: UID không còn nằm trong danh sách chờ duyệt.
+INVITE_CODE_NOT_IN_PENDING_LIST = 170
+# 177 OVER_MEM_LIMIT: vượt giới hạn thành viên của nhóm.
+INVITE_CODE_OVER_MEM_LIMIT = 177
+# 183 REACHED_LIMIT_MEMBER_GROUP: đã chạm trần số thành viên nhóm.
+INVITE_CODE_REACHED_LIMIT_MEMBER_GROUP = 183
+# 246 GROUP_LINK_NOT_AVAILABLE: nhóm chưa bật link tham gia.
+INVITE_CODE_GROUP_LINK_NOT_AVAILABLE = 246
+# 247 IGNORED_GROUP: nhóm bị bỏ qua (không còn quyền truy cập).
+INVITE_CODE_IGNORED_GROUP = 247
+# 248 WAIT_FOR_ADMIN_APPROVAL: cần admin duyệt trước.
+INVITE_CODE_WAIT_FOR_ADMIN_APPROVAL = 248
+# 257 BAN_JOIN_GROUP: bị cấm tham gia nhóm.
+INVITE_CODE_BAN_JOIN_GROUP = 257
+# 264 ADD_TO_BIG_GROUP: nhóm quá lớn, cần dùng link thay vì add trực tiếp.
+INVITE_CODE_ADD_TO_BIG_GROUP = 264
+# 271 OWNER_NEED_VERIFY_PROFILE: chủ nhóm cần xác minh hồ sơ.
+INVITE_CODE_OWNER_NEED_VERIFY = 271
+# 221: vượt hạn mức tần suất request (rate limit).
+INVITE_CODE_RATE_LIMIT = 221
+
+INVITE_STRANGER_CODES = {
+    INVITE_CODE_STRANGER_QUOTA,
+    INVITE_CODE_STRANGER_IN_LIST,
+    INVITE_CODE_STRANGER,
+    INVITE_CODE_NOT_IN_PHONEBOOK,
+}
+
+# Nhóm lỗi mà việc thử lại cũng vô ích vì đó là quy tắc phía server.
+# Worker dùng danh sách này để BỎ QUA gọi lại API cho những người đã chắc
+# chắn không thể vào nhóm theo cách add trực tiếp.
+INVITE_TERMINAL_CODES = INVITE_STRANGER_CODES | {
+    INVITE_CODE_BLOCKED_STRANGER,
+    INVITE_CODE_BLOCKED_TO_COMMUNITY,
+    INVITE_CODE_NOT_PERMISSION,
+    INVITE_CODE_OVER_MEM_LIMIT,
+    INVITE_CODE_REACHED_LIMIT_MEMBER_GROUP,
+    INVITE_CODE_GROUP_LINK_NOT_AVAILABLE,
+    INVITE_CODE_IGNORED_GROUP,
+    INVITE_CODE_BAN_JOIN_GROUP,
+    INVITE_CODE_OWNER_NEED_VERIFY,
+    INVITE_CODE_NOT_IN_PENDING_LIST,
+}
+
+# Mã cho phép thử lại sau (lỗi tạm thời / phía server quá tải).
+INVITE_RETRYABLE_CODES = {
+    INVITE_CODE_RATE_LIMIT,
+    INVITE_CODE_WAIT_FOR_ADMIN_APPROVAL,
+}
 
 INVITE_ACCEPTED_CODES = {
     INVITE_CODE_WAITING_APPROVAL,
@@ -48,6 +110,10 @@ INVITE_ACCEPTED_CODES = {
     INVITE_CODE_SENT_INV_BOX,
 }
 INVITE_JOINED_CODES = {INVITE_CODE_MEMBER_ALREADY}
+
+# Số UID tối đa được thử riêng khi một batch lỗi ở cấp yêu cầu. Giới hạn
+# này tránh biến 1 batch 50 người thành 50 API call (N+1) làm nghẽn chiến dịch.
+MAX_INDIVIDUAL_RETRY = 10
 
 
 def parse_grid_input(value: str) -> str:
@@ -267,6 +333,95 @@ def _result_message(code: int, fallback: str = "") -> tuple[str, str]:
         return "pending_approval", "Yêu cầu đã tồn tại; đang chờ quản trị viên nhóm duyệt."
     if code == INVITE_CODE_MEMBER_ALREADY:
         return "already_joined", "Thành viên đã có trong nhóm đích."
+    if code == INVITE_CODE_STRANGER_QUOTA:
+        return (
+            "stranger_blocked",
+            "Zalo không cho thêm trực tiếp người chưa kết bạn (mã 314 "
+            "MAX_QUOTA_INVITE_STRANGER_PHONEID). Cần gửi link nhóm hoặc lời mời "
+            "kết bạn trước.",
+        )
+    if code == INVITE_CODE_STRANGER_IN_LIST:
+        return (
+            "stranger_blocked",
+            "Zalo báo danh sách mời có người lạ (mã 269). Người này phải được "
+            "mời kết bạn trước rồi mới thêm trực tiếp vào nhóm được.",
+        )
+    if code == INVITE_CODE_STRANGER:
+        return (
+            "stranger_blocked",
+            "Zalo chỉ cho thêm trực tiếp người đã là bạn bè (mã 245 STRANGER).",
+        )
+    if code == INVITE_CODE_NOT_IN_PHONEBOOK:
+        return (
+            "stranger_blocked",
+            "Người nhận không có trong danh bạ của tài khoản (mã 244).",
+        )
+    if code == INVITE_CODE_BLOCKED_STRANGER:
+        return (
+            "blocked",
+            "Người nhận đã chặn tin nhắn từ người lạ (mã 122).",
+        )
+    if code == INVITE_CODE_BLOCKED_TO_COMMUNITY:
+        return (
+            "blocked",
+            "Người nhận đã chặn tin nhắn từ cộng đồng/nhóm (mã 188).",
+        )
+    if code == INVITE_CODE_NOT_PERMISSION:
+        return (
+            "failed",
+            "Tài khoản không đủ quyền thêm người vào nhóm này (mã 166). "
+            "Cần là chủ nhóm hoặc phó nhóm.",
+        )
+    if code == INVITE_CODE_OVER_MEM_LIMIT:
+        return (
+            "failed",
+            "Nhóm đã vượt giới hạn số thành viên cho phép (mã 177).",
+        )
+    if code == INVITE_CODE_REACHED_LIMIT_MEMBER_GROUP:
+        return (
+            "failed",
+            "Đã chạm trần số thành viên của nhóm (mã 183).",
+        )
+    if code == INVITE_CODE_GROUP_LINK_NOT_AVAILABLE:
+        return (
+            "failed",
+            "Nhóm chưa bật link tham gia nên Zalo không cho mời (mã 246).",
+        )
+    if code == INVITE_CODE_IGNORED_GROUP:
+        return (
+            "failed",
+            "Nhóm bị bỏ qua, tài khoản không còn truy cập được (mã 247).",
+        )
+    if code == INVITE_CODE_WAIT_FOR_ADMIN_APPROVAL:
+        return (
+            "pending_approval",
+            "Cần quản trị viên nhóm duyệt trước (mã 248).",
+        )
+    if code == INVITE_CODE_BAN_JOIN_GROUP:
+        return (
+            "failed",
+            "Người nhận bị cấm tham gia nhóm này (mã 257).",
+        )
+    if code == INVITE_CODE_ADD_TO_BIG_GROUP:
+        return (
+            "failed",
+            "Nhóm quá lớn, cần dùng link tham gia thay vì thêm trực tiếp (mã 264).",
+        )
+    if code == INVITE_CODE_OWNER_NEED_VERIFY:
+        return (
+            "failed",
+            "Chủ nhóm cần xác minh hồ sơ trước khi thêm thành viên (mã 271).",
+        )
+    if code == INVITE_CODE_RATE_LIMIT:
+        return (
+            "failed",
+            "Vượt hạn mức tần suất gửi yêu cầu của Zalo (mã 221), sẽ thử lại sau.",
+        )
+    if code == INVITE_CODE_NOT_IN_PENDING_LIST:
+        return (
+            "failed",
+            "Người này không còn trong danh sách chờ duyệt (mã 170).",
+        )
     return "failed", fallback or (f"Zalo từ chối lời mời, mã {code}." if code >= 0 else "Zalo từ chối lời mời.")
 
 
@@ -336,9 +491,14 @@ def classify_invite_response(
             invited_count += 1
         else:
             code = global_code
-            delivery = "failed"
-            status = "failed"
-            message = global_message or f"Zalo trả về mã lỗi {global_code}."
+            if code in INVITE_STRANGER_CODES:
+                # Zalo từ chối cả batch vì có người chưa kết bạn. Không phải lỗi
+                # kỹ thuật, cần đi đường lời mời kết bạn / gửi link nhóm.
+                delivery, message = _result_message(code, global_message)
+                status = "failed"
+            else:
+                delivery = "failed"
+                message = global_message or f"Zalo trả về mã lỗi {global_code}."
             failed_count += 1
 
         members.append({
@@ -388,7 +548,7 @@ def invite_group(
     plaintext = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     params = zalo_encode(plaintext, zpw_enk, url_encode=True)
 
-    response = requests.post(
+    response = zalo_http.post(
         "https://tt-group-wpa.chat.zalo.me/api/group/invite/v2",
         params={"zpw_ver": get_zpw_ver(zpw_ver), "zpw_type": "30"},
         data=f"params={params}",
@@ -448,14 +608,22 @@ def invite_members_to_group(
 
         # Nếu cả batch bị lỗi ở cấp yêu cầu, thử từng UID một để lấy kết quả chính
         # xác và tránh việc một UID lỗi làm hỏng toàn bộ batch.
-        if (
+        #
+        # Lưu ý hiệu năng: không retry từng người khi lỗi là lỗi "người lạ"
+        # (314/269/245/244). Các mã này là quy tắc phía server áp cho TỪNG người
+        # nên retry lặp lại chỉ tốn thêm N API call mà không thu được thông tin
+        # mới. Worker đã tách sẵn bạn bè/người lạ nên không cần retry này.
+        global_code = _to_int(parsed.get("errorCode"), -1)
+        can_retry_individually = (
             retry_global_failure_individually
             and parsed.get("acceptedCount", 0) == 0
             and parsed.get("failedCount", 0) == len(member_batch)
             and len(member_batch) > 1
-        ):
+            and global_code not in INVITE_STRANGER_CODES
+        )
+        if can_retry_individually:
             individual_members: list[dict] = []
-            for uid in member_batch:
+            for uid in member_batch[:MAX_INDIVIDUAL_RETRY]:
                 one_response, one_decoded = invite_group(
                     grid,
                     [uid],
@@ -466,6 +634,17 @@ def invite_members_to_group(
                 )
                 one_parsed = classify_invite_response([uid], one_response, one_decoded)
                 individual_members.extend(one_parsed.get("members") or [])
+            if len(member_batch) > MAX_INDIVIDUAL_RETRY:
+                # Phần còn lại chưa thử riêng -> ghi nhận là thất bại chung.
+                for uid in member_batch[MAX_INDIVIDUAL_RETRY:]:
+                    individual_members.append({
+                        "userId": uid,
+                        "status": "failed",
+                        "code": global_code,
+                        "delivery": "failed",
+                        "message": parsed.get("errorMessage")
+                        or f"Zalo từ chối lời mời, mã {global_code}.",
+                    })
             parsed = {
                 "success": all(item.get("status") != "failed" for item in individual_members),
                 "partial": any(item.get("status") != "failed" for item in individual_members)

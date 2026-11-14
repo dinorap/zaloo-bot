@@ -3,134 +3,439 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kích hoạt phần mềm - Nexus</title>
+    <title>Phân loại License & Kích hoạt - Jimmy BOT CHAT</title>
     <link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=nexus-light-v3-20260728">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=nexus-light-v3-20260728">
     <style>
-        .activation-wrap { max-width: 1080px; margin: 0 auto; }
+        .activation-wrap { max-width: 1140px; margin: 0 auto; padding-bottom: 50px; }
         .activation-hero {
             border: 1px solid var(--border);
-            background: linear-gradient(135deg, rgba(88,166,255,.16), rgba(63,185,80,.08)), var(--surface);
+            background: linear-gradient(135deg, rgba(234, 88, 12, .12), rgba(254, 215, 170, .24)), var(--surface);
             border-radius: 16px;
-            padding: 28px;
-            margin-bottom: 20px;
+            padding: 24px 28px;
+            margin-bottom: 22px;
+            box-shadow: 0 4px 18px rgba(90, 48, 22, 0.04);
         }
-        .activation-hero h2 { font-size: 24px; margin-bottom: 10px; }
-        .activation-hero p { color: var(--text-muted); line-height: 1.6; }
-        .status-badge {
+        .activation-hero h2 { font-size: 22px; font-weight: 800; margin-bottom: 8px; color: var(--text); }
+        .activation-hero p { color: var(--text-muted); line-height: 1.6; margin: 4px 0; font-size: 13.5px; }
+        
+        .tier-status-pill {
             display: inline-flex; align-items: center; gap: 8px;
-            border: 1px solid var(--border); border-radius: 999px;
-            padding: 8px 12px; margin-bottom: 14px; font-size: 13px;
-            background: rgba(255,255,255,.03);
+            border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700;
+            margin-bottom: 12px;
         }
-        .status-badge.ok { color: var(--green); border-color: rgba(63,185,80,.45); }
-        .status-badge.warn { color: var(--yellow); border-color: rgba(210,153,34,.5); }
-        .change-plan-note { margin-top: 14px; padding: 11px 14px; border-radius: 10px; background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.25); color: var(--text); font-size: 13px; line-height: 1.5; }
-        .activation-grid { display:grid; grid-template-columns: 320px minmax(0,1fr); gap: 18px; margin-top: 16px; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
-        .card h3 { margin: 0 0 12px; font-size: 18px; }
-        .muted { color: var(--text-muted); }
-        .plan-list { list-style:none; margin:0; padding:0; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-        .plan-item { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); cursor:pointer; background:rgba(255,255,255,.02); transition:.18s ease; }
-        .plan-item:last-child { border-bottom:none; }
-        .plan-item:hover { background: rgba(88,166,255,.08); }
-        .plan-item.active { background: rgba(88,166,255,.14); outline: 1px solid rgba(88,166,255,.28); }
-        .plan-icon { width:24px; text-align:center; font-size:18px; }
-        .plan-item input { display:none; }
-        .plan-label { font-weight:600; }
-        .plan-sub { margin-left:auto; color: var(--text-muted); font-size: 12px; }
+        .tier-status-pill.tier-1 { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .tier-status-pill.tier-2 { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        .tier-status-pill.tier-3 { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+
+        /* Lưới 3 loại License */
+        .tier-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .tier-card {
+            display: flex;
+            flex-direction: column;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .tier-card:hover {
+            border-color: #ea580c;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(234, 88, 12, 0.12);
+        }
+        .tier-card.is-active {
+            border-color: #ea580c;
+            background: #fffdfb;
+            box-shadow: 0 6px 20px rgba(234, 88, 12, 0.16);
+        }
+        .tier-card-badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 9px;
+            border-radius: 999px;
+            text-transform: uppercase;
+        }
+        .tier-card.tier-1 .tier-card-badge { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+        .tier-card.tier-2 .tier-card-badge { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
+        .tier-card.tier-3 .tier-card-badge { background: #ffedd5; color: #ea580c; border: 1px solid #fed7aa; }
+
+        .tier-card-title {
+            font-size: 17px;
+            font-weight: 800;
+            margin: 0 0 4px;
+            color: var(--text);
+            padding-right: 60px;
+        }
+        .tier-card-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+        .tier-feature-list {
+            list-style: none;
+            margin: 0 0 18px;
+            padding: 0;
+            flex: 1 1 auto;
+            border-top: 1px solid rgba(0,0,0,0.06);
+            padding-top: 12px;
+        }
+        .tier-feature-list li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12.5px;
+            padding: 5px 0;
+            color: var(--text);
+        }
+        .tier-feature-list li.is-disabled {
+            color: #9ca3af;
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        .tier-feature-list li .f-icon {
+            flex: 0 0 16px;
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .tier-feature-list li .f-icon.ok { color: #16a34a; }
+        .tier-feature-list li .f-icon.no { color: #dc2626; font-size: 11px; }
+
+        .tier-card-actions {
+            margin-top: auto;
+        }
+        .tier-switch-btn {
+            width: 100%;
+            height: 38px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--text);
+        }
+        .tier-switch-btn:hover:not(:disabled) {
+            background: #ea580c;
+            color: #ffffff;
+            border-color: #ea580c;
+        }
+        .tier-switch-btn.active-btn {
+            background: #ea580c;
+            color: #ffffff;
+            border-color: #ea580c;
+            cursor: default;
+        }
+
+        /* Khối nhập License Key */
+        .activation-form-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.03);
+            margin-bottom: 22px;
+        }
+        .activation-form-card h3 {
+            margin: 0 0 8px;
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text);
+        }
+        .key-input-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 14px;
+        }
         .activation-code-box {
-            width: 100%; background: #0b0f14; color: var(--text);
-            border: 1px solid var(--border); border-radius: 10px;
-            padding: 16px; font-family: "Cascadia Code", "Consolas", monospace;
-            font-size: 24px; line-height: 1.2; outline: none;
-            letter-spacing: 3px; text-align: center; text-transform: uppercase;
+            flex: 1 1 auto;
+            background: #ffffff;
+            color: #2b1a10;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-family: "Cascadia Code", "Consolas", monospace;
+            font-size: 17px;
+            font-weight: 700;
+            line-height: 1.2;
+            outline: none;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            box-sizing: border-box;
+            transition: border-color 0.16s ease;
         }
-        .activation-code-box:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88,166,255,.14); }
-        .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
-        .btn-primary, .btn-secondary {
-            border: 0; border-radius: 9px; padding: 11px 16px;
-            cursor: pointer; font-weight: 600; font-size: 14px;
+        .activation-code-box:focus {
+            border-color: #ea580c;
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.18);
         }
-        .btn-primary { background: var(--accent); color: #06101f; }
-        .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-        .help-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
-        .help-item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
-        .help-item h3 { font-size: 14px; margin-bottom: 8px; }
-        .help-item p { color: var(--text-muted); font-size: 13px; line-height: 1.55; }
-        #activationResult { margin-top: 12px; font-size: 13px; line-height: 1.5; }
-        #activationResult.ok { color: var(--green); }
-        #activationResult.err { color: var(--red); }
-        #selectedPlanLabel { font-weight: 700; }
-        .disclaimer { position: fixed; bottom: 12px; right: 12px; font-size: 11px; color: var(--text-muted); text-align: right; max-width: 280px; line-height: 1.4; pointer-events: none; }
-        @media (max-width: 860px) {
-            .activation-grid { grid-template-columns: 1fr; }
-            .help-grid { grid-template-columns: 1fr; }
-            .disclaimer { font-size: 10px; max-width: 200px; }
+        .btn-activate {
+            padding: 0 24px;
+            height: 48px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #ff7542, #ea580c);
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.28);
+            transition: all 0.16s ease;
+            white-space: nowrap;
+        }
+        .btn-activate:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(234, 88, 12, 0.38);
+        }
+
+        #activationResult {
+            margin-top: 14px;
+            font-size: 13.5px;
+            font-weight: 600;
+            line-height: 1.5;
+            padding: 10px 14px;
+            border-radius: 8px;
+            display: none;
+        }
+        #activationResult.ok {
+            display: block;
+            background: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        #activationResult.err {
+            display: block;
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        /* Tool tạo mã cho Admin */
+        .admin-keygen-box {
+            background: #fffaf5;
+            border: 1px dashed #fed7aa;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-top: 18px;
+        }
+        .admin-keygen-box h4 {
+            margin: 0 0 6px;
+            font-size: 14px;
+            font-weight: 800;
+            color: #9a3412;
+        }
+        .admin-keygen-box p {
+            margin: 0 0 10px;
+            font-size: 12px;
+            color: #7c6250;
+        }
+        .keygen-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn-keygen-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 32px;
+            padding: 0 12px;
+            border: 1px solid #fbd38d;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #9a3412;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-keygen-pill:hover {
+            background: #ffedd5;
+            border-color: #ea580c;
+            color: #ea580c;
+        }
+
+        @media (max-width: 960px) {
+            .tier-cards-grid { grid-template-columns: 1fr; }
+            .key-input-row { flex-direction: column; }
+            .btn-activate { width: 100%; height: 42px; }
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=nexus-light-v3-20260728">
 </head>
 <body class="activation-page">
     {% include '_nav.html' %}
     <main class="page">
         <div class="activation-wrap">
             <section class="activation-hero">
-                <div class="status-badge {{ 'ok' if activated else 'warn' }}">
-                    {{ '✅ Đã kích hoạt' if activated else '🔐 Chưa kích hoạt' }}
+                <div class="tier-status-pill tier-{{ license_tier }}">
+                    ● Đang kích hoạt: {{ license_info.tierName }}
                 </div>
-                <h2>Kích hoạt Nexus trên thiết bị này</h2>
-                <p>{{ activation_message }}</p>
-                {% if activated %}
-                    <p>{% if days_remaining >= 99999 %}License <b>vĩnh viễn</b> hợp lệ. Bạn có thể sử dụng phần mềm bình thường.{% elif days_remaining == 0 %}License còn <b>dưới 1 ngày</b>. Bạn có thể sử dụng phần mềm bình thường.{% else %}License còn khoảng <b>{{ days_remaining }}</b> ngày. Bạn có thể sử dụng phần mềm bình thường.{% endif %}</p>
-                    <div class="actions">
-                        <button class="btn-primary" onclick="location.href='{{ url_for('guide_page') }}'; return false;">Vào phần mềm</button>
-                    </div>
-                {% else %}
-                    <p>Khi khởi động phần mềm sẽ kiểm tra kích hoạt trước. Nếu chưa có license hợp lệ, bạn cần <b>chọn thời gian kích hoạt</b>, gửi mã qua email rồi nhập mã <b>12 ký tự</b> để mở khóa phần mềm.</p>
-                {% endif %}
+                <h2>Hệ thống 3 loại Key License Jimmy BOT CHAT</h2>
+                <p>Phần mềm được phân quyền nghiêm ngặt thành 3 gói bản quyền. Khi kích hoạt từng loại key, hệ thống tự động mở các tính năng tương ứng và chặn/ẩn hoàn toàn các phân hệ không thuộc gói.</p>
+                <p>Thời hạn license: <b>{% if license_info.isPermanent %}Vĩnh viễn{% elif license_info.daysRemaining == 0 %}Dưới 1 ngày{% else %}Còn {{ license_info.daysRemaining }} ngày{% endif %}</b> | Mã hiện tại: <code>{{ license_info.key or 'Chưa lưu mã' }}</code></p>
             </section>
 
-            {% if activated %}
-            <div class="change-plan-note">
-                Bạn đã kích hoạt. Có thể <b>chọn gói khác và nhập mã mới</b> để đổi hoặc nâng gói bất cứ lúc nào — mã mới sẽ thay thế license hiện tại.
-            </div>
-            {% endif %}
-            <div class="activation-grid">
-                <section class="card">
-                    <h3>{{ 'Đổi / nâng gói' if activated else 'Chọn thời gian kích hoạt' }}</h3>
-                    <p class="muted" style="margin-bottom: 12px;">Chọn gói thời gian tương tự như menu bạn yêu cầu. Sau đó bấm gửi mã để hệ thống gửi email.</p>
-                    <ul class="plan-list" id="activationPlanList">
-                        {% for item in activation_options %}
-                        <li>
-                            <label class="plan-item {{ 'active' if item.key == '1m' else '' }}" data-plan-key="{{ item.key }}">
-                                <input type="radio" name="activationPlan" value="{{ item.key }}" {{ 'checked' if item.key == '1m' else '' }}>
-                                <span class="plan-icon">{{ item.icon }}</span>
-                                <span class="plan-label">{{ item.label }}</span>
-                            </label>
-                        </li>
-                        {% endfor %}
+            <!-- Bảng so sánh 3 loại License -->
+            <div class="tier-cards-grid">
+                <!-- LOẠI 1: FULL -->
+                <div class="tier-card tier-1 {% if license_tier == 1 %}is-active{% endif %}">
+                    <span class="tier-card-badge">Full trọn bộ</span>
+                    <h3 class="tier-card-title">Loại 1: Full</h3>
+                    <div class="tier-card-sub">Toàn bộ 11 chức năng hệ thống</div>
+                    <ul class="tier-feature-list">
+                        <li><span class="f-icon ok">✓</span> 1. Tổng quan điều hành</li>
+                        <li><span class="f-icon ok">✓</span> 2. Tài khoản Zalo</li>
+                        <li><span class="f-icon ok">✓</span> 3. Inbox chung (CSKH)</li>
+                        <li><span class="f-icon ok">✓</span> 4. Nhóm Zalo</li>
+                        <li><span class="f-icon ok">✓</span> 5. Thành viên nhóm</li>
+                        <li><span class="f-icon ok">✓</span> 6. Bạn bè</li>
+                        <li><span class="f-icon ok">✓</span> 7. Chatbot (Zalo + Tele)</li>
+                        <li><span class="f-icon ok">✓</span> 8. Chia sẻ (Gateway)</li>
+                        <li><span class="f-icon ok">✓</span> 9. Chiến dịch gửi tin</li>
+                        <li><span class="f-icon ok">✓</span> 10. Sao chép nhóm</li>
+                        <li><span class="f-icon ok">✓</span> 11. Lịch hoạt động</li>
                     </ul>
-                </section>
+                    <div class="tier-card-actions">
+                        {% if license_tier == 1 %}
+                        <button type="button" class="tier-switch-btn active-btn" disabled>✓ Đang sử dụng</button>
+                        {% else %}
+                        <button type="button" class="tier-switch-btn" onclick="switchLicenseTier(1)">Chuyển sang Loại 1</button>
+                        {% endif %}
+                    </div>
+                </div>
 
-                <section class="card">
-                    <h3>Nhập mã kích hoạt</h3>
-                    <p class="muted" style="margin-bottom: 12px;">Gói đang chọn: <span id="selectedPlanLabel">1 Tháng</span>. Mã kích hoạt sẽ được gửi tới email admin đã cấu hình trong <code>.env</code>.</p>
-                    <div class="actions" style="margin-top:0; margin-bottom:12px;">
-                        <button id="requestActivationBtn" class="btn-primary">Gửi mã theo thời gian đã chọn</button>
-                        <button id="resendActivationBtn" class="btn-secondary">Gửi lại mã</button>
-                        <button class="btn-secondary" onclick="checkStatus();">Kiểm tra trạng thái</button>
+                <!-- LOẠI 2: CSKH & CHIẾN DỊCH -->
+                <div class="tier-card tier-2 {% if license_tier == 2 %}is-active{% endif %}">
+                    <span class="tier-card-badge">CSKH & MKT</span>
+                    <h3 class="tier-card-title">Loại 2: CSKH</h3>
+                    <div class="tier-card-sub">Chỉ còn 6 chức năng CSKH & gửi tin</div>
+                    <ul class="tier-feature-list">
+                        <li><span class="f-icon ok">✓</span> 1. Tài khoản Zalo</li>
+                        <li><span class="f-icon ok">✓</span> 2. Inbox chung (CSKH)</li>
+                        <li><span class="f-icon ok">✓</span> 3. Chatbot (Zalo + Tele)</li>
+                        <li><span class="f-icon ok">✓</span> 4. Chia sẻ (Gateway)</li>
+                        <li><span class="f-icon ok">✓</span> 5. Chiến dịch gửi tin</li>
+                        <li><span class="f-icon ok">✓</span> 6. Lịch hoạt động</li>
+                        <li class="is-disabled"><span class="f-icon no">✕</span> Ẩn: Tổng quan</li>
+                        <li class="is-disabled"><span class="f-icon no">✕</span> Ẩn: Nhóm Zalo</li>
+                        <li class="is-disabled"><span class="f-icon no">✕</span> Ẩn: Thành viên nhóm</li>
+                        <li class="is-disabled"><span class="f-icon no">✕</span> Ẩn: Bạn bè</li>
+                        <li class="is-disabled"><span class="f-icon no">✕</span> Ẩn: Sao chép nhóm</li>
+                    </ul>
+                    <div class="tier-card-actions">
+                        {% if license_tier == 2 %}
+                        <button type="button" class="tier-switch-btn active-btn" disabled>✓ Đang sử dụng</button>
+                        {% else %}
+                        <button type="button" class="tier-switch-btn" onclick="switchLicenseTier(2)">Chuyển sang Loại 2</button>
+                        {% endif %}
                     </div>
-                    <input id="activationCode" class="activation-code-box" maxlength="12" autocomplete="one-time-code" spellcheck="false" placeholder="NHẬP 12 KÝ TỰ" />
-                    <div class="actions">
-                        <button id="saveActivationBtn" class="btn-primary">Lưu & kích hoạt</button>
+                </div>
+
+                <!-- LOẠI 3: QUẢN TRỊ & SAO CHÉP NHÓM -->
+                <div class="tier-card tier-3 {% if license_tier == 3 %}is-active{% endif %}">
+                    <span class="tier-card-badge">Quản trị nhóm</span>
+                    <h3 class="tier-card-title">Loại 3: Nhóm</h3>
+                    <div class="tier-card-sub">Chỉ còn 7 chức năng Nhóm & Sao chép</div>
+                    <ul class="tier-feature-list">
+                        <li><span class="f-icon ok">✓</span> 1. Tổng quan điều hành</li>
+                        <li><span class="f-icon ok">✓</span> 2. Tài khoản Zalo</li>
+                        <li><span class="f-icon ok">✓</span> 3. Nhóm Zalo</li>
+                        <li><span class="f-icon ok">✓</span> 4. Thành viên nhóm</li>
+                        <li><span class="f-icon ok">✓</span> 5. Bạn bè</li>
+                        <li><span class="f-icon ok">✓</span> 6. Sao chép nhóm</li>
+                        <li><span class="f-icon ok">✓</span> 7. Lịch hoạt động</li>
+                        <li class="is-disabled"><span class="f-icon no">✕</span> Ẩn: Inbox chung</li>
+                        <li class="is-disabled"><span class="f-icon no">✕</span> Ẩn: Chatbot</li>
+                        <li class="is-disabled"><span class="f-icon no">✕</span> Ẩn: Chia sẻ (Gateway)</li>
+                        <li class="is-disabled"><span class="f-icon no">✕</span> Ẩn: Chiến dịch gửi tin</li>
+                    </ul>
+                    <div class="tier-card-actions">
+                        {% if license_tier == 3 %}
+                        <button type="button" class="tier-switch-btn active-btn" disabled>✓ Đang sử dụng</button>
+                        {% else %}
+                        <button type="button" class="tier-switch-btn" onclick="switchLicenseTier(3)">Chuyển sang Loại 3</button>
+                        {% endif %}
                     </div>
-                    <div id="activationResult"></div>
-                </section>
+                </div>
             </div>
+
+            <!-- Khối nhập key kích hoạt -->
+            <section class="activation-form-card">
+                <h3>Kích hoạt bằng mã Key (Hỗ trợ cả mã 12 ký tự cũ & mã License mới)</h3>
+                <p style="color:var(--text-muted); font-size:13px; margin:0 0 12px;">Dán mã License Key bạn được cấp (hoặc mã kích hoạt 12 ký tự từ email) vào ô bên dưới rồi bấm <b>Kích hoạt License</b>:</p>
+
+                <div class="key-input-row">
+                    <input id="activationCode" class="activation-code-box" autocomplete="off" spellcheck="false" placeholder="NHẬP MÃ KÍCH HOẠT (VD: JM1-..., JM2-..., HOẶC MÃ 12 KÝ TỰ)" />
+                    <button id="saveActivationBtn" class="btn-activate" type="button">Kích hoạt License</button>
+                </div>
+                <div id="activationResult"></div>
+
+                <!-- Công cụ tạo mã mẫu cho Admin / Kỹ thuật viên -->
+                <div class="admin-keygen-box">
+                    <h4>🛠️ Công cụ tạo mã mẫu nhanh (Dành cho Quản trị viên / Test tính năng):</h4>
+                    <p>Bấm vào nút bên dưới để tạo mã chuẩn và tự động điền vào ô nhập:</p>
+                    <div class="keygen-buttons">
+                        <button type="button" class="btn-keygen-pill" onclick="generateSampleKey(1, 9999)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                            Tạo Key Loại 1 (Full vĩnh viễn)
+                        </button>
+                        <button type="button" class="btn-keygen-pill" onclick="generateSampleKey(2, 30)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg>
+                            Tạo Key Loại 2 (CSKH 30 ngày)
+                        </button>
+                        <button type="button" class="btn-keygen-pill" onclick="generateSampleKey(3, 9999)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                            Tạo Key Loại 3 (Nhóm vĩnh viễn)
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CƠ CHẾ GỬI MÃ 12 KÝ TỰ THEO THIẾT BỊ QUA EMAIL (CHECK KEY CŨ) -->
+            <section class="activation-form-card" style="margin-top: 20px;">
+                <h3>Gửi mã kích hoạt theo thiết bị qua Email (Hệ thống cũ)</h3>
+                <p style="color:var(--text-muted); font-size:13px; margin:0 0 14px;">
+                    Cơ chế kiểm tra theo mã thiết bị (Hardware Fingerprint): Chọn thời hạn và bấm <b>Gửi mã qua Email</b>. Hệ thống sẽ phát sinh mã kích hoạt 12 ký tự gắn với thiết bị này gửi tới email Admin đã cấu hình trong <code>.env</code>.
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 10px; margin-bottom: 16px;">
+                    {% for item in activation_options %}
+                    <div class="plan-btn-card {% if item.key == '1m' %}active-plan{% endif %}" onclick="selectDurationOption('{{ item.key }}', '{{ item.label }}', this)">
+                        <span style="font-size:18px;">{{ item.icon }}</span>
+                        <strong style="font-size:12.5px; margin-top:4px;">{{ item.label }}</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <button type="button" id="requestActivationBtn" class="btn btn-primary" onclick="requestDeviceEmailCode()">
+                        Gửi mã 12 ký tự qua Email
+                    </button>
+                    <button type="button" id="resendActivationBtn" class="btn btn-secondary" onclick="requestDeviceEmailCode(true)">
+                        Gửi lại mã
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="checkStatus()">
+                        Kiểm tra trạng thái thiết bị
+                    </button>
+                    <span id="selectedDurationLabel" style="font-size:13px; color:var(--text-muted); margin-left:6px;">Gói đang chọn: <b>1 Tháng</b></span>
+                </div>
+            </section>
         </div>
     </main>
-    <script src="{{ url_for('static', filename='js/activation.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/activation.js') }}?v=license-tier-v3"></script>
     <div class="disclaimer">Hệ thống chỉ phục vụ marketing.<br>Nhà phát triển xin miễn trừ mọi trách nhiệm.</div>
 </body>
 </html>

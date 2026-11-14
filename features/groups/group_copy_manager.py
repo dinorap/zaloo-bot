@@ -18,13 +18,257 @@ def _base_dir() -> str:
     return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
+# ─── Lưu trữ tách file theo từng tác vụ ──────────────────────────────────────
+# Vấn đề: trước đây MỌI thao tác lưu đều ghi lại toàn bộ danh sách tác vụ vào
+# một file JSON duy nhất. Với 10 tác vụ x 500 thành viên, mỗi lần lưu phải
+# serialize + ghi ~3.5MB, và mỗi lần đọc phải parse lại 3.5MB. Đây là nguyên
+# nhân chính khiến ứng dụng "chậm" khi chiến dịch lớn.
+#
+# Cách sửa:
+#   - JOBS_FILE  -> file CHỈ chứa phần tóm tắt (không có "members"), nhỏ gọn.
+#   - JOBS_DIR   -> mỗi tác vụ một file riêng <jobId>.json chứa đầy đủ.
+# Khi lưu chỉ ghi lại đúng 1 file tác vụ thay vì ghi lại tất cả.
+#
+# Tương thích ngược: nếu file cũ vẫn tồn tại và chứa "members", nó được tự
+# động tách ra thành các file riêng ngay lần đọc đầu tiên.
 BASE_DIR = _base_dir()
 DATA_DIR = os.path.join(BASE_DIR, "data")
 JOBS_FILE = os.path.join(DATA_DIR, "group_copy_jobs.json")
+JOBS_DIR = os.path.join(DATA_DIR, "group_copy_jobs")
 _LOCK = threading.RLock()
 
 _TERMINAL_STATUSES = {"done", "partial", "expired", "failed", "cancelled"}
 _MEMBER_STATUSES = {"pending", "invited", "joined", "failed", "skipped"}
+
+# Các chỉ số tiến độ được tính lại từ danh sách thành viên. Dùng chung cho
+# cả job có members và job chỉ có phần tóm tắt (đường đọc nóng của frontend).
+_PROGRESS_FIELDS = (
+    "totalMembers",
+    "friendCount",
+    "pendingInviteCount",
+    "eligibleCount",
+    "waitingFriendCount",
+    "invitedCount",
+    "inboxInviteCount",
+    "awaitingJoinCount",
+    "joinedCount",
+    "successCount",
+    "acceptedInviteCount",
+    "preExistingCount",
+    "campaignFriendCount",
+    "messageSentCount",
+    "removedFriendCount",
+    "failedCount",
+    "skippedCount",
+    "remainingCount",
+    "pendingCount",
+)
+
+# Cache trong bộ nhớ: danh sách job đầy đủ (kèm members).
+_CACHE: Optional[list[dict]] = None
+_CACHE_MTIME: Optional[float] = None
+# Cache phần tóm tắt (không kèm members) cho đường đọc nóng.
+_SUMMARY_CACHE: Optional[list[dict]] = None
+_SUMMARY_MTIME: Optional[float] = None
+
+
+def _file_mtime() -> Optional[float]:
+    try:
+        return os.path.getmtime(JOBS_FILE)
+    except OSError:
+        return None
+
+
+def _job_file_path(job_id: str) -> str:
+    safe = "".join(ch for ch in str(job_id or "") if ch.isalnum() or ch in ("-", "_"))
+    return os.path.join(JOBS_DIR, f"{safe or 'unknown'}.json")
+
+
+def _invalidate_cache() -> None:
+    global _CACHE, _CACHE_MTIME, _SUMMARY_CACHE, _SUMMARY_MTIME
+    _CACHE = None
+    _CACHE_MTIME = None
+    _SUMMARY_CACHE = None
+    _SUMMARY_MTIME = None
+
+
+def _split_legacy_store_unlocked() -> list[dict]:
+    """Tách file cũ (chứa cả members) thành các file riêng theo từng tác vụ.
+
+    Chạy một lần duy nhất khi phát hiện dữ liệu cũ. Sau đó JOBS_FILE chỉ còn
+    phần tóm tắt và mỗi tác vụ nằm ở file riêng.
+    """
+    global _CACHE, _CACHE_MTIME, _SUMMARY_CACHE, _SUMMARY_MTIME
+
+    try:
+        os.makedirs(JOBS_DIR, exist_ok=True)
+    except OSError:
+        pass
+
+    try:
+        with open(JOBS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return []
+
+    jobs = data.get("jobs", data if isinstance(data, list) else [])
+    if not isinstance(jobs, list):
+        return []
+
+    has_members = any(
+        isinstance(job, dict) and isinstance(job.get("members"), list) and job.get("members")
+        for job in jobs
+    )
+    if not has_members:
+        return jobs
+
+    for job in jobs:
+        if not isinstance(job, dict):
+            continue
+        job_id = str(job.get("jobId") or "").strip()
+        if not job_id:
+            continue
+        path = _job_file_path(job_id)
+        try:
+            temp_path = path + ".tmp"
+            with open(temp_path, "w", encoding="utf-8") as f:
+                json.dump(job, f, ensure_ascii=False)
+            os.replace(temp_path, path)
+        except OSError:
+            pass
+
+    # Ghi lại file tóm tắt (không kèm members).
+    summaries = []
+    for job in jobs:
+        if not isinstance(job, dict):
+            continue
+        summary = dict(job)
+        summary.pop("members", None)
+        summaries.append(summary)
+    try:
+        temp_path = JOBS_FILE + ".tmp"
+        with open(temp_path, "w", encoding="utf-8") as f:
+            json.dump({"jobs": summaries}, f, ensure_ascii=False, indent=2)
+        os.replace(temp_path, JOBS_FILE)
+    except OSError:
+        pass
+
+    _CACHE = None
+    _CACHE_MTIME = None
+    _SUMMARY_CACHE = None
+    _SUMMARY_MTIME = None
+    return jobs
+
+
+def _load_summaries_unlocked() -> list[dict]:
+    """Đọc danh sách tóm tắt tác vụ (không kèm members) — rất nhỏ gọn."""
+    global _SUMMARY_CACHE, _SUMMARY_MTIME
+    if _SUMMARY_CACHE is not None:
+        current_mtime = _file_mtime()
+        if current_mtime == _SUMMARY_MTIME:
+            return _SUMMARY_CACHE
+        _SUMMARY_CACHE = None
+        _SUMMARY_MTIME = None
+
+    _ensure_store()
+    try:
+        with open(JOBS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        jobs = data.get("jobs", data if isinstance(data, list) else [])
+        if not isinstance(jobs, list):
+            jobs = []
+    except (OSError, json.JSONDecodeError):
+        jobs = []
+
+    _SUMMARY_CACHE = jobs
+    _SUMMARY_MTIME = _file_mtime()
+    return _SUMMARY_CACHE
+
+
+def _load_job_detail_unlocked(job_id: str) -> Optional[dict]:
+    """Đọc đầy đủ một tác vụ từ file riêng của nó."""
+    path = _job_file_path(job_id)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            job = json.load(f)
+        return job if isinstance(job, dict) else None
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _load_jobs_unlocked() -> list[dict]:
+    """Trả về danh sách job đầy đủ (kèm members), nạp từ cache nếu có."""
+    global _CACHE, _CACHE_MTIME
+    if _CACHE is not None:
+        return _CACHE
+
+    summaries = _split_legacy_store_unlocked()
+    if not summaries:
+        summaries = _load_summaries_unlocked()
+
+    jobs: list[dict] = []
+    for summary in summaries:
+        if not isinstance(summary, dict):
+            continue
+        job_id = str(summary.get("jobId") or "").strip()
+        detail = _load_job_detail_unlocked(job_id) if job_id else None
+        if detail is None:
+            detail = summary
+        merged = dict(summary)
+        merged.update(detail)
+        jobs.append(merged)
+
+    _CACHE = jobs
+    _CACHE_MTIME = _file_mtime()
+    return _CACHE
+
+
+def _flush_jobs_unlocked(jobs: list[dict], dirty_job_ids: Optional[set[str]] = None) -> None:
+    """Ghi thay đổi ra đĩa.
+
+    Tối ưu quan trọng: chỉ ghi lại các file tác vụ thực sự thay đổi
+    (``dirty_job_ids``). Worker thường chỉ sửa 1 tác vụ trong mỗi chu kỳ,
+    nên ghi lại toàn bộ (hàng chục file, vài MB) là lãng phí I/O.
+    """
+    global _CACHE, _CACHE_MTIME, _SUMMARY_CACHE, _SUMMARY_MTIME
+
+    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(JOBS_DIR, exist_ok=True)
+
+    summaries = []
+    for job in jobs:
+        if not isinstance(job, dict):
+            continue
+        job_id = str(job.get("jobId") or "").strip()
+        summary = dict(job)
+        summary.pop("members", None)
+        summaries.append(summary)
+        if not job_id:
+            continue
+        # Nếu biết rõ job nào đổi thì chỉ ghi file đó.
+        if dirty_job_ids is not None and job_id not in dirty_job_ids:
+            continue
+        path = _job_file_path(job_id)
+        try:
+            temp_path = path + ".tmp"
+            with open(temp_path, "w", encoding="utf-8") as f:
+                json.dump(job, f, ensure_ascii=False)
+            os.replace(temp_path, path)
+        except OSError:
+            pass
+
+    try:
+        temp_path = JOBS_FILE + ".tmp"
+        with open(temp_path, "w", encoding="utf-8") as f:
+            json.dump({"jobs": summaries}, f, ensure_ascii=False, indent=2)
+        os.replace(temp_path, JOBS_FILE)
+    except OSError:
+        pass
+
+    _CACHE = jobs
+    _CACHE_MTIME = _file_mtime()
+    _SUMMARY_CACHE = summaries
+    _SUMMARY_MTIME = _file_mtime()
 
 
 def _now_ms() -> int:
@@ -50,14 +294,8 @@ def _write_jobs_unlocked(jobs: list[dict]) -> None:
 
 
 def _read_jobs_unlocked() -> list[dict]:
-    _ensure_store()
-    try:
-        with open(JOBS_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        jobs = data.get("jobs", data if isinstance(data, list) else [])
-        return jobs if isinstance(jobs, list) else []
-    except (OSError, json.JSONDecodeError):
-        return []
+    """Tương thích ngược: đọc job từ cache trong RAM."""
+    return _load_jobs_unlocked()
 
 
 def _normalize_friend_state(value):
@@ -160,6 +398,10 @@ def _normalize_member(item) -> Optional[dict]:
     return {
         "userId": uid,
         "zaloName": str(item.get("zaloName") or item.get("displayName") or item.get("name") or uid).strip(),
+        "displayName": str(item.get("displayName") or item.get("zaloName") or item.get("name") or uid).strip(),
+        # Giới tính để xưng hô đúng (Anh/Chị) trong tin nhắn mời người lạ.
+        # None = chưa xác định -> dùng "Anh/Chị".
+        "gender": item.get("gender", None),
         "avatar": str(item.get("avatar") or item.get("avatarUrl") or "").strip(),
         "isFriend": friend_state,
         "status": status,
@@ -195,11 +437,30 @@ def _normalize_member(item) -> Optional[dict]:
     }
 
 
-def _refresh_progress(job: dict) -> dict:
+def _refresh_progress(job: dict, *, mutate: bool = True) -> dict:
+    """Tính lại toàn bộ chỉ số tiến độ từ danh sách thành viên.
+
+    QUAN TRỌNG: hàm này CHỈ chạy được khi ``job`` có ``members``. Đường đọc
+    tóm tắt (``list_jobs(include_members=False)``) cố tình KHÔNG nạp members
+    để nhẹ và nhanh; nếu gọi ở đó thì mọi chỉ số bị ghi đè về 0 và bảng thống
+    kê trên UI luôn hiển thị "0 người" dù chiến dịch đã có người vào nhóm.
+    Vì vậy khi không có thành viên thì giữ nguyên chỉ số đã lưu sẵn.
+    """
     members = job.get("members") or []
     if not isinstance(members, list):
         members = []
-        job["members"] = members
+        if mutate:
+            job["members"] = members
+
+    if not members:
+        # Không có dữ liệu thành viên -> không tính lại (sẽ xóa sạch số liệu).
+        for key in _PROGRESS_FIELDS:
+            job.setdefault(key, 0)
+        job.setdefault("pendingFriendRequestCount", 0)
+        job.setdefault("conversionRate", 0.0)
+        job.setdefault("progressPercent", 0.0)
+        job.setdefault("inviteConversionRate", 0.0)
+        return job
 
     counts = {status: 0 for status in _MEMBER_STATUSES}
     friend_count = 0
@@ -212,32 +473,46 @@ def _refresh_progress(job: dict) -> dict:
     removed_friend_count = 0
 
     for member in members:
-        status = str((member or {}).get("status") or "pending").lower()
+        if not isinstance(member, dict):
+            member = {}
+        status = str(member.get("status") or "pending").lower()
         if status not in counts:
             status = "pending"
-            member["status"] = status
+            if mutate:
+                member["status"] = status
         counts[status] += 1
-        if (member or {}).get("isFriend") is True:
+        if member.get("isFriend") is True:
             friend_count += 1
-        attempts = max(0, _to_int((member or {}).get("inviteAttempts"), 0))
-        friend_request_attempts = max(0, _to_int((member or {}).get("friendRequestAttempts"), 0))
+        # Inline _to_int cho vòng lặp nóng: giá trị đã là int thì khỏi gọi hàm.
+        attempts = member.get("inviteAttempts") or 0
+        if not isinstance(attempts, int) or attempts < 0:
+            try:
+                attempts = max(0, int(attempts))
+            except (TypeError, ValueError):
+                attempts = 0
+        friend_request_attempts = member.get("friendRequestAttempts") or 0
+        if not isinstance(friend_request_attempts, int) or friend_request_attempts < 0:
+            try:
+                friend_request_attempts = max(0, int(friend_request_attempts))
+            except (TypeError, ValueError):
+                friend_request_attempts = 0
         # Chỉ tính đã gửi khi Zalo thực sự chấp nhận yêu cầu. Thành viên failed
         # không còn bị cộng nhầm vào chỉ số đã gửi lời mời.
         if (attempts > 0 or friend_request_attempts > 0) and status in {"invited", "joined"}:
             invited_sent_count += 1
-            if str((member or {}).get("friendRequestDelivery") or "") == "friend_request_with_group_link":
+            if member.get("friendRequestDelivery") == "friend_request_with_group_link":
                 inbox_invite_count += 1
-            elif str((member or {}).get("inviteDelivery") or "") == "pending_inbox":
+            elif member.get("inviteDelivery") == "pending_inbox":
                 inbox_invite_count += 1
             if status == "joined":
                 accepted_invite_count += 1
         elif status == "joined":
             preexisting_count += 1
-        if bool((member or {}).get("friendRequestCreatedByCampaign")):
+        if member.get("friendRequestCreatedByCampaign"):
             campaign_friend_count += 1
-        if str((member or {}).get("messageDelivery") or "") == "sent":
+        if member.get("messageDelivery") == "sent":
             message_sent_count += 1
-        if str((member or {}).get("friendRemoveDelivery") or "") == "removed":
+        if member.get("friendRemoveDelivery") == "removed":
             removed_friend_count += 1
 
     total = len(members)
@@ -245,6 +520,22 @@ def _refresh_progress(job: dict) -> dict:
     awaiting_join_count = counts["invited"]
     pending_invite_count = counts["pending"]
     active_count = pending_invite_count + awaiting_join_count
+    # Số người đã nhận thẻ link nhóm nhưng CHƯA nhận lời mời kết bạn. Lưu
+    # thành chỉ số riêng vì đường đọc tóm tắt không có "members" nhưng vẫn
+    # cần biết để hẹn lịch gửi lời mời kết bạn.
+    pending_friend_request_count = 0
+    for member in members:
+        if not isinstance(member, dict):
+            continue
+        if str(member.get("status") or "") == "joined":
+            continue
+        if member.get("isFriend") is True:
+            continue
+        if str(member.get("messageDelivery") or "") != "sent":
+            continue
+        if str(member.get("friendRequestDelivery") or "") == "friend_request_with_group_link":
+            continue
+        pending_friend_request_count += 1
     conversion_rate = round((joined_count * 100 / total), 1) if total else 0.0
     invite_conversion_rate = (
         round((accepted_invite_count * 100 / invited_sent_count), 1)
@@ -272,6 +563,7 @@ def _refresh_progress(job: dict) -> dict:
     # pendingCount bao gồm cả người đã gửi lời mời nhưng chưa thực sự vào nhóm,
     # để worker tiếp tục kiểm tra định kỳ.
     job["pendingCount"] = active_count
+    job["pendingFriendRequestCount"] = pending_friend_request_count
     job["progressPercent"] = conversion_rate
     job["conversionRate"] = conversion_rate
     job["inviteConversionRate"] = invite_conversion_rate
@@ -291,21 +583,38 @@ def _earliest_iso(values: list[str]) -> str:
     return min(clean) if clean else ""
 
 
-def _normalize_job(job: dict) -> dict:
-    job = dict(job or {})
-    raw_members = job.get("members") or []
-    legacy_waiting_found = any(
-        isinstance(raw, dict) and str(raw.get("status") or "").strip().lower() == "waiting_friend"
-        for raw in raw_members
-    )
-    normalized_members = []
-    seen = set()
+def _normalize_members(job: dict, raw_members: list) -> list[dict]:
+    """Chuẩn hóa danh sách thành viên, bỏ trùng theo userId."""
+    normalized_members: list[dict] = []
+    seen: set[str] = set()
     for raw in raw_members:
         member = _normalize_member(raw)
         if not member or member["userId"] in seen:
             continue
         seen.add(member["userId"])
         normalized_members.append(member)
+    return normalized_members
+
+
+def _normalize_job(job: dict, *, deep: bool = True) -> dict:
+    """Chuẩn hóa một tác vụ.
+
+    ``deep=False`` bỏ qua việc dựng lại dict 40-field cho từng thành viên.
+    Dùng cho đường đọc (polling danh sách tác vụ) vốn không cần chi tiết
+    thành viên -> tiết kiệm O(job x member) mỗi lần frontend poll.
+    """
+    job = dict(job or {})
+    raw_members = job.get("members") or []
+    if deep:
+        normalized_members = _normalize_members(job, raw_members)
+    else:
+        # Copy mỏng: rẻ hơn nhiều so với dựng lại dict 40-field cho từng
+        # thành viên, nhưng vẫn an toàn vì không sửa trực tiếp object trong cache.
+        normalized_members = [dict(m) for m in raw_members if isinstance(m, dict)]
+    legacy_waiting_found = any(
+        isinstance(raw, dict) and str(raw.get("status") or "").strip().lower() == "waiting_friend"
+        for raw in raw_members
+    )
     legacy_invite_retry_found = False
     for member in normalized_members:
         note = str(member.get("error") or "").strip().lower().rstrip(".")
@@ -329,6 +638,13 @@ def _normalize_job(job: dict) -> dict:
     job.setdefault("lastVerifiedAt", "")
     job.setdefault("lastVerificationError", "")
     job.setdefault("targetMemberCount", 0)
+    job.setdefault("nextStatusPollAt", "")
+    # Chu kỳ rà soát nhanh (phút): chỉ đọc danh sách thành viên nhóm đích để
+    # bảng thống kê cập nhật ngay khi người nhận bấm link vào nhóm.
+    try:
+        job["statusPollMinutes"] = max(1, min(int(job.get("statusPollMinutes") or 2), 30))
+    except (TypeError, ValueError):
+        job["statusPollMinutes"] = 2
 
     daily_limit = job.get("friendRequestDailyLimit", job.get("dailyLimit", job.get("batchSize", 10)))
     try:
@@ -340,11 +656,34 @@ def _normalize_job(job: dict) -> dict:
     job["friendRequestDailyLimit"] = daily_limit
     job.setdefault("dailyFriendRequestDate", "")
     job.setdefault("dailyFriendRequestCount", 0)
+    # Hạn mức gửi thẻ link nhóm cho người lạ trong tin nhắn 1-1. Dùng chung
+    # hạn mức với lời mời kết bạn để tránh chạm trần anti-spam của Zalo.
+    job.setdefault("dailyLinkCardDate", "")
+    job.setdefault("dailyLinkCardCount", 0)
+    # Hạn mức tiếp cận theo NGƯỜI (một người có thể nhận cả thẻ link nhóm
+    # lẫn lời mời kết bạn mà chỉ tính 1 lượt).
+    job.setdefault("dailyReachDate", "")
+    job.setdefault("dailyReachCount", 0)
+    # Migration: job cũ chỉ đếm theo thẻ link nhóm. Quy đổi sang bộ đếm
+    # tiếp cận theo NGƯỜI để không tính lại lượt đã dùng hôm nay.
+    if not str(job.get("dailyReachDate") or "").strip() and str(job.get("dailyLinkCardDate") or "").strip():
+        job["dailyReachDate"] = str(job.get("dailyLinkCardDate"))
+        job["dailyReachCount"] = max(
+            int(job.get("dailyReachCount") or 0),
+            int(job.get("dailyLinkCardCount") or 0),
+        )
+    # Template tin nhắn mời gửi cho người lạ + tối đa 2 link phụ.
+    job.setdefault("inviteMessageTemplate", "")
+    job.setdefault("inviteExtraLinks", "")
     job.setdefault("groupLink", "")
     job.setdefault("groupLinkExpirationDate", 0)
     job.setdefault("groupLinkEnabled", 0)
     job.setdefault("groupLinkUpdatedAt", "")
     job["removeFriendAfterJoin"] = bool(job.get("removeFriendAfterJoin"))
+    # Gửi lời mời kết bạn kèm link ngay cùng đợt gửi thẻ link nhóm.
+    # Mặc định BẬT: người nhận có cả hai đường vào nhóm (bấm link hoặc
+    # chấp nhận lời mời kết bạn) nên tỉ lệ vào nhóm cao hơn hẳn.
+    job["friendRequestWithLink"] = job.get("friendRequestWithLink") is not False
     job["scheduleMode"] = "daily"
     job["dailyRunTime"] = str(job.get("dailyRunTime") or _extract_daily_time(job.get("startAt"))).strip()
 
@@ -395,7 +734,19 @@ def _normalize_job(job: dict) -> dict:
     else:
         job.setdefault("nextVerifyAt", "")
 
-    _refresh_progress(job)
+    # Tác vụ tạo trước khi có cơ chế rà soát nhanh: bật ngay chu kỳ rà soát
+    # 2 phút cho những người đang chờ vào nhóm, để bảng thống kê cập nhật
+    # ngay khi họ bấm link.
+    if (
+        job.get("awaitingJoinCount")
+        and str(job.get("targetGroupId") or "").strip()
+        and not str(job.get("nextStatusPollAt") or "").strip()
+        and job.get("status") not in {"cancelled", "running", "done", "expired"}
+    ):
+        job["nextStatusPollAt"] = _now_iso()
+        job["nextRunAt"] = _now_iso()
+
+    _refresh_progress(job, mutate=deep)
 
     # Đã đủ thành viên thì kết thúc tác vụ, không tiếp tục theo dõi hay kiểm tra.
     if job.get("totalMembers") and (
@@ -421,12 +772,30 @@ def _normalize_job(job: dict) -> dict:
 
     if job.get("status") in {"pending", "monitoring"}:
         candidates = []
-        if job.get("pendingInviteCount"):
+        # Người đã nhận thẻ link nhóm nhưng chưa nhận lời mời kết bạn vẫn
+        # cần một lượt gửi nữa -> phải tính nextInviteAt vào lịch chạy, nếu
+        # không worker sẽ không bao giờ dậy để gửi kèm lời mời kết bạn.
+        needs_friend_request = bool(job.get("pendingFriendRequestCount"))
+        if not needs_friend_request:
+            needs_friend_request = any(
+                str(m.get("status") or "") != "joined"
+                and m.get("isFriend") is not True
+                and str(m.get("messageDelivery") or "") == "sent"
+                and str(m.get("friendRequestDelivery") or "")
+                != "friend_request_with_group_link"
+                for m in (job.get("members") or [])
+                if isinstance(m, dict)
+            )
+        if job.get("pendingInviteCount") or needs_friend_request:
             candidates.append(str(job.get("nextInviteAt") or start_at))
         if str(job.get("targetGroupId") or "").strip() and (
             job.get("awaitingJoinCount") or job.get("pendingInviteCount") or job.get("status") == "monitoring"
         ):
             candidates.append(str(job.get("nextVerifyAt") or start_at))
+            # Rà soát nhanh: giữ bảng thống kê cập nhật gần như tức thì khi
+            # người nhận bấm link vào nhóm.
+            if job.get("awaitingJoinCount") and str(job.get("nextStatusPollAt") or "").strip():
+                candidates.append(str(job.get("nextStatusPollAt") or ""))
         job["nextRunAt"] = _earliest_iso(candidates) or str(job.get("nextRunAt") or start_at)
     elif job.get("status") in _TERMINAL_STATUSES:
         job.setdefault("nextRunAt", "")
@@ -523,6 +892,10 @@ def create_job(
         "friendRequestDailyLimit": daily_limit,
         "dailyFriendRequestDate": "",
         "dailyFriendRequestCount": 0,
+        "dailyLinkCardDate": "",
+        "dailyLinkCardCount": 0,
+        "inviteMessageTemplate": str(payload.get("inviteMessageTemplate") or "").strip(),
+        "inviteExtraLinks": str(payload.get("inviteExtraLinks") or "").strip(),
         "scheduleMode": "daily",
         "dailyRunTime": _extract_daily_time(start_at),
         "verifyIntervalMinutes": verify_minutes,
@@ -530,6 +903,8 @@ def create_job(
         "campaignEndAt": campaign_end_at,
         "campaignExpiredAt": "",
         "removeFriendAfterJoin": bool(payload.get("removeFriendAfterJoin")),
+        "friendRequestWithLink": payload.get("friendRequestWithLink") is not False,
+        "statusPollMinutes": max(1, min(int(payload.get("statusPollMinutes") or 2), 30)),
         "startAt": start_at,
         "nextInviteAt": start_at,
         "nextVerifyAt": start_at if target_mode == "existing" and target_group_id else "",
@@ -555,15 +930,30 @@ def create_job(
     _refresh_progress(job)
 
     with _LOCK:
-        jobs = _read_jobs_unlocked()
+        jobs = _load_jobs_unlocked()
         jobs.append(job)
-        _write_jobs_unlocked(jobs)
+        _flush_jobs_unlocked(jobs)
     return job
 
 
 def list_jobs(include_members: bool = False) -> list[dict]:
+    # Đường đọc nóng: frontend poll endpoint này mỗi 10 giây.
+    # - Không cần members -> chỉ đọc file TÓM TẮT (vài KB), không đụng tới
+    #   các file tác vụ riêng (vài MB). Đây là đường đọc siêu nhanh.
+    # - Cần members -> nạp đầy đủ rồi normalize sâu.
     with _LOCK:
-        jobs = [_normalize_job(item) for item in _read_jobs_unlocked() if isinstance(item, dict)]
+        if include_members:
+            jobs = [
+                _normalize_job(item, deep=True)
+                for item in _load_jobs_unlocked()
+                if isinstance(item, dict)
+            ]
+        else:
+            jobs = [
+                _normalize_job(item, deep=False)
+                for item in _load_summaries_unlocked()
+                if isinstance(item, dict)
+            ]
     jobs.sort(key=lambda item: int(item.get("createdAt") or 0), reverse=True)
     if include_members:
         return jobs
@@ -576,10 +966,17 @@ def list_jobs(include_members: bool = False) -> list[dict]:
 
 
 def get_job(job_id: str) -> Optional[dict]:
+    job_id = str(job_id or "").strip()
+    if not job_id:
+        return None
     with _LOCK:
-        for item in _read_jobs_unlocked():
-            if str(item.get("jobId") or "") == str(job_id):
+        # Thử cache trước (đã nạp đầy đủ), sau đó đọc file riêng của tác vụ.
+        for item in _load_jobs_unlocked():
+            if str(item.get("jobId") or "") == job_id:
                 return _normalize_job(item)
+        detail = _load_job_detail_unlocked(job_id)
+        if detail is not None:
+            return _normalize_job(detail)
     return None
 
 
@@ -587,22 +984,26 @@ def save_job(job: dict) -> dict:
     job_id = str(job.get("jobId") or "").strip()
     if not job_id:
         raise ValueError("Tác vụ không có jobId.")
-    job = _normalize_job(job)
+    # `job` từ worker đã là dạng đã chuẩn hóa (đọc ra từ get_job/
+    # claim_due_job) nên không cần normalize lại lần nữa -> tiết kiệm
+    # O(member) mỗi lần lưu.
+    job = _normalize_job(job, deep=False)
     job["updatedAt"] = _now_ms()
 
     with _LOCK:
-        jobs = _read_jobs_unlocked()
+        jobs = _load_jobs_unlocked()
         for index, item in enumerate(jobs):
             if str(item.get("jobId") or "") == job_id:
                 jobs[index] = job
-                _write_jobs_unlocked(jobs)
+                # Chỉ ghi lại file của tác vụ này -> tiết kiệm I/O.
+                _flush_jobs_unlocked(jobs, {job_id})
                 return job
     raise ValueError("Không tìm thấy tác vụ sao chép nhóm.")
 
 
 def mutate_job(job_id: str, mutator: Callable[[dict], None]) -> dict:
     with _LOCK:
-        jobs = _read_jobs_unlocked()
+        jobs = _load_jobs_unlocked()
         for index, item in enumerate(jobs):
             if str(item.get("jobId") or "") != str(job_id):
                 continue
@@ -611,7 +1012,7 @@ def mutate_job(job_id: str, mutator: Callable[[dict], None]) -> dict:
             job["updatedAt"] = _now_ms()
             _refresh_progress(job)
             jobs[index] = job
-            _write_jobs_unlocked(jobs)
+            _flush_jobs_unlocked(jobs, {str(job_id)})
             return job
     raise ValueError("Không tìm thấy tác vụ sao chép nhóm.")
 
@@ -619,7 +1020,7 @@ def mutate_job(job_id: str, mutator: Callable[[dict], None]) -> dict:
 def claim_due_job(now_iso: str) -> Optional[dict]:
     """Đánh dấu một tác vụ đến hạn là running để worker xử lý độc quyền."""
     with _LOCK:
-        jobs = _read_jobs_unlocked()
+        jobs = _load_jobs_unlocked()
         due_items = []
         now_ms = _now_ms()
         store_changed = False
@@ -640,7 +1041,10 @@ def claim_due_job(now_iso: str) -> Optional[dict]:
                 continue
             has_work = bool(job.get("pendingCount")) or bool(
                 str(job.get("targetGroupId") or "").strip()
-                and str(job.get("nextVerifyAt") or "").strip()
+                and (
+                    str(job.get("nextVerifyAt") or "").strip()
+                    or str(job.get("nextStatusPollAt") or "").strip()
+                )
             )
             if not has_work:
                 continue
@@ -649,7 +1053,7 @@ def claim_due_job(now_iso: str) -> Optional[dict]:
                 due_items.append((next_run, index, job))
         if not due_items:
             if store_changed:
-                _write_jobs_unlocked(jobs)
+                _flush_jobs_unlocked(jobs)
             return None
         due_items.sort(key=lambda item: item[0])
         _, index, job = due_items[0]
@@ -657,7 +1061,7 @@ def claim_due_job(now_iso: str) -> Optional[dict]:
         job["lastRunAt"] = now_iso
         job["updatedAt"] = _now_ms()
         jobs[index] = job
-        _write_jobs_unlocked(jobs)
+        _flush_jobs_unlocked(jobs)
         return job
 
 
@@ -666,7 +1070,7 @@ def recover_running_jobs(now_iso: str = "") -> int:
     now_iso = now_iso or _now_iso()
     recovered = 0
     with _LOCK:
-        jobs = _read_jobs_unlocked()
+        jobs = _load_jobs_unlocked()
         for index, raw in enumerate(jobs):
             job = _normalize_job(raw)
             if job.get("status") != "running":
@@ -686,7 +1090,7 @@ def recover_running_jobs(now_iso: str = "") -> int:
             jobs[index] = job
             recovered += 1
         if recovered:
-            _write_jobs_unlocked(jobs)
+            _flush_jobs_unlocked(jobs)
     return recovered
 
 
@@ -746,6 +1150,9 @@ def request_verification(job_id: str) -> dict:
             raise ValueError("Tác vụ đang chạy. Vui lòng chờ đợt hiện tại kết thúc.")
         now_iso = datetime.now().isoformat(timespec="seconds")
         job["status"] = "pending" if job.get("pendingCount") else "monitoring"
+        # Nút "Kiểm tra ngay" -> rà soát nhanh (chỉ đọc danh sách thành viên
+        # nhóm đích) để bảng thống kê cập nhật tức thì mà không gọi API mời.
+        job["nextStatusPollAt"] = now_iso
         job["nextVerifyAt"] = now_iso
         job["nextRunAt"] = now_iso
         job["lastVerificationError"] = ""
@@ -755,13 +1162,18 @@ def request_verification(job_id: str) -> dict:
 
 def delete_job(job_id: str) -> None:
     with _LOCK:
-        jobs = _read_jobs_unlocked()
+        jobs = _load_jobs_unlocked()
         for index, item in enumerate(jobs):
             if str(item.get("jobId") or "") != str(job_id):
                 continue
             if str(item.get("status") or "") == "running":
                 raise ValueError("Không thể xóa tác vụ đang chạy.")
             jobs.pop(index)
-            _write_jobs_unlocked(jobs)
+            _flush_jobs_unlocked(jobs)
+            # Xóa luôn file riêng của tác vụ để không rò rỉ dữ liệu thành viên.
+            try:
+                os.remove(_job_file_path(job_id))
+            except OSError:
+                pass
             return
     raise ValueError("Không tìm thấy tác vụ sao chép nhóm.")

@@ -36,9 +36,9 @@ def _prepare_link_info(message: str, zpw_enk: str, cookies: str, zpw_ver: str, i
     return None
 
 
-def _load_schedule_photo(schedule: dict):
-    """Đọc bytes ảnh đính kèm của lịch (nếu có). Trả (bytes|None, tên file)."""
-    photo_path = str(schedule.get("photoPath") or "").strip()
+def _read_photo_bytes(photo_path: str, photo_name: str = ""):
+    """Đọc bytes ảnh từ đường dẫn tương đối trong data/ (nếu có). Trả (bytes|None, tên file)."""
+    photo_path = str(photo_path or "").strip()
     if not photo_path:
         return None, ""
     abs_path = photo_path if os.path.isabs(photo_path) else os.path.join(DATA_DIR, photo_path)
@@ -47,11 +47,95 @@ def _load_schedule_photo(schedule: dict):
             data = f.read()
         if not data:
             raise ValueError("file rỗng")
-        name = schedule.get("photoName") or os.path.basename(abs_path)
+        name = photo_name or os.path.basename(abs_path)
         return data, name
     except Exception as e:
         print(f"[schedule_worker] Không đọc được ảnh đính kèm '{abs_path}': {e}")
         return None, ""
+
+
+def _load_schedule_photo(schedule: dict):
+    """Đọc bytes ảnh đính kèm của lịch (nếu có). Trả (bytes|None, tên file)."""
+    return _read_photo_bytes(schedule.get("photoPath") or "", schedule.get("photoName") or "")
+
+
+def _build_message_items(schedule: dict, zpw_enk: str, cookies: str, zpw_ver: str, imei: str = "") -> list:
+    """Chuẩn bị danh sách tin nhắn (text + ảnh + link_info) một lần cho cả lịch."""
+    raw_items = schedule.get("messages")
+    entries = []
+    if isinstance(raw_items, list) and raw_items:
+        for entry in raw_items:
+            if isinstance(entry, dict):
+                entries.append({
+                    "text": str(entry.get("text") or entry.get("message") or "").strip(),
+                    "photoPath": str(entry.get("photoPath") or "").strip(),
+                    "photoName": str(entry.get("photoName") or "").strip(),
+                })
+    if not entries:
+        entries.append({
+            "text": str(schedule.get("message") or "").strip(),
+            "photoPath": str(schedule.get("photoPath") or "").strip(),
+            "photoName": str(schedule.get("photoName") or "").strip(),
+        })
+    prepared = []
+    for entry in entries:
+        pbytes, pname = _read_photo_bytes(entry["photoPath"], entry["photoName"])
+        txt = entry["text"]
+        if not txt and pbytes is None:
+            continue
+        link_info = _prepare_link_info(txt, zpw_enk, cookies, zpw_ver, imei=imei) if txt else None
+        prepared.append({
+            "text": txt,
+            "photo_bytes": pbytes,
+            "photo_name": pname,
+            "link_info": link_info,
+        })
+    return prepared
+
+
+def _deliver_single_item(target_id: str, is_group: bool, item: dict, zpw_enk: str, cookies: str, imei: str, zpw_ver: str):
+    """Gửi 1 mục tin nhắn (ảnh nếu có, rồi text) tới người nhận hoặc nhóm."""
+    txt = item.get("text") or ""
+    pbytes = item.get("photo_bytes")
+    pname = item.get("photo_name") or "image.jpg"
+    link_info = item.get("link_info")
+    if pbytes is not None:
+        photo_result = send_photo(
+            pbytes, pname, target_id, zpw_enk, cookies, imei,
+            desc="", is_group=is_group, zpw_ver=zpw_ver,
+        )
+        if not photo_result.get("ok"):
+            return False, photo_result.get("message", "Gửi ảnh thất bại")
+        if txt:
+            text_result = send_message_smart(
+                target_id, txt, zpw_enk, cookies, imei,
+                is_group=is_group, zpw_ver=zpw_ver, link_info=link_info,
+            )
+            if not text_result.get("ok"):
+                return False, f"Ảnh đã gửi nhưng text lỗi: {text_result.get('error')}"
+        return True, ""
+    text_result = send_message_smart(
+        target_id, txt, zpw_enk, cookies, imei,
+        is_group=is_group, zpw_ver=zpw_ver, link_info=link_info,
+    )
+    return bool(text_result.get("ok")), str(text_result.get("error") or "")
+
+
+def _deliver_items_to_target(target_id: str, is_group: bool, items: list, mode: str, target_idx: int,
+                             zpw_enk: str, cookies: str, imei: str, zpw_ver: str):
+    """Gửi tất cả tin nối tiếp ('sequence') hoặc xoay vòng 1 tin theo người/nhóm ('rotate_recipient')."""
+    if not items:
+        return False, "Không có nội dung tin nhắn hợp lệ"
+    if mode == "rotate_recipient" or len(items) == 1:
+        chosen = items[target_idx % len(items)]
+        return _deliver_single_item(target_id, is_group, chosen, zpw_enk, cookies, imei, zpw_ver)
+    for k, item in enumerate(items):
+        ok, err = _deliver_single_item(target_id, is_group, item, zpw_enk, cookies, imei, zpw_ver)
+        if not ok:
+            return False, f"Tin {k + 1}/{len(items)} lỗi: {err}"
+        if k < len(items) - 1:
+            time.sleep(random.uniform(1.0, 2.0))
+    return True, ""
 
 def _resume_progress(recipients, results, id_key):
     """Giữ kết quả đã lưu; chỉ tiếp tục những người chưa được xử lý."""
@@ -124,28 +208,15 @@ class ScheduleWorker:
         schedule_source = schedule.get("source", "")  # 'group', 'phone', or 'personal-groups'
         previous_results = (schedule.get("results") or []) if schedule.get("status") == "running" else []
 
-        # Ảnh đính kèm (tùy chọn): đọc 1 lần cho cả lịch.
+        # Ảnh / danh sách nội dung tin nhắn của lịch
         photo_bytes, photo_name = _load_schedule_photo(schedule)
+        message_mode = str(schedule.get("messageMode") or "sequence").strip()
 
         # Validate
         if not recipients:
             print(f"[schedule_worker] Schedule {sch_id}: No recipients")
             update_schedule(sch_id, {"status": "failed"})
             return
-
-        if not message and photo_bytes is None:
-            print(f"[schedule_worker] Schedule {sch_id}: Empty message and no photo")
-            update_schedule(sch_id, {"status": "failed"})
-            return
-
-        if schedule.get("photoPath") and photo_bytes is None:
-            # Lịch có khai báo ảnh nhưng file mất/hỏng: nếu còn text thì gửi
-            # text-only kèm cảnh báo, nếu không thì fail rõ ràng.
-            if not message:
-                print(f"[schedule_worker] Schedule {sch_id}: Photo file missing and no message -> failed")
-                update_schedule(sch_id, {"status": "failed"})
-                return
-            print(f"[schedule_worker] Schedule {sch_id}: Photo file missing, fallback to text-only")
 
         # Lấy account
         accounts = load_accounts()
@@ -166,6 +237,12 @@ class ScheduleWorker:
             update_schedule(sch_id, {"status": "failed"})
             return
 
+        items = _build_message_items(schedule, zpw_enk, cookies, zpw_ver, imei=imei)
+        if not items:
+            print(f"[schedule_worker] Schedule {sch_id}: Empty message items")
+            update_schedule(sch_id, {"status": "failed"})
+            return
+
         # Batch config
         batch_size = batch_config.get("batchSize", 10)
         batch_delay_sec = batch_config.get("batchDelaySec", 30)
@@ -175,14 +252,13 @@ class ScheduleWorker:
         max_delay = rate_limit.get("maxDelaySec", 5)
         max_errors = rate_limit.get("maxConsecutiveErrors", 5)
 
-        # Nội dung chứa link nhóm Zalo -> resolve info nhóm 1 lần cho cả lịch.
-        link_info = _prepare_link_info(message, zpw_enk, cookies, zpw_ver, imei=imei)
+        link_info = items[0].get("link_info")
 
         # Handle personal groups
         if schedule_source == "personal-groups":
             self._run_schedule_groups(sch_id, account, recipients, message, rate_limit, batch_config, update_schedule, append_schedule_result,
                                       photo_bytes=photo_bytes, photo_name=photo_name, link_info=link_info,
-                                      previous_results=previous_results)
+                                      previous_results=previous_results, items=items, message_mode=message_mode)
             return
 
         # Handle individual users (group or phone source)
@@ -223,32 +299,11 @@ class ScheduleWorker:
                 avatar = recipient.get("avatar", "")
 
                 try:
-                    if photo_bytes is not None:
-                        # Gửi ảnh TRƯỚC (không caption), rồi gửi text thành tin riêng sau.
-                        print(f"[schedule_worker] Sending photo to {uid} ({zalo_name})...")
-                        photo_result = send_photo(
-                            photo_bytes, photo_name or "image.jpg", uid,
-                            zpw_enk, cookies, imei,
-                            desc="", is_group=False, zpw_ver=zpw_ver,
-                        )
-                        sent_ok = bool(photo_result.get("ok"))
-                        send_error = photo_result.get("message", "Gửi ảnh thất bại")
-                        if sent_ok and message:
-                            text_result = send_message_smart(
-                                uid, message, zpw_enk, cookies, imei,
-                                is_group=False, zpw_ver=zpw_ver, link_info=link_info,
-                            )
-                            if not text_result.get("ok"):
-                                sent_ok = False
-                                send_error = f"Ảnh đã gửi nhưng text lỗi: {text_result.get('error')}"
-                    else:
-                        print(f"[schedule_worker] Sending to {uid} ({zalo_name})...")
-                        text_result = send_message_smart(
-                            uid, message, zpw_enk, cookies, imei,
-                            is_group=False, zpw_ver=zpw_ver, link_info=link_info,
-                        )
-                        sent_ok = bool(text_result.get("ok"))
-                        send_error = text_result.get("error", "")
+                    print(f"[schedule_worker] Sending ({len(items)} item(s), mode={message_mode}) to {uid} ({zalo_name})...")
+                    sent_ok, send_error = _deliver_items_to_target(
+                        uid, False, items, message_mode, batch_start + i,
+                        zpw_enk, cookies, imei, zpw_ver,
+                    )
 
                     if sent_ok:
                         success_count += 1
@@ -310,7 +365,7 @@ class ScheduleWorker:
         update_schedule(sch_id, {"status": final_status})
     
     def _run_schedule_groups(self, sch_id, account, recipients, message, rate_limit, batch_config, update_schedule, append_schedule_result,
-                             photo_bytes=None, photo_name="", link_info=None, previous_results=None):
+                             photo_bytes=None, photo_name="", link_info=None, previous_results=None, items=None, message_mode="sequence"):
         """Run schedule for personal groups - xử lý theo batch."""
         cookies = account.get("cookies", "")
         zpw_enk = account.get("zpwEnk", "")
@@ -358,32 +413,13 @@ class ScheduleWorker:
                     continue
 
                 try:
-                    if photo_bytes is not None:
-                        # Gửi ảnh vào nhóm TRƯỚC (không caption), rồi gửi text thành tin riêng.
-                        print(f"[schedule_worker] Sending photo to group {group_id}...")
-                        photo_result = send_photo(
-                            photo_bytes, photo_name or "image.jpg", group_id,
-                            zpw_enk, cookies, imei,
-                            desc="", is_group=True, zpw_ver=zpw_ver,
-                        )
-                        error_code = 0 if photo_result.get("ok") else -1
-                        if error_code != 0:
-                            print(f"[schedule_worker] Photo to group {group_id} failed: {photo_result.get('message')}")
-                        elif message:
-                            text_result = send_message_smart(
-                                group_id, message, zpw_enk, cookies, imei,
-                                is_group=True, zpw_ver=zpw_ver, link_info=link_info,
-                            )
-                            error_code = 0 if text_result.get("ok") else -1
-                            if error_code != 0:
-                                print(f"[schedule_worker] Text after photo to group {group_id} failed: {text_result.get('error')}")
-                    else:
-                        print(f"[schedule_worker] Sending to group {group_id}...")
-                        text_result = send_message_smart(
-                            group_id, message, zpw_enk, cookies, imei,
-                            is_group=True, zpw_ver=zpw_ver, link_info=link_info,
-                        )
-                        error_code = 0 if text_result.get("ok") else -1
+                    active_items = items or [{"text": message, "photo_bytes": photo_bytes, "photo_name": photo_name, "link_info": link_info}]
+                    print(f"[schedule_worker] Sending ({len(active_items)} item(s), mode={message_mode}) to group {group_id}...")
+                    ok, send_err = _deliver_items_to_target(
+                        group_id, True, active_items, message_mode, batch_start + i,
+                        zpw_enk, cookies, imei, zpw_ver,
+                    )
+                    error_code = 0 if ok else -1
 
                     if error_code == 0:
                         success_count += 1

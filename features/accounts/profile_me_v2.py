@@ -6,6 +6,7 @@ from core.zalo.dec import zalo_decode
 from core.zalo.debugs import save
 from core.zalo.zalo_config import get_zpw_ver
 from core.zalo.zalo_headers import zalo_mobile_headers
+from core.zalo import http as zalo_http
 
 
 def parse_cookie_string(cookies: str) -> dict:
@@ -44,7 +45,7 @@ def get_my_profile_v2(
 
     Lưu ý quan trọng:
     - Đây là GET query string.
-    - Không URL-encode sẵn params nếu sau đó truyền vào requests.get(..., params=...),
+    - Không URL-encode sẵn params nếu sau đó truyền vào zalo_http.get(..., params=...),
       nếu không sẽ bị double encode.
     """
 
@@ -73,7 +74,7 @@ def get_my_profile_v2(
 
     cookie_dict = parse_cookie_string(cookies)
 
-    response = requests.get(
+    response = zalo_http.get(
         url,
         params=query_params,
         headers=headers,

@@ -58,8 +58,18 @@ ZALO_URL = "https://chat.zalo.me/index.html"
 DEBUG_PORT_START = 9333
 
 _running_chrome = {}
+_running_headless = {}
 _proxy_relay_servers = {}  # account_id -> ThreadingTCPServer (local proxy relay)
 _used_ports = set()
+
+
+def is_account_chrome_headless(account_id: str) -> bool:
+    """Kiểm tra tiến trình Chrome đang chạy của account có phải chế độ headless không."""
+    proc = _running_chrome.get(account_id)
+    if proc is None or proc.poll() is not None:
+        _running_headless.pop(account_id, None)
+        return False
+    return bool(_running_headless.get(account_id))
 
 # Bảo vệ chu trình đọc-sửa-ghi data/accounts.json khỏi race condition khi nhiều
 # thread ghi đồng thời (network monitor của từng tài khoản đang chạy + các request
@@ -67,6 +77,35 @@ _used_ports = set()
 # lúc có thể làm mất tài khoản khỏi accounts.json do lost-update (thread A đọc danh
 # sách cũ, ghi đè lại đúng lúc thread B vừa thêm/sửa xong).
 _accounts_file_lock = threading.RLock()
+
+# Cache noi bo cho load_accounts(): (mtime, size, danh sach, timestamp)
+# TTL ngan (2s) de van phat hien Chrome bi dong ngoai y muon (remoteDebugPort
+# phai duoc tu sua) trong thoi gian reasonable.
+_ACCOUNTS_CACHE_TTL = 2.0
+_accounts_cache: tuple[float, int, list, float] | None = None
+
+
+def _stat_of(path: str):
+    try:
+        st = os.stat(path)
+        return (st.st_mtime, st.st_size)
+    except OSError:
+        return None
+
+
+def _set_accounts_cache(stat, accounts):
+    global _accounts_cache
+    if stat is None:
+        _accounts_cache = None
+    else:
+        _accounts_cache = (stat[0], stat[1], list(accounts), time.time())
+
+
+def invalidate_accounts_cache():
+    """Xoa cache (dung khi accounts.json bi doi ngoai process)."""
+    global _accounts_cache
+    with _accounts_file_lock:
+        _accounts_cache = None
 
 
 def _locked(fn):
@@ -144,6 +183,10 @@ def load_accounts():
 
     Nếu file chính bị ghi dở hoặc hỏng JSON, thử phục hồi từ bản sao an toàn
     thay vì trả danh sách rỗng rồi vô tình ghi đè dữ liệu người dùng.
+
+    Toi uu: cache theo (mtime, size) cua file. ``load_accounts`` duoc goi rat
+    nhieu lan (moi request Flask, moi vong poll cua worker) -> moi lan lai
+    doc + parse lai file + stat 3 file lock Chrome la 1 ton I/O thua.
     """
     _ensure_dirs()
     backup_file = ACCOUNTS_FILE + ".bak"
@@ -156,6 +199,13 @@ def load_accounts():
         if not os.path.isfile(ACCOUNTS_FILE):
             save_accounts([])
             return []
+
+    # --- Fast path: file chua doi -> dung cache ---
+    stat = _stat_of(ACCOUNTS_FILE)
+    if stat is not None and _accounts_cache is not None \
+            and _accounts_cache[0] == stat[0] and _accounts_cache[1] == stat[1] \
+            and (time.time() - _accounts_cache[3]) <= _ACCOUNTS_CACHE_TTL:
+        return list(_accounts_cache[2])
 
     try:
         with open(ACCOUNTS_FILE, "r", encoding="utf-8") as f:
@@ -185,6 +235,8 @@ def load_accounts():
             accounts.append(norm)
         if changed:
             save_accounts(accounts)
+            stat = _stat_of(ACCOUNTS_FILE)
+        _set_accounts_cache(stat, accounts)
         return accounts
     except (json.JSONDecodeError, OSError) as error:
         backup_file = ACCOUNTS_FILE + ".bak"
@@ -234,6 +286,8 @@ def save_accounts(accounts):
             pass
 
     os.replace(temp_file, ACCOUNTS_FILE)
+    # Cap nhat cache ngay (stat lai sau khi ghi).
+    _set_accounts_cache(_stat_of(ACCOUNTS_FILE), normalized)
 
 
 def _find_account(accounts, account_id):
@@ -276,68 +330,90 @@ def _cookie_has(cookie_str: str, name: str) -> bool:
     return False
 
 
-def account_capture_complete(account_id: str) -> bool:
+_CAPTURE_LOG_STATE: dict[str, tuple[str, float]] = {}
+
+
+def _log_capture_reason(account_id: str, reason: str, force: bool = False):
+    """Chỉ ghi log trạng thái capture khi lý do thay đổi hoặc sau mỗi 30 giây."""
+    now = time.time()
+    prev_reason, prev_ts = _CAPTURE_LOG_STATE.get(account_id, ("", 0.0))
+    if force or reason != prev_reason or (now - prev_ts) >= 30.0:
+        _CAPTURE_LOG_STATE[account_id] = (reason, now)
+        print(f"[account_capture_complete] {reason} for {account_id[:8]}...")
+
+
+def account_capture_complete(account_id: str, verbose: bool = False) -> bool:
     """
     Monitor dừng khi TẤT CẢ các điều kiện được thỏa:
     - Đã capture login (loginCaptured = True, zpwEnk có giá trị)
     - Đã capture userinfo (userinfoCaptured = True, name/avatar/etc)
     - Đã lấy được danh sách nhóm cá nhân (personalGroups không rỗng)
-    - Đã có cookies đầy đủ (độ dài > 300 ký tự)
-    
-    Nếu chưa đủ, monitor tiếp tục chạy để lấy thêm dữ liệu.
+    - Đã có cookies đầy đủ (zpw_sek)
     """
     acc = get_account(account_id)
     if not acc:
         return False
-    
+
     # Kiểm tra login capture (zpwEnk là dấu hiệu)
     zpw_enk = (acc.get("zpwEnk") or "").strip()
     if not zpw_enk:
-        print(f"[account_capture_complete] Missing zpwEnk for {account_id[:8]}...")
+        if verbose:
+            _log_capture_reason(account_id, "Missing zpwEnk")
         return False
-    
+
     login_captured = acc.get("loginCaptured", False)
     if not login_captured:
-        print(f"[account_capture_complete] loginCaptured=False for {account_id[:8]}...")
+        if verbose:
+            _log_capture_reason(account_id, "loginCaptured=False")
         return False
-    
+
     # Kiểm tra userinfo capture
     userinfo_captured = acc.get("userinfoCaptured", False)
     if not userinfo_captured:
-        print(f"[account_capture_complete] userinfoCaptured=False for {account_id[:8]}...")
-        return False
-    
-    # Khi đang yêu cầu Làm mới nhóm, không được coi dữ liệu cũ là đủ.
-    # Monitor phải tiếp tục chạy cho đến khi bắt được getlg/v4 mới và save_account_groups cập nhật lại trạng thái.
-    groups_sync_status = str(acc.get("groupsSyncStatus") or "").strip().lower()
-    if groups_sync_status in {"opening", "refreshing", "syncing"}:
-        print(f"[account_capture_complete] groupsSyncStatus={groups_sync_status} for {account_id[:8]}..., continue capture")
+        if verbose:
+            _log_capture_reason(account_id, "userinfoCaptured=False")
         return False
 
     # Kiểm tra personalGroups
     personal_groups = acc.get("personalGroups", [])
-    has_groups = False
-    
-    if isinstance(personal_groups, list):
-        has_groups = len(personal_groups) > 0
-    elif isinstance(personal_groups, dict):
-        has_groups = len(personal_groups) > 0
-    
-    if not has_groups:
-        print(f"[account_capture_complete] No personalGroups for {account_id[:8]}...")
-        return False
-    
-    # Cookie dài không đồng nghĩa với phiên hợp lệ. getmg bắt buộc phải có
-    # zpw_sek; trước đây cookie 282 ký tự vẫn được lưu và ghi đè cookie đầy đủ.
+    has_groups = bool(personal_groups) if isinstance(personal_groups, (list, dict)) else False
+
+    # Cookie hợp lệ bắt buộc phải có zpw_sek
     cookies = acc.get("cookies", "")
-    if not _cookie_has(cookies, "zpw_sek"):
-        print(
-            f"[account_capture_complete] Missing zpw_sek "
-            f"({len(cookies)} chars) for {account_id[:8]}..."
-        )
+    has_sek = _cookie_has(cookies, "zpw_sek")
+    if not has_sek:
+        if verbose:
+            _log_capture_reason(account_id, f"Missing zpw_sek ({len(cookies)} chars)")
         return False
-    
+
+    # Khi đang yêu cầu Làm mới nhóm, không được coi dữ liệu cũ là đủ.
+    # Riêng trạng thái 'opening' (mở trình duyệt bình thường): nếu đã chờ > 12s mà
+    # phiên đăng nhập + nhóm cũ đã đầy đủ (Zalo dùng cache không gọi lại getlg/v4),
+    # cho phép kết thúc monitor sớm thay vì chạy treo suốt 5 phút.
+    groups_sync_status = str(acc.get("groupsSyncStatus") or "").strip().lower()
+    if groups_sync_status == "opening" and has_groups:
+        started_ms = int(acc.get("sessionRefreshStartedAt") or 0)
+        elapsed_sec = (int(time.time() * 1000) - started_ms) / 1000.0 if started_ms else 999.0
+        if elapsed_sec >= 12.0:
+            try:
+                update_account(account_id, groupsSyncStatus="details_done")
+            except Exception:
+                pass
+            _CAPTURE_LOG_STATE.pop(account_id, None)
+            return True
+
+    if groups_sync_status in {"opening", "refreshing", "syncing"}:
+        if verbose:
+            _log_capture_reason(account_id, f"groupsSyncStatus={groups_sync_status}, continue capture")
+        return False
+
+    if not has_groups:
+        if verbose:
+            _log_capture_reason(account_id, "No personalGroups")
+        return False
+
     # TẤT CẢ điều kiện thỏa - dữ liệu đủ
+    _CAPTURE_LOG_STATE.pop(account_id, None)
     return True
 
 def account_capture_basic(account_id: str) -> bool:
@@ -669,7 +745,7 @@ def _stop_proxy_relay(account_id: str):
             pass
 
 
-def _launch_chrome(profile_path: str, account_id: str, debug_port: int, proxy: str = ""):
+def _launch_chrome(profile_path: str, account_id: str, debug_port: int, proxy: str = "", headless: bool = False):
     if not os.path.isfile(CHROME_EXE):
         raise FileNotFoundError(f"Không tìm thấy Chrome tại: {CHROME_EXE}")
 
@@ -684,6 +760,12 @@ def _launch_chrome(profile_path: str, account_id: str, debug_port: int, proxy: s
         "--no-first-run",
         "--no-default-browser-check",
     ]
+    if headless:
+        args.extend([
+            "--headless=new",
+            "--disable-gpu",
+            "--window-size=1280,800",
+        ])
 
     proxy = (proxy or "").strip()
 
@@ -734,9 +816,14 @@ def _launch_chrome(profile_path: str, account_id: str, debug_port: int, proxy: s
 
     creationflags = 0
     if sys.platform == "win32":
-        creationflags = (
-            subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-        )
+        if headless:
+            creationflags = (
+                subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP
+            )
+        else:
+            creationflags = (
+                subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+            )
 
     print("[account_manager] Launching Chrome with args:", " ".join(args))
 
@@ -749,7 +836,8 @@ def _launch_chrome(profile_path: str, account_id: str, debug_port: int, proxy: s
     )
 
     _running_chrome[account_id] = proc
-    print(f"[account_manager] Chrome process started (PID: {proc.pid}) for account {account_id}")
+    _running_headless[account_id] = bool(headless)
+    print(f"[account_manager] Chrome process started (PID: {proc.pid}, headless={bool(headless)}) for account {account_id}")
     return proc
 
 def _start_network_monitor(account_id: str, debug_port: int):
@@ -796,8 +884,12 @@ def _stop_fingerprint_guard(account_id: str):
 
 
 @_locked
-def _open_chrome_for_account(account: dict, resync: bool = True, clear_groups: bool = False):
+def _open_chrome_for_account(account: dict, resync: bool = True, clear_groups: bool = False, headless: bool = False):
     account_id = account["accountId"]
+    # Nếu đang có tiến trình headless chạy nền cho profile này mà giờ cần mở cửa sổ thật (hoặc mở lại),
+    # đóng tiến trình headless trước để tránh xung đột user-data-dir.
+    if not headless and is_account_chrome_headless(account_id):
+        close_account(account_id)
     if resync:
         reset_account_session(account_id, clear_groups=clear_groups)
         account = get_account(account_id) or account
@@ -815,7 +907,7 @@ def _open_chrome_for_account(account: dict, resync: bool = True, clear_groups: b
                 break
         save_accounts(accounts)
 
-    _launch_chrome(profile_path, account_id, int(port), account.get("proxy", ""))
+    _launch_chrome(profile_path, account_id, int(port), account.get("proxy", ""), headless=headless)
     _start_network_monitor(account_id, int(port))
     _start_fingerprint_guard(account_id, int(port), account.get("proxy", ""))
     return get_account(account_id) or normalize_account(account)
@@ -867,8 +959,8 @@ def create_account(name: str = None, proxy: str = "", auto_launch: bool = True):
     return get_account(account_id) or account
 
 
-def open_account(account_id: str, clear_groups: bool = False):
-    """Mở Chrome với profile của tài khoản + bật monitor."""
+def open_account(account_id: str, clear_groups: bool = False, headless: bool = False):
+    """Mở Chrome với profile của tài khoản + bật monitor (headless=True để chạy ngầm)."""
     accounts = load_accounts()
     account = _find_account(accounts, account_id)
     if not account:
@@ -880,7 +972,7 @@ def open_account(account_id: str, clear_groups: bool = False):
         update_account(account_id, profilePath=os.path.abspath(profile_path))
         account = get_account(account_id)
 
-    return _open_chrome_for_account(account, clear_groups=clear_groups)
+    return _open_chrome_for_account(account, clear_groups=clear_groups, headless=headless)
 
 
 @_locked
@@ -909,6 +1001,7 @@ def close_account(account_id: str):
             print(f"[account_manager] Lỗi kill Chrome: {e}")
         finally:
             del _running_chrome[account_id]
+    _running_headless.pop(account_id, None)
 
     _stop_proxy_relay(account_id)
     _stop_fingerprint_guard(account_id)
@@ -961,6 +1054,7 @@ def delete_account(account_id: str):
 
     if account_id in _running_chrome:
         del _running_chrome[account_id]
+    _running_headless.pop(account_id, None)
 
     if os.path.isdir(profile_path):
         try:

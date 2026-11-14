@@ -12,6 +12,7 @@ from core.zalo.dec import zalo_decode
 from core.zalo.enc import zalo_encode
 from core.zalo.zalo_config import get_zpw_ver
 from core.zalo.zalo_headers import zalo_mobile_headers
+from core.zalo import http as zalo_http
 
 JOIN_LINK_URL = "https://tt-group-wpa.chat.zalo.me/api/group/link/join"
 LEAVE_GROUP_URL = "https://tt-group-wpa.chat.zalo.me/api/group/leave"
@@ -170,7 +171,7 @@ def join_group_by_link(
     cookie_dict = cookies_str_to_dict(cookies)
 
     try:
-        response = requests.get(
+        response = zalo_http.get(
             join_url,
             headers=headers,
             cookies=cookie_dict,
@@ -231,7 +232,7 @@ def leave_group(
     cookie_dict = cookies_str_to_dict(cookies)
 
     try:
-        response = requests.post(
+        response = zalo_http.post(
             LEAVE_GROUP_URL,
             params={"zpw_ver": get_zpw_ver(zpw_ver), "zpw_type": "30"},
             data=f"params={encoded}",

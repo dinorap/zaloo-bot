@@ -1204,12 +1204,26 @@ html body.policy-masterise .policy-shell {
     border-color: var(--nx14-border) !important;
 }
 
-html body.guide-page .guide-hero-main *,
-html body.guide-page .guide-start-panel *,
-html body.policy-masterise .policy-story *,
-html body.policy-masterise .policy-document * {
+/* Rule "*{color:đen}" ép chữ tối cho mọi phần tử con, kể cả nút nền xanh →
+   chữ trắng của nút bị ghi đè, thành chữ chìm/nền trắng không đọc được.
+   Loại trừ các nút nền đậm (btn-primary, policy-button) ra khỏi rule này. */
+html body.guide-page .guide-hero-main *:not(.btn-primary):not(.policy-button),
+html body.guide-page .guide-start-panel *:not(.btn-primary):not(.policy-button),
+html body.policy-masterise .policy-story *:not(.btn-primary):not(.policy-button),
+html body.policy-masterise .policy-document *:not(.btn-primary):not(.policy-button) {
     color: var(--nx14-black) !important;
     opacity: 1 !important;
+}
+
+/* Nút nền xanh đậm trong vùng sáng: chữ bắt buộc trắng để đọc được. */
+html body.policy-masterise .policy-button:not(:disabled),
+html body.policy-masterise .policy-document .btn-primary:not(:disabled),
+html body.policy-masterise .policy-story .btn-primary:not(:disabled),
+html body.guide-page .guide-hero-main .btn-primary:not(:disabled),
+html body.guide-page .guide-start-panel .btn-primary:not(:disabled) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    text-shadow: none !important;
 }
 
 html body.guide-page .guide-start-list > li > span,
@@ -1356,4 +1370,45 @@ html body .nexus-update-toast {
     right: 18px !important;
     bottom: 18px !important;
     left: auto !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   V14-FINAL: chữ trắng trên mọi nền xanh.
+   Rule generic "html body button:not(:disabled)" (0,2,1) đứng sau các rule
+   nền xanh nên vẫn ghi đè màu chữ. Ở đây dùng selector đủ mạnh
+   (0,3,1 + !important) để mọi nút nền xanh/primary đều có chữ trắng. */
+html body .btn-primary:not(:disabled),
+html body button.btn-primary:not(:disabled),
+html body a.btn-primary:not(:disabled),
+html body .btn-info:not(:disabled),
+html body button.btn-info:not(:disabled),
+html body a.btn-info:not(:disabled),
+html body .policy-button:not(:disabled),
+html body .gc-run-btn:not(:disabled),
+html body .nexus-update-toast-btn:not(:disabled),
+html body .nexus-update-actions .btn-primary:not(:disabled) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    text-shadow: none !important;
+}
+
+/* Nút toast cập nhật: nền phải xanh đậm để chữ trắng đọc được
+   (rule generic đã ép nền trắng cho mọi button). */
+html body button.nexus-update-toast-btn:not(:disabled),
+html body .nexus-update-toast-btn:not(:disabled) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: #1d5f8c !important;
+    background-color: #1d5f8c !important;
+    background-image: none !important;
+    border-color: #17496c !important;
+}
+
+html body .btn-secondary:not(:disabled),
+html body button.btn-secondary:not(:disabled),
+html body a.btn-secondary:not(:disabled),
+html body .btn-ghost:not(:disabled),
+html body button.btn-ghost:not(:disabled) {
+    color: #0f2f4a !important;
+    -webkit-text-fill-color: #0f2f4a !important;
 }

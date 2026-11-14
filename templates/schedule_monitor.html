@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title or "Lịch gửi" }} - Nexus</title>
+    <title>{{ page_title or "Lịch gửi" }} - Jimmy BOT CHAT</title>
     <link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=nexus-light-v3-20260728">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=nexus-light-v3-20260728">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-masterise.css') }}?v=nexus-masterise-v6-20260728">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=schedmon-fix3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=schedmon-fix3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-masterise.css') }}?v=schedmon-fix3">
 </head>
 <body class="schedmon-page">
 {% include '_nav.html' %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/schedule-monitor.css') }}?v=recip-progress-v1">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/schedule-monitor.css') }}?v=schedmon-fix3">
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=nexus-light-v3-20260728">
 <main class="page schedmon-shell">
@@ -54,10 +54,17 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6.2 6.2L4 8M5.5 15A7 7 0 0 0 17.8 17.8L20 16"/></svg>
                 <span>Làm mới</span>
             </button>
+            {% if 'marketing_campaign' in allowed_features %}
             <a class="btn btn-primary" href="{{ url_for('marketing_group_page') }}">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                 <span>Tạo chiến dịch</span>
             </a>
+            {% elif 'group_copy' in allowed_features %}
+            <a class="btn btn-primary" href="{{ url_for('marketing_group_copy_page') }}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+                <span>Sao chép nhóm mới</span>
+            </a>
+            {% endif %}
         </div>
     </header>
 

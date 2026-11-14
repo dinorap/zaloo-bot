@@ -78,13 +78,14 @@ html body .brand-copy h1,
 html body .header-content .brand h1 {
     color: var(--nx13-text) !important;
 }
+
 html body .brand-subtitle,
 html body .nav-section-label {
     color: var(--nx13-muted) !important;
 }
 
-html body .app-sidebar .header-nav > a,
-html body .header.app-sidebar .header-nav > a,
+html body .app-sidebar .header-nav>a,
+html body .header.app-sidebar .header-nav>a,
 html body .sidebar-mini-link,
 html body .sidebar-policy-link {
     color: var(--nx13-text) !important;
@@ -94,28 +95,31 @@ html body .sidebar-policy-link {
     box-shadow: none !important;
 }
 
-html body .app-sidebar .header-nav > a .nav-copy strong,
-html body .header.app-sidebar .header-nav > a .nav-copy strong,
+html body .app-sidebar .header-nav>a .nav-copy strong,
+html body .header.app-sidebar .header-nav>a .nav-copy strong,
 html body .sidebar-mini-link strong,
 html body .sidebar-policy-link strong {
     color: var(--nx13-text) !important;
 }
-html body .app-sidebar .header-nav > a .nav-copy small,
-html body .header.app-sidebar .header-nav > a .nav-copy small,
+
+html body .app-sidebar .header-nav>a .nav-copy small,
+html body .header.app-sidebar .header-nav>a .nav-copy small,
 html body .sidebar-mini-link small,
 html body .sidebar-policy-link small {
     color: var(--nx13-muted) !important;
 }
-html body .app-sidebar .header-nav > a .nav-icon,
-html body .header.app-sidebar .header-nav > a .nav-icon,
-html body .sidebar-mini-link > span,
-html body .sidebar-policy-link > span {
+
+html body .app-sidebar .header-nav>a .nav-icon,
+html body .header.app-sidebar .header-nav>a .nav-icon,
+html body .sidebar-mini-link>span,
+html body .sidebar-policy-link>span {
     color: var(--nx13-blue-text) !important;
     background: #f4f9fd !important;
     border-color: var(--nx13-border) !important;
 }
-html body .app-sidebar .header-nav > a svg,
-html body .header.app-sidebar .header-nav > a svg,
+
+html body .app-sidebar .header-nav>a svg,
+html body .header.app-sidebar .header-nav>a svg,
 html body .sidebar-mini-link svg,
 html body .sidebar-policy-link svg {
     color: var(--nx13-blue-text) !important;
@@ -123,10 +127,10 @@ html body .sidebar-policy-link svg {
 }
 
 /* Selected menu: light blue surface + dark blue copy. */
-html body .app-sidebar .header-nav > a.active,
-html body .header.app-sidebar .header-nav > a.active,
-html body .app-sidebar .header-nav > a[aria-current="page"],
-html body .header.app-sidebar .header-nav > a[aria-current="page"],
+html body .app-sidebar .header-nav>a.active,
+html body .header.app-sidebar .header-nav>a.active,
+html body .app-sidebar .header-nav>a[aria-current="page"],
+html body .header.app-sidebar .header-nav>a[aria-current="page"],
 html body .sidebar-mini-link.active {
     color: var(--nx13-blue-text) !important;
     background: var(--nx13-selected) !important;
@@ -135,47 +139,52 @@ html body .sidebar-mini-link.active {
     border-color: #a9cdeb !important;
     box-shadow: inset 4px 0 0 var(--nx13-blue) !important;
 }
-html body .app-sidebar .header-nav > a.active *,
-html body .header.app-sidebar .header-nav > a.active *,
-html body .app-sidebar .header-nav > a[aria-current="page"] *,
-html body .header.app-sidebar .header-nav > a[aria-current="page"] *,
+
+html body .app-sidebar .header-nav>a.active *,
+html body .header.app-sidebar .header-nav>a.active *,
+html body .app-sidebar .header-nav>a[aria-current="page"] *,
+html body .header.app-sidebar .header-nav>a[aria-current="page"] *,
 html body .sidebar-mini-link.active * {
     color: var(--nx13-blue-text) !important;
     opacity: 1 !important;
 }
-html body .app-sidebar .header-nav > a.active .nav-icon,
-html body .header.app-sidebar .header-nav > a.active .nav-icon,
-html body .app-sidebar .header-nav > a[aria-current="page"] .nav-icon,
-html body .header.app-sidebar .header-nav > a[aria-current="page"] .nav-icon {
+
+html body .app-sidebar .header-nav>a.active .nav-icon,
+html body .header.app-sidebar .header-nav>a.active .nav-icon,
+html body .app-sidebar .header-nav>a[aria-current="page"] .nav-icon,
+html body .header.app-sidebar .header-nav>a[aria-current="page"] .nav-icon {
     color: var(--nx13-blue-text) !important;
     background: #f3f9ff !important;
     border-color: #a8cae7 !important;
 }
-html body .app-sidebar .header-nav > a.active svg,
-html body .header.app-sidebar .header-nav > a.active svg,
-html body .app-sidebar .header-nav > a[aria-current="page"] svg,
-html body .header.app-sidebar .header-nav > a[aria-current="page"] svg {
+
+html body .app-sidebar .header-nav>a.active svg,
+html body .header.app-sidebar .header-nav>a.active svg,
+html body .app-sidebar .header-nav>a[aria-current="page"] svg,
+html body .header.app-sidebar .header-nav>a[aria-current="page"] svg {
     color: var(--nx13-blue-text) !important;
     stroke: var(--nx13-blue-text) !important;
 }
 
 /* Hover: medium sky blue + white copy. */
-html body .app-sidebar .header-nav > a:hover,
-html body .header.app-sidebar .header-nav > a:hover,
+html body .app-sidebar .header-nav>a:hover,
+html body .header.app-sidebar .header-nav>a:hover,
 html body .sidebar-mini-link:hover,
 html body .sidebar-policy-link:hover {
     color: #ffffff !important;
     background: var(--nx13-blue) !important;
     border-color: var(--nx13-blue) !important;
 }
-html body .app-sidebar .header-nav > a:hover *,
-html body .header.app-sidebar .header-nav > a:hover *,
+
+html body .app-sidebar .header-nav>a:hover *,
+html body .header.app-sidebar .header-nav>a:hover *,
 html body .sidebar-mini-link:hover *,
 html body .sidebar-policy-link:hover * {
     color: #ffffff !important;
 }
-html body .app-sidebar .header-nav > a:hover svg,
-html body .header.app-sidebar .header-nav > a:hover svg,
+
+html body .app-sidebar .header-nav>a:hover svg,
+html body .header.app-sidebar .header-nav>a:hover svg,
 html body .sidebar-mini-link:hover svg,
 html body .sidebar-policy-link:hover svg {
     color: #ffffff !important;
@@ -230,6 +239,7 @@ html body .conversation-item {
     background: var(--nx13-item) !important;
     border-color: var(--nx13-border) !important;
 }
+
 html body .dash-stat:hover,
 html body .acc-stat:hover,
 html body .gc-stat:hover,
@@ -246,6 +256,7 @@ html body .conversation-item:hover {
     background: var(--nx13-item-hover) !important;
     border-color: #a5c6df !important;
 }
+
 html body .dash-stat *,
 html body .acc-stat *,
 html body .gc-stat *,
@@ -278,10 +289,12 @@ html body .schedmon-select-field select {
     border-color: var(--nx13-border-strong) !important;
     box-shadow: none !important;
 }
+
 html body input::placeholder,
 html body textarea::placeholder {
     color: #8798a6 !important;
 }
+
 html body input:focus,
 html body select:focus,
 html body textarea:focus {
@@ -302,6 +315,7 @@ html body [role="tab"]:not([aria-disabled="true"]) {
     border-color: #a7cbed !important;
     box-shadow: none !important;
 }
+
 html body .btn-primary:not(:disabled),
 html body button.btn-primary:not(:disabled),
 html body .policy-button:not(:disabled),
@@ -311,17 +325,20 @@ html body .nexus-update-toast-btn {
     background: var(--nx13-blue) !important;
     border-color: var(--nx13-blue) !important;
 }
+
 html body .btn-danger:not(:disabled),
 html body .btn-icon-danger:not(:disabled) {
     color: var(--nx13-red-text) !important;
     background: var(--nx13-red-soft) !important;
     border-color: #e9b8c0 !important;
 }
+
 html body .btn-success:not(:disabled) {
     color: var(--nx13-green-text) !important;
     background: var(--nx13-green-soft) !important;
     border-color: #a9d7bf !important;
 }
+
 html body button:not(:disabled):hover,
 html body .btn:not(:disabled):hover,
 html body a.btn:hover,
@@ -334,6 +351,7 @@ html body .guide-anchor-nav a:focus-visible {
     background-color: var(--nx13-blue-hover) !important;
     border-color: var(--nx13-blue-hover) !important;
 }
+
 html body button:not(:disabled):hover *,
 html body .btn:not(:disabled):hover *,
 html body a.btn:hover *,
@@ -341,6 +359,7 @@ html body [role="button"]:not([aria-disabled="true"]):hover *,
 html body [role="tab"]:not([aria-disabled="true"]):hover * {
     color: #ffffff !important;
 }
+
 html body button:not(:disabled):hover svg,
 html body .btn:not(:disabled):hover svg,
 html body a.btn:hover svg,
@@ -349,6 +368,7 @@ html body [role="tab"]:not([aria-disabled="true"]):hover svg {
     color: #ffffff !important;
     stroke: #ffffff !important;
 }
+
 html body button:disabled,
 html body .btn:disabled {
     color: #8a9aa6 !important;
@@ -377,6 +397,7 @@ html body .plan-item.active {
     border-color: #9fc9eb !important;
     box-shadow: inset 0 -3px 0 var(--nx13-blue) !important;
 }
+
 html body button.active *,
 html body [role="tab"][aria-selected="true"] *,
 html body [aria-pressed="true"] *,
@@ -399,11 +420,13 @@ html body.guide-page .guide-hero-main {
     color: var(--nx13-text) !important;
     background: linear-gradient(135deg, #f8fbfd, #eaf3f9) !important;
 }
+
 html body.guide-page .guide-start-panel {
     color: var(--nx13-text) !important;
     background: linear-gradient(180deg, #e7f3fc, #dceefb) !important;
     border-color: #b8d4e8 !important;
 }
+
 html body.guide-page .guide-start-panel *,
 html body.guide-page .guide-start-panel .guide-panel-label,
 html body.guide-page .guide-start-panel strong,
@@ -411,10 +434,12 @@ html body.guide-page .guide-start-panel small {
     color: var(--nx13-text) !important;
     opacity: 1 !important;
 }
+
 html body.guide-page .guide-start-panel .guide-start-list small {
     color: var(--nx13-text-2) !important;
 }
-html body.guide-page .guide-start-list > li > span,
+
+html body.guide-page .guide-start-list>li>span,
 html body.guide-page .guide-section-number,
 html body.guide-page .guide-step-index,
 html body.guide-page .guide-process-label {
@@ -422,15 +447,18 @@ html body.guide-page .guide-process-label {
     background: #f5faff !important;
     border-color: #a8cdea !important;
 }
+
 html body.guide-page .guide-anchor-nav {
     color: var(--nx13-text) !important;
     background: #f5f9fc !important;
     border-color: var(--nx13-border) !important;
 }
+
 html body.guide-page .guide-anchor-nav a {
     color: var(--nx13-text-2) !important;
     background: transparent !important;
 }
+
 html body.guide-page .guide-kicker,
 html body.guide-page .guide-section-eyebrow {
     color: #a56f2f !important;
@@ -440,33 +468,41 @@ html body.guide-page .guide-section-eyebrow {
 html body.policy-masterise {
     background: linear-gradient(135deg, #edf3f7, #e4edf3) !important;
 }
+
 html body.policy-masterise .nexus-splash {
     color: var(--nx13-text) !important;
     background: linear-gradient(145deg, #edf6fc, #dcecf7) !important;
 }
+
 html body.policy-masterise .nexus-splash::before,
 html body.policy-masterise .nexus-splash::after {
     border-color: rgba(73, 139, 190, .24) !important;
 }
+
 html body.policy-masterise .splash-word {
     color: var(--nx13-text) !important;
 }
+
 html body.policy-masterise .splash-caption {
     color: var(--nx13-text-2) !important;
 }
+
 html body.policy-masterise .splash-line {
     background: #7fb7de !important;
 }
+
 html body.policy-masterise .policy-shell,
 html body.policy-masterise .policy-document {
     color: var(--nx13-text) !important;
     background: var(--nx13-panel) !important;
     border-color: var(--nx13-border) !important;
 }
+
 html body.policy-masterise .policy-story {
     color: var(--nx13-text) !important;
     background: linear-gradient(160deg, #e7f3fc, #d8ebf8) !important;
 }
+
 html body.policy-masterise .policy-story *,
 html body.policy-masterise .policy-brand strong,
 html body.policy-masterise .policy-brand span,
@@ -477,35 +513,42 @@ html body.policy-masterise .policy-version {
     color: var(--nx13-text) !important;
     opacity: 1 !important;
 }
+
 html body.policy-masterise .policy-brand span,
 html body.policy-masterise .policy-lead,
 html body.policy-masterise .policy-version {
     color: var(--nx13-text-2) !important;
 }
+
 html body.policy-masterise .policy-eyebrow,
 html body.policy-masterise .eyebrow {
     color: #9b6a2c !important;
 }
+
 html body.policy-masterise .policy-head,
 html body.policy-masterise .policy-actions {
     color: var(--nx13-text) !important;
     background: #eaf2f7 !important;
     border-color: var(--nx13-border) !important;
 }
+
 html body.policy-masterise .policy-confirm,
 html body.policy-masterise .policy-warning {
     color: var(--nx13-text) !important;
     background: #f6f9fb !important;
     border-color: var(--nx13-border) !important;
 }
+
 html body.policy-masterise .policy-number {
     color: var(--nx13-blue-text) !important;
     background: var(--nx13-blue-soft) !important;
     border-color: #a4cae9 !important;
 }
+
 html body.policy-masterise .policy-section h3 {
     color: var(--nx13-text) !important;
 }
+
 html body.policy-masterise .policy-section p {
     color: var(--nx13-text-2) !important;
 }
@@ -526,6 +569,7 @@ html body .group-copy-member-wrap {
     background: #f9fbfc !important;
     border-color: var(--nx13-border) !important;
 }
+
 html body thead,
 html body thead tr,
 html body th,
@@ -534,17 +578,29 @@ html body .schedmon-table-head {
     background: #dcecf8 !important;
     border-color: #b9d1e1 !important;
 }
+
 html body thead *,
 html body th * {
     color: var(--nx13-blue-text) !important;
 }
+
 html body td {
     color: var(--nx13-text-2) !important;
     border-color: #dbe4ea !important;
 }
-html body tbody tr { background: #fbfcfd !important; }
-html body tbody tr:nth-child(even) { background: #f1f6f9 !important; }
-html body tbody tr:hover { background: #e0eff9 !important; }
+
+html body tbody tr {
+    background: #fbfcfd !important;
+}
+
+html body tbody tr:nth-child(even) {
+    background: #f1f6f9 !important;
+}
+
+html body tbody tr:hover {
+    background: #e0eff9 !important;
+}
+
 html body tbody tr.selected,
 html body tbody tr.is-selected {
     background: #d8ebf8 !important;
@@ -561,6 +617,7 @@ html body .group-copy-modal {
     background: rgba(93, 111, 125, .28) !important;
     backdrop-filter: blur(7px) saturate(108%) !important;
 }
+
 html body .overlay-card,
 html body .nexus-update-modal,
 html body .log-drawer,
@@ -571,6 +628,7 @@ html body .groups-modal-card {
     border-color: var(--nx13-border) !important;
     box-shadow: 0 28px 70px rgba(55, 85, 107, .18) !important;
 }
+
 html body .overlay-header,
 html body .overlay-footer,
 html body .gc-create-head,
@@ -582,6 +640,7 @@ html body .groups-modal-head {
     background: #eaf3f9 !important;
     border-color: var(--nx13-border) !important;
 }
+
 html body .overlay-body,
 html body .gc-create-body,
 html body .group-copy-detail-body,
@@ -590,6 +649,7 @@ html body .groups-modal-body {
     color: var(--nx13-text) !important;
     background: #f8fbfd !important;
 }
+
 html body .overlay-name,
 html body .overlay-title,
 html body .pf-user-name,
@@ -598,6 +658,7 @@ html body .nexus-update-head h3,
 html body .groups-modal-head strong {
     color: var(--nx13-text) !important;
 }
+
 html body .overlay-uid,
 html body .overlay-label,
 html body .pf-user-uid,
@@ -622,6 +683,7 @@ html body .status-chip {
     background: var(--nx13-blue-soft) !important;
     border-color: #afd0ea !important;
 }
+
 html body .status-badge.success,
 html body .status-badge.done,
 html body .account-card-status.ok,
@@ -632,6 +694,7 @@ html body .schedule-status-badge.done {
     background: var(--nx13-green-soft) !important;
     border-color: #a9d5bd !important;
 }
+
 html body .status-badge.error,
 html body .status-badge.failed,
 html body .dashboard-status-pill.danger,
@@ -640,6 +703,7 @@ html body .schedule-status-badge.failed {
     background: var(--nx13-red-soft) !important;
     border-color: #e4b6bf !important;
 }
+
 html body .status-badge.pending,
 html body .status-badge.warning,
 html body .account-card-status.wait,
@@ -662,10 +726,12 @@ html body .nexus-update-toast {
     left: auto !important;
     z-index: 10020 !important;
 }
+
 html body .notification-overlay {
     background: transparent !important;
     backdrop-filter: none !important;
 }
+
 html body .member-toast,
 html body .groups-toast,
 html body .notification-card,
@@ -675,30 +741,47 @@ html body .nexus-update-toast {
     border: 1px solid var(--nx13-border) !important;
     box-shadow: 0 16px 42px rgba(53, 83, 105, .18) !important;
 }
+
 html body .member-toast *,
 html body .groups-toast *,
 html body .notification-card *,
 html body .nexus-update-toast * {
     color: var(--nx13-text) !important;
 }
+
 html body .notification-message {
     color: var(--nx13-text-2) !important;
 }
-html body .member-toast.success { border-left: 5px solid #67b78b !important; }
-html body .member-toast.error { border-left: 5px solid #d97782 !important; }
+
+html body .member-toast.success {
+    border-left: 5px solid #67b78b !important;
+}
+
+html body .member-toast.error {
+    border-left: 5px solid #d97782 !important;
+}
+
 html body .member-toast.warning,
-html body .member-toast.warn { border-left: 5px solid #d6a14f !important; }
-html body .member-toast.info { border-left: 5px solid var(--nx13-blue) !important; }
+html body .member-toast.warn {
+    border-left: 5px solid #d6a14f !important;
+}
+
+html body .member-toast.info {
+    border-left: 5px solid var(--nx13-blue) !important;
+}
 
 @media (max-width: 980px) {
-    html body:not(.policy-masterise) > .page,
-    html body:not(.policy-masterise) > main.page,
+
+    html body:not(.policy-masterise)>.page,
+    html body:not(.policy-masterise)>main.page,
     html body:not(.policy-masterise) .page.guide-shell {
         width: 100% !important;
         margin-left: 0 !important;
     }
 }
+
 @media (max-width: 700px) {
+
     html body .member-toast-stack,
     html body .groups-toast,
     html body .notification-overlay,
@@ -828,8 +911,8 @@ html body .header.app-sidebar {
     background: #f7fafc !important;
 }
 
-html body .app-sidebar .header-nav > a,
-html body .header.app-sidebar .header-nav > a,
+html body .app-sidebar .header-nav>a,
+html body .header.app-sidebar .header-nav>a,
 html body .sidebar-mini-link,
 html body .sidebar-policy-link {
     color: var(--nx14-text) !important;
@@ -837,43 +920,43 @@ html body .sidebar-policy-link {
     border-color: #d3dde4 !important;
 }
 
-html body .app-sidebar .header-nav > a .nav-copy strong,
-html body .header.app-sidebar .header-nav > a .nav-copy strong,
+html body .app-sidebar .header-nav>a .nav-copy strong,
+html body .header.app-sidebar .header-nav>a .nav-copy strong,
 html body .sidebar-mini-link strong,
 html body .sidebar-policy-link strong {
     color: var(--nx14-black) !important;
     font-weight: 800 !important;
 }
 
-html body .app-sidebar .header-nav > a .nav-copy small,
-html body .header.app-sidebar .header-nav > a .nav-copy small,
+html body .app-sidebar .header-nav>a .nav-copy small,
+html body .header.app-sidebar .header-nav>a .nav-copy small,
 html body .sidebar-mini-link small,
 html body .sidebar-policy-link small {
     color: #34485a !important;
     font-weight: 600 !important;
 }
 
-html body .app-sidebar .header-nav > a .nav-icon,
-html body .header.app-sidebar .header-nav > a .nav-icon,
-html body .sidebar-mini-link > span,
-html body .sidebar-policy-link > span {
+html body .app-sidebar .header-nav>a .nav-icon,
+html body .header.app-sidebar .header-nav>a .nav-icon,
+html body .sidebar-mini-link>span,
+html body .sidebar-policy-link>span {
     color: #174d71 !important;
     background: #eef4f8 !important;
     border-color: #afc2cf !important;
 }
 
-html body .app-sidebar .header-nav > a svg,
-html body .header.app-sidebar .header-nav > a svg,
+html body .app-sidebar .header-nav>a svg,
+html body .header.app-sidebar .header-nav>a svg,
 html body .sidebar-mini-link svg,
 html body .sidebar-policy-link svg {
     color: #174d71 !important;
     stroke: #174d71 !important;
 }
 
-html body .app-sidebar .header-nav > a.active,
-html body .header.app-sidebar .header-nav > a.active,
-html body .app-sidebar .header-nav > a[aria-current="page"],
-html body .header.app-sidebar .header-nav > a[aria-current="page"],
+html body .app-sidebar .header-nav>a.active,
+html body .header.app-sidebar .header-nav>a.active,
+html body .app-sidebar .header-nav>a[aria-current="page"],
+html body .header.app-sidebar .header-nav>a[aria-current="page"],
 html body .sidebar-mini-link.active {
     color: #ffffff !important;
     background: var(--nx14-blue) !important;
@@ -881,36 +964,36 @@ html body .sidebar-mini-link.active {
     box-shadow: inset 4px 0 0 #0f4e78 !important;
 }
 
-html body .app-sidebar .header-nav > a.active *,
-html body .header.app-sidebar .header-nav > a.active *,
-html body .app-sidebar .header-nav > a[aria-current="page"] *,
-html body .header.app-sidebar .header-nav > a[aria-current="page"] *,
+html body .app-sidebar .header-nav>a.active *,
+html body .header.app-sidebar .header-nav>a.active *,
+html body .app-sidebar .header-nav>a[aria-current="page"] *,
+html body .header.app-sidebar .header-nav>a[aria-current="page"] *,
 html body .sidebar-mini-link.active * {
     color: #ffffff !important;
     opacity: 1 !important;
 }
 
-html body .app-sidebar .header-nav > a.active .nav-icon,
-html body .header.app-sidebar .header-nav > a.active .nav-icon,
-html body .app-sidebar .header-nav > a[aria-current="page"] .nav-icon,
-html body .header.app-sidebar .header-nav > a[aria-current="page"] .nav-icon,
-html body .sidebar-mini-link.active > span {
+html body .app-sidebar .header-nav>a.active .nav-icon,
+html body .header.app-sidebar .header-nav>a.active .nav-icon,
+html body .app-sidebar .header-nav>a[aria-current="page"] .nav-icon,
+html body .header.app-sidebar .header-nav>a[aria-current="page"] .nav-icon,
+html body .sidebar-mini-link.active>span {
     color: #ffffff !important;
-    background: rgba(255,255,255,.14) !important;
-    border-color: rgba(255,255,255,.46) !important;
+    background: rgba(255, 255, 255, .14) !important;
+    border-color: rgba(255, 255, 255, .46) !important;
 }
 
-html body .app-sidebar .header-nav > a.active svg,
-html body .header.app-sidebar .header-nav > a.active svg,
-html body .app-sidebar .header-nav > a[aria-current="page"] svg,
-html body .header.app-sidebar .header-nav > a[aria-current="page"] svg,
+html body .app-sidebar .header-nav>a.active svg,
+html body .header.app-sidebar .header-nav>a.active svg,
+html body .app-sidebar .header-nav>a[aria-current="page"] svg,
+html body .header.app-sidebar .header-nav>a[aria-current="page"] svg,
 html body .sidebar-mini-link.active svg {
     color: #ffffff !important;
     stroke: #ffffff !important;
 }
 
-html body .app-sidebar .header-nav > a:hover,
-html body .header.app-sidebar .header-nav > a:hover,
+html body .app-sidebar .header-nav>a:hover,
+html body .header.app-sidebar .header-nav>a:hover,
 html body .sidebar-mini-link:hover,
 html body .sidebar-policy-link:hover {
     color: #ffffff !important;
@@ -918,26 +1001,26 @@ html body .sidebar-policy-link:hover {
     border-color: var(--nx14-blue-hover) !important;
 }
 
-html body .app-sidebar .header-nav > a:hover *,
-html body .header.app-sidebar .header-nav > a:hover *,
+html body .app-sidebar .header-nav>a:hover *,
+html body .header.app-sidebar .header-nav>a:hover *,
 html body .sidebar-mini-link:hover *,
 html body .sidebar-policy-link:hover * {
     color: #ffffff !important;
 }
 
 /* Prevent the icon from becoming a white square on hover. */
-html body .app-sidebar .header-nav > a:hover .nav-icon,
-html body .header.app-sidebar .header-nav > a:hover .nav-icon,
-html body .sidebar-mini-link:hover > span,
-html body .sidebar-policy-link:hover > span {
+html body .app-sidebar .header-nav>a:hover .nav-icon,
+html body .header.app-sidebar .header-nav>a:hover .nav-icon,
+html body .sidebar-mini-link:hover>span,
+html body .sidebar-policy-link:hover>span {
     color: #ffffff !important;
-    background: rgba(255,255,255,.14) !important;
-    border-color: rgba(255,255,255,.48) !important;
+    background: rgba(255, 255, 255, .14) !important;
+    border-color: rgba(255, 255, 255, .48) !important;
     box-shadow: none !important;
 }
 
-html body .app-sidebar .header-nav > a:hover svg,
-html body .header.app-sidebar .header-nav > a:hover svg,
+html body .app-sidebar .header-nav>a:hover svg,
+html body .header.app-sidebar .header-nav>a:hover svg,
 html body .sidebar-mini-link:hover svg,
 html body .sidebar-policy-link:hover svg {
     color: #ffffff !important;
@@ -1042,8 +1125,8 @@ html body button:not(:disabled):hover .btn-icon,
 html body .btn:not(:disabled):hover .btn-icon,
 html body [role="button"]:not([aria-disabled="true"]):hover .nav-icon {
     color: #ffffff !important;
-    background: rgba(255,255,255,.14) !important;
-    border-color: rgba(255,255,255,.45) !important;
+    background: rgba(255, 255, 255, .14) !important;
+    border-color: rgba(255, 255, 255, .45) !important;
 }
 
 /* Selected tabs and filter buttons are unmistakably blue with white copy. */
@@ -1137,9 +1220,18 @@ html body .group-copy-member-table td {
     font-weight: 700 !important;
 }
 
-html body tbody tr { background: #ffffff !important; }
-html body tbody tr:nth-child(even) { background: #f2f6f8 !important; }
-html body tbody tr:hover { background: #dcebf5 !important; }
+html body tbody tr {
+    background: #ffffff !important;
+}
+
+html body tbody tr:nth-child(even) {
+    background: #f2f6f8 !important;
+}
+
+html body tbody tr:hover {
+    background: #dcebf5 !important;
+}
+
 html body tbody tr.selected,
 html body tbody tr.is-selected {
     color: var(--nx14-black) !important;
@@ -1172,13 +1264,15 @@ html body .schedule-list strong {
     font-weight: 800 !important;
 }
 
-/* Re-apply button/status colors inside pages after the broad black data rule. */
-html body .account-card button:not(:disabled),
-html body .account-card .btn:not(:disabled),
-html body .schedmon-all-card button:not(:disabled),
-html body .schedmon-all-card .btn:not(:disabled),
-html body .schedmon-panel button:not(:disabled),
-html body .schedule-list button:not(:disabled) {
+/* Re-apply button/status colors inside pages after the broad black data rule.
+   Không ghi đè các nút có màu riêng (primary/info/success/warning/danger...)
+   để tránh trường hợp nền bị ép trắng trong khi chữ vẫn trắng. */
+html body .account-card button:not(:disabled):not(.btn-primary):not(.btn-info):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-icon-danger):not(.gc-run-btn):not(.policy-button):not(.sendbtn),
+html body .account-card .btn:not(:disabled):not(.btn-primary):not(.btn-info):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-icon-danger):not(.gc-run-btn):not(.policy-button):not(.sendbtn),
+html body .schedmon-all-card button:not(:disabled):not(.btn-primary):not(.btn-info):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-icon-danger):not(.gc-run-btn):not(.policy-button):not(.sendbtn),
+html body .schedmon-all-card .btn:not(:disabled):not(.btn-primary):not(.btn-info):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-icon-danger):not(.gc-run-btn):not(.policy-button):not(.sendbtn),
+html body .schedmon-panel button:not(:disabled):not(.btn-primary):not(.btn-info):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-icon-danger):not(.gc-run-btn):not(.policy-button):not(.sendbtn),
+html body .schedule-list button:not(:disabled):not(.btn-primary):not(.btn-info):not(.btn-success):not(.btn-warning):not(.btn-danger):not(.btn-icon-danger):not(.gc-run-btn):not(.policy-button):not(.sendbtn) {
     color: var(--nx14-black) !important;
     background: #ffffff !important;
 }
@@ -1204,15 +1298,64 @@ html body.policy-masterise .policy-shell {
     border-color: var(--nx14-border) !important;
 }
 
-html body.guide-page .guide-hero-main *,
-html body.guide-page .guide-start-panel *,
-html body.policy-masterise .policy-story *,
-html body.policy-masterise .policy-document * {
+/* Rule "*{color:đen}" ép chữ tối cho mọi phần tử con, kể cả nút nền xanh →
+   chữ trắng của nút bị ghi đè, thành chữ chìm/nền trắng không đọc được.
+   Loại trừ các nút nền đậm (btn-primary, policy-button) ra khỏi rule này. */
+html body.guide-page .guide-hero-main *:not(.btn-primary):not(.policy-button),
+html body.guide-page .guide-start-panel *:not(.btn-primary):not(.policy-button),
+html body.policy-masterise .policy-story *:not(.btn-primary):not(.policy-button),
+html body.policy-masterise .policy-document *:not(.btn-primary):not(.policy-button) {
     color: var(--nx14-black) !important;
     opacity: 1 !important;
 }
 
-html body.guide-page .guide-start-list > li > span,
+/* Nền xanh đậm: chữ bắt buộc trắng. Rule "*{color:đen}" ở trên sẽ ghi đè màu chữ
+   của các nút nền xanh, làm chữ chìm vào nền — phải đặt lại thành trắng.
+   Chỉ áp cho .btn-primary (nền xanh); nút .btn-secondary nền trắng phải giữ chữ tối. */
+html body.guide-page .guide-hero-main .btn-primary,
+html body.guide-page .guide-hero-main button.btn-primary,
+html body.guide-page .guide-start-panel .btn-primary,
+html body.guide-page .guide-start-panel button.btn-primary,
+html body.guide-page .btn-primary,
+html body.guide-page button.btn-primary,
+html body.guide-page a.btn-primary,
+html body.guide-page .guide-hero-actions a.btn-primary,
+html body.guide-page .guide-start-panel a.btn-primary,
+html body.policy-masterise .btn-primary,
+html body.policy-masterise button.btn-primary,
+html body.policy-masterise a.btn-primary,
+html body.policy-masterise .policy-story a.btn-primary,
+html body.policy-masterise .policy-document a.btn-primary,
+html body.policy-masterise .policy-button {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    text-shadow: none !important;
+}
+
+html body .policy-button {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    text-shadow: none !important;
+}
+
+/* Nút nền trắng/nút phụ trong vùng sáng: chữ phải tối để đọc được. */
+html body.guide-page .guide-hero-main .btn-secondary,
+html body.guide-page .guide-start-panel .btn-secondary,
+html body.guide-page .btn-secondary,
+html body.guide-page button.btn-secondary,
+html body.guide-page a.btn-secondary,
+html body.guide-page .guide-hero-actions a.btn-secondary,
+html body.guide-page .guide-start-panel a.btn-secondary,
+html body.policy-masterise .btn-secondary,
+html body.policy-masterise button.btn-secondary,
+html body.policy-masterise a.btn-secondary,
+html body.policy-masterise .policy-story a.btn-secondary,
+html body.policy-masterise .policy-document a.btn-secondary {
+    color: #0f2f4a !important;
+    -webkit-text-fill-color: #0f2f4a !important;
+}
+
+html body.guide-page .guide-start-list>li>span,
 html body.guide-page .guide-section-number,
 html body.guide-page .guide-step-index,
 html body.guide-page .guide-process-label,
@@ -1413,6 +1556,7 @@ html body.schedmon-page .schedmon-quick-btn:not(:disabled):focus-visible svg {
 main.page {
     transition: opacity .16s ease, transform .16s ease, filter .16s ease !important;
 }
+
 body.nexus-workspace-loading main.page {
     opacity: .55 !important;
     filter: saturate(.82) !important;
@@ -1441,17 +1585,20 @@ body.nexus-workspace-loading main.page {
     transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
     pointer-events: none;
 }
+
 .nexus-workspace-loader.is-visible {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
 }
+
 .nexus-workspace-loader strong {
     color: #14344d !important;
     font-size: 12px;
     font-weight: 800;
     white-space: nowrap;
 }
+
 .nexus-workspace-loader-spinner {
     width: 17px;
     height: 17px;
@@ -1460,8 +1607,887 @@ body.nexus-workspace-loading main.page {
     border-radius: 50%;
     animation: nexusWorkspaceSpin .72s linear infinite;
 }
-@keyframes nexusWorkspaceSpin { to { transform: rotate(360deg); } }
+
+@keyframes nexusWorkspaceSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
 
 @media (max-width: 900px) {
-    .nexus-workspace-loader { top: 76px; right: 12px; }
+    .nexus-workspace-loader {
+        top: 76px;
+        right: 12px;
+    }
+}
+
+/* ==========================================================================
+   V16 — Đọc dễ hơn: cỡ chữ sidebar lớn hơn + hover/active luôn nổi lên.
+   Vấn đề gốc: các rule tĩnh như `html body .app-sidebar ... .nav-copy small`
+   có specificity CAO hơn rule `:hover`, nên chữ không đổi màu khi rê chuột
+   và trở nên gần trùng nền. Ở đây dùng selector `:hover` có độ ưu tiên tương
+   đương (thêm `html body` + pseudo-class) để ghi đè chắc chắn.
+   ========================================================================== */
+
+/* --- 1. Cỡ chữ sidebar lớn hơn --- */
+html body .app-sidebar .brand-copy h1,
+html body .header.app-sidebar .brand-copy h1 {
+    font-size: 19px !important;
+}
+
+html body .app-sidebar .brand-subtitle,
+html body .header.app-sidebar .brand-subtitle {
+    font-size: 11px !important;
+    color: #43566c !important;
+    font-weight: 600 !important;
+}
+
+html body .app-sidebar .nav-section-label,
+html body .header.app-sidebar .nav-section-label {
+    font-size: 11px !important;
+    color: #4a5c72 !important;
+    font-weight: 800 !important;
+    letter-spacing: .1em !important;
+}
+
+html body .app-sidebar .header-nav>a .nav-copy strong,
+html body .header.app-sidebar .header-nav>a .nav-copy strong {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    line-height: 1.3 !important;
+}
+
+html body .app-sidebar .header-nav>a .nav-copy small,
+html body .header.app-sidebar .header-nav>a .nav-copy small {
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+}
+
+html body .sidebar-mini-link strong,
+html body .sidebar-policy-link strong {
+    font-size: 12.5px !important;
+    font-weight: 800 !important;
+}
+
+html body .sidebar-mini-link small,
+html body .sidebar-policy-link small {
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    color: #3c4f66 !important;
+}
+
+/* Nhóm link phụ 2 cột trong sidebar: chữ nhỏ nhất cũng phải đọc được */
+html body .sidebar-support-links .sidebar-mini-link strong {
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+}
+
+html body .sidebar-support-links .sidebar-mini-link small {
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+    color: #3c4f66 !important;
+}
+
+html body .sidebar-footer {
+    font-size: 10px !important;
+    color: #45596f !important;
+    font-weight: 600 !important;
+}
+
+html body .nav-beta-tag {
+    font-size: 9.5px !important;
+    font-weight: 800 !important;
+}
+
+/* --- 2. Badge "Beta"/"Mới": chữ đậm trên nền nhạt, không trùng màu --- */
+html body .app-sidebar .nav-beta-tag,
+html body .header.app-sidebar .nav-beta-tag {
+    color: #7a4a00 !important;
+    background: #ffe4ad !important;
+    border-color: #d9a53c !important;
+}
+
+/* --- 3. Hover/active sidebar: nền xanh đậm + chữ TRẮNG nổi bật ---
+   Dùng `html body` + `:hover` để specificity >= rule tĩnh. */
+html body .app-sidebar .header-nav>a:hover,
+html body .header.app-sidebar .header-nav>a:hover,
+html body .sidebar-mini-link:hover,
+html body .sidebar-policy-link:hover {
+    background: #175b8a !important;
+    border-color: #175b8a !important;
+}
+
+html body .app-sidebar .header-nav>a:hover .nav-copy strong,
+html body .header.app-sidebar .header-nav>a:hover .nav-copy strong,
+html body .app-sidebar .header-nav>a:hover .nav-copy small,
+html body .header.app-sidebar .header-nav>a:hover .nav-copy small,
+html body .app-sidebar .header-nav>a:focus-visible .nav-copy strong,
+html body .app-sidebar .header-nav>a:focus-visible .nav-copy small,
+html body .sidebar-mini-link:hover strong,
+html body .sidebar-mini-link:hover small,
+html body .sidebar-policy-link:hover strong,
+html body .sidebar-policy-link:hover small {
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+
+html body .app-sidebar .header-nav>a:hover .nav-beta-tag,
+html body .header.app-sidebar .header-nav>a:hover .nav-beta-tag {
+    color: #3d2900 !important;
+    background: #ffd97a !important;
+    border-color: #ffd97a !important;
+}
+
+/* Active (trang hiện tại): nền xanh + chữ trắng.
+   Selector phải có specificity CAO hơn rule tĩnh `... a .nav-copy strong`
+   (0,3,4) — vì vậy thêm class `.active` để thành (0,4,4). */
+html body .app-sidebar .header-nav>a.active .nav-copy strong,
+html body .header.app-sidebar .header-nav>a.active .nav-copy strong,
+html body .app-sidebar .header-nav>a[aria-current="page"] .nav-copy strong,
+html body .header.app-sidebar .header-nav>a[aria-current="page"] .nav-copy strong {
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+
+html body .app-sidebar .header-nav>a.active .nav-copy small,
+html body .header.app-sidebar .header-nav>a.active .nav-copy small,
+html body .app-sidebar .header-nav>a[aria-current="page"] .nav-copy small,
+html body .header.app-sidebar .header-nav>a[aria-current="page"] .nav-copy small {
+    color: #e8f2fb !important;
+    opacity: 1 !important;
+}
+
+html body .app-sidebar .header-nav>a.active .nav-beta-tag,
+html body .header.app-sidebar .header-nav>a.active .nav-beta-tag,
+html body .app-sidebar .header-nav>a[aria-current="page"] .nav-beta-tag,
+html body .header.app-sidebar .header-nav>a[aria-current="page"] .nav-beta-tag {
+    color: #3d2900 !important;
+    background: #ffd97a !important;
+    border-color: #ffd97a !important;
+}
+
+/* --- 4. Phiên bản / ghi chú sidebar: đủ tương phản ---
+   Dùng ID vì `#nexusUpdateVersion` có specificity cao hơn class. */
+html body .nexus-update-version,
+html body #nexusUpdateVersion {
+    font-size: 10.5px !important;
+    color: #43566c !important;
+    font-weight: 600 !important;
+}
+
+html body #nexusUpdateHint {
+    font-size: 11.5px !important;
+    color: #16273a !important;
+    font-weight: 700 !important;
+}
+
+/* Nút "Kiểm tra phiên bản" trong sidebar */
+html body .sidebar-updater #nexusUpdateBtn {
+    font-size: 12px !important;
+    font-weight: 800 !important;
+}
+
+/* Nhãn thống kê nhỏ: 8px quá nhỏ, nâng lên 11px */
+html body .acc-stat span,
+html body .dash-stat span,
+html body .gc-stat span {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: .03em !important;
+    color: #3c4f66 !important;
+}
+
+html body .acc-stat strong,
+html body .dash-stat strong,
+html body .gc-stat strong {
+    font-size: 16px !important;
+}
+
+/* Dòng "Kiểm tra phiên bản" trong sidebar: 9px quá nhỏ */
+html body .nexus-update-label-row strong,
+html body #nexusUpdateHint {
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    color: #16273a !important;
+}
+
+/* --- 5. Nút bị vô hiệu hoá: vẫn phải đọc được ---
+   `button:disabled { opacity: .58 }` làm chữ nhạt gần trùng nền.
+   Selector cố tình đủ mạnh (0,3,2) để thắng các rule `.btn-primary`
+   có `!important` đặt chữ trắng/nền trong suốt. */
+html body button:disabled,
+html body .btn:disabled,
+html body [aria-disabled="true"],
+html body button.btn-primary:disabled,
+html body .btn.btn-primary:disabled,
+html body button.btn-secondary:disabled,
+html body .btn.btn-secondary:disabled,
+html body .btn.btn-info:disabled,
+html body .policy-button:disabled {
+    opacity: 1 !important;
+    color: #4a5c72 !important;
+    background: #e7edf2 !important;
+    background-color: #e7edf2 !important;
+    background-image: none !important;
+    border-color: #b6c3cd !important;
+    font-weight: 700 !important;
+    -webkit-text-fill-color: #4a5c72 !important;
+    box-shadow: none !important;
+    filter: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   V15-FINAL: chữ trắng trên mọi nền xanh.
+   Rule generic "html body button:not(:disabled)" (0,2,1) đứng sau các rule
+   nền xanh nên vẫn ghi đè màu chữ/nền. Ở đây ép đồng thời cả nền xanh lẫn
+   chữ trắng để không bao giờ xảy ra nút trắng chữ trắng. */
+html body .btn-primary:not(:disabled),
+html body button.btn-primary:not(:disabled),
+html body a.btn-primary:not(:disabled),
+html body .btn-info:not(:disabled),
+html body button.btn-info:not(:disabled),
+html body a.btn-info:not(:disabled),
+html body .policy-button:not(:disabled),
+html body .gc-run-btn:not(:disabled),
+html body .nexus-update-toast-btn:not(:disabled),
+html body .sendbtn:not(:disabled),
+html body .nexus-update-actions .btn-primary:not(:disabled) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: var(--nx14-blue) !important;
+    background-color: var(--nx14-blue) !important;
+    background-image: none !important;
+    border-color: var(--nx14-blue) !important;
+    text-shadow: none !important;
+}
+
+html body .btn-primary:not(:disabled):hover,
+html body button.btn-primary:not(:disabled):hover,
+html body a.btn-primary:not(:disabled):hover,
+html body .btn-info:not(:disabled):hover,
+html body button.btn-info:not(:disabled):hover,
+html body a.btn-info:not(:disabled):hover,
+html body .policy-button:not(:disabled):hover,
+html body .gc-run-btn:not(:disabled):hover,
+html body .sendbtn:not(:disabled):hover,
+html body .nexus-update-actions .btn-primary:not(:disabled):hover {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: var(--nx14-blue-hover) !important;
+    background-color: var(--nx14-blue-hover) !important;
+    border-color: var(--nx14-blue-hover) !important;
+}
+
+/* Nút nền trắng (secondary/ghost) trong vùng sáng: chữ phải tối (trừ khi hover sang nền xanh). */
+html body .btn-secondary:not(:disabled):not(:hover),
+html body button.btn-secondary:not(:disabled):not(:hover),
+html body a.btn-secondary:not(:disabled):not(:hover),
+html body .btn-ghost:not(:disabled):not(:hover),
+html body button.btn-ghost:not(:disabled):not(:hover) {
+    color: #0f2f4a !important;
+    -webkit-text-fill-color: #0f2f4a !important;
+}
+
+/* Nút toast cập nhật: nền phải xanh đậm để chữ trắng đọc được
+   (rule generic đã ép nền trắng cho mọi button). */
+html body button.nexus-update-toast-btn:not(:disabled),
+html body .nexus-update-toast-btn:not(:disabled) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: #1d5f8c !important;
+    background-color: #1d5f8c !important;
+    background-image: none !important;
+    border-color: #17496c !important;
+}
+
+/* Nút nền xanh mà các rule khác có thể ép lại màu chữ tối. */
+html body .guide-hero-actions .btn-primary:not(:disabled),
+html body .guide-start-panel .btn-primary:not(:disabled),
+html body .guide-hero-main .btn-primary:not(:disabled),
+html body .guide-page .btn-primary:not(:disabled),
+html body .policy-masterise .policy-document .btn-primary:not(:disabled),
+html body .policy-masterise .policy-story .btn-primary:not(:disabled) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+/* ========================================================
+   MODERN FLAT SIDEBAR REDESIGN (SaaS Standard / Clean / Elegant)
+   ======================================================== */
+html body .app-sidebar.header,
+html body .header.app-sidebar {
+    width: 236px !important;
+    min-width: 236px !important;
+    max-width: 236px !important;
+    background: #ffffff !important;
+    border-right: 1px solid #e9eef3 !important;
+    box-shadow: 1px 0 8px rgba(15, 23, 42, 0.03) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Header & Brand */
+html body .app-sidebar .header-content,
+html body .header.app-sidebar .header-content {
+    padding: 16px 14px 12px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    margin: 0 !important;
+}
+
+html body .header-content .brand,
+html body .app-sidebar .brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    min-height: auto !important;
+    text-decoration: none !important;
+}
+
+html body .brand-logo {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 9px !important;
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+    border: none !important;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+html body .brand-logo img {
+    width: 22px !important;
+    height: 22px !important;
+}
+
+html body .brand-copy {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+html body .brand-copy h1,
+html body .header-content .brand h1 {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.02em !important;
+}
+
+html body .brand-subtitle {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #64748b !important;
+    margin: 1px 0 0 !important;
+}
+
+/* Nav scroll area */
+html body .app-sidebar .header-nav,
+html body .header.app-sidebar .header-nav {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    padding: 10px 10px !important;
+    gap: 2px !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+html body .app-sidebar .header-nav::-webkit-scrollbar,
+html body .header.app-sidebar .header-nav::-webkit-scrollbar {
+    display: none !important;
+}
+
+/* Section labels */
+html body .app-sidebar .nav-section-label,
+html body .header.app-sidebar .nav-section-label {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    color: #94a3b8 !important;
+    margin: 14px 8px 4px !important;
+    padding: 0 !important;
+}
+
+html body .app-sidebar .nav-section-label:first-child,
+html body .header.app-sidebar .nav-section-label:first-child {
+    margin-top: 2px !important;
+}
+
+/* Modern Menu Items */
+html body .app-sidebar .header-nav > a,
+html body .header.app-sidebar .header-nav > a {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 0 10px !important;
+    min-height: 38px !important;
+    height: 38px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    background: transparent !important;
+    color: #334155 !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    margin: 1px 0 !important;
+    transition: background 0.15s ease, color 0.15s ease !important;
+    transform: none !important;
+}
+
+html body .app-sidebar .header-nav > a::before,
+html body .header.app-sidebar .header-nav > a::before,
+html body .app-sidebar .header-nav > a::after,
+html body .header.app-sidebar .header-nav > a::after,
+html body .app-sidebar .nexus-ripple {
+    display: none !important;
+    content: none !important;
+}
+
+html body .app-sidebar .header-nav > a > span {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+html body .app-sidebar .header-nav > .nav-temp-hidden,
+html body .header.app-sidebar .header-nav > .nav-temp-hidden {
+    display: none !important;
+}
+
+/* Icons */
+html body .app-sidebar .header-nav > a .nav-icon,
+html body .header.app-sidebar .header-nav > a .nav-icon {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #64748b !important;
+    transition: color 0.15s ease !important;
+    transform: none !important;
+}
+
+html body .app-sidebar .header-nav > a svg,
+html body .header.app-sidebar .header-nav > a svg {
+    width: 17px !important;
+    height: 17px !important;
+    color: currentColor !important;
+    stroke: currentColor !important;
+    stroke-width: 1.8px !important;
+}
+
+/* Labels */
+html body .app-sidebar .header-nav > a .nav-text,
+html body .header.app-sidebar .header-nav > a .nav-text,
+html body .app-sidebar .header-nav > a .nav-copy strong,
+html body .header.app-sidebar .header-nav > a .nav-copy strong {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #334155 !important;
+    letter-spacing: -0.01em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    flex: 1 1 auto !important;
+}
+
+/* Hide legacy subtexts */
+html body .app-sidebar .header-nav > a .nav-copy small,
+html body .header.app-sidebar .header-nav > a .nav-copy small {
+    display: none !important;
+}
+
+/* Badges */
+html body .app-sidebar .nav-badge-pill,
+html body .header.app-sidebar .nav-badge-pill,
+html body .app-sidebar .nav-beta-tag,
+html body .header.app-sidebar .nav-beta-tag {
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    padding: 2px 6px !important;
+    border-radius: 999px !important;
+    background: #e0f2fe !important;
+    color: #0284c7 !important;
+    border: none !important;
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* Hover & Press */
+html body .app-sidebar .header-nav > a:hover,
+html body .header.app-sidebar .header-nav > a:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+html body .app-sidebar .header-nav > a:active:not(.active):not([aria-current="page"]),
+html body .header.app-sidebar .header-nav > a:active:not(.active):not([aria-current="page"]) {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+
+html body .app-sidebar .header-nav > a:hover .nav-icon,
+html body .header.app-sidebar .header-nav > a:hover .nav-icon,
+html body .app-sidebar .header-nav > a:hover svg,
+html body .header.app-sidebar .header-nav > a:hover svg {
+    color: #0284c7 !important;
+    stroke: #0284c7 !important;
+}
+
+html body .app-sidebar .header-nav > a:hover .nav-text,
+html body .header.app-sidebar .header-nav > a:hover .nav-text,
+html body .app-sidebar .header-nav > a:hover strong,
+html body .header.app-sidebar .header-nav > a:hover strong {
+    color: #0f172a !important;
+}
+
+/* Active Menu Item */
+html body .app-sidebar .header-nav > a.active,
+html body .header.app-sidebar .header-nav > a.active,
+html body .app-sidebar .header-nav > a[aria-current="page"],
+html body .header.app-sidebar .header-nav > a[aria-current="page"],
+html body .app-sidebar .header-nav > a.active:hover,
+html body .app-sidebar .header-nav > a.active:active,
+html body .app-sidebar .header-nav > a.active:focus,
+html body .app-sidebar .header-nav > a[aria-current="page"]:hover,
+html body .app-sidebar .header-nav > a[aria-current="page"]:active,
+html body .app-sidebar .header-nav > a[aria-current="page"]:focus {
+    background: #0284c7 !important;
+    background-color: #0284c7 !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 3px 10px rgba(2, 132, 199, 0.28) !important;
+}
+
+html body .app-sidebar .header-nav > a.active .nav-icon,
+html body .header.app-sidebar .header-nav > a.active .nav-icon,
+html body .app-sidebar .header-nav > a[aria-current="page"] .nav-icon,
+html body .header.app-sidebar .header-nav > a[aria-current="page"] .nav-icon,
+html body .app-sidebar .header-nav > a.active svg,
+html body .header.app-sidebar .header-nav > a.active svg,
+html body .app-sidebar .header-nav > a[aria-current="page"] svg,
+html body .header.app-sidebar .header-nav > a[aria-current="page"] svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+html body .app-sidebar .header-nav > a.active .nav-text,
+html body .header.app-sidebar .header-nav > a.active .nav-text,
+html body .app-sidebar .header-nav > a.active strong,
+html body .header.app-sidebar .header-nav > a.active strong,
+html body .app-sidebar .header-nav > a[aria-current="page"] .nav-text,
+html body .header.app-sidebar .header-nav > a[aria-current="page"] strong {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+html body .app-sidebar .header-nav > a.active .nav-badge-pill,
+html body .header.app-sidebar .header-nav > a.active .nav-badge-pill,
+html body .app-sidebar .header-nav > a.active .nav-beta-tag,
+html body .header.app-sidebar .header-nav > a.active .nav-beta-tag {
+    background: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+}
+
+/* Sidebar Footer */
+html body .app-sidebar .sidebar-bottom,
+html body .header.app-sidebar .sidebar-bottom {
+    margin-top: auto !important;
+    padding: 10px 10px 12px !important;
+    border-top: 1px solid #e2e8f0 !important;
+    background: #f8fafc !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+}
+
+html body .sidebar-footer-links {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+}
+
+html body .sidebar-link-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    padding: 7px 3px !important;
+    border-radius: 8px !important;
+    border: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    color: #475569 !important;
+    text-decoration: none !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    line-height: 1.15 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
+}
+
+html body .sidebar-link-item svg {
+    width: 14px !important;
+    height: 14px !important;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 1.85 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+    color: #64748b !important;
+    flex-shrink: 0 !important;
+}
+
+html body .sidebar-link-item:hover {
+    background: #f0f9ff !important;
+    border-color: #bae6fd !important;
+    color: #0284c7 !important;
+}
+
+html body .sidebar-link-item:hover svg {
+    color: #0284c7 !important;
+    stroke: #0284c7 !important;
+}
+
+html body .app-sidebar .sidebar-link-item span {
+    color: inherit !important;
+}
+
+html body .app-sidebar .sidebar-link-item.active,
+html body .app-sidebar .sidebar-link-item.active:hover,
+html body .app-sidebar .sidebar-link-item[aria-current="page"],
+html body .app-sidebar .sidebar-link-item[aria-current="page"]:hover {
+    background: #0284c7 !important;
+    border-color: #0284c7 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25) !important;
+}
+
+html body .app-sidebar .sidebar-link-item.active span,
+html body .app-sidebar .sidebar-link-item[aria-current="page"] span {
+    color: #ffffff !important;
+    background: transparent !important;
+}
+
+html body .app-sidebar .sidebar-link-item.active svg,
+html body .app-sidebar .sidebar-link-item[aria-current="page"] svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+/* Compact update button */
+html body .sidebar-updater.sidebar-updater-button-only {
+    display: block !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+html body .app-sidebar .nexus-update-pill,
+html body button.nexus-update-pill {
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 8px 10px !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 9px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    cursor: pointer !important;
+    text-align: left !important;
+    color: #334155 !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
+}
+
+html body .app-sidebar .nexus-update-pill:hover,
+html body button.nexus-update-pill:hover {
+    border-color: #bae6fd !important;
+    background: #f0f9ff !important;
+    background-color: #f0f9ff !important;
+    color: #0f172a !important;
+}
+
+html body .nexus-update-head-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+}
+
+html body .nexus-update-icon {
+    width: 14px !important;
+    height: 14px !important;
+    color: #0284c7 !important;
+    stroke: #0284c7 !important;
+    fill: none !important;
+    stroke-width: 2 !important;
+    flex-shrink: 0 !important;
+}
+
+html body .app-sidebar .nexus-update-pill:hover *,
+html body button.nexus-update-pill:hover * {
+    color: inherit !important;
+}
+
+html body .app-sidebar .nexus-update-pill:hover .nexus-update-icon,
+html body button.nexus-update-pill:hover .nexus-update-icon {
+    color: #0284c7 !important;
+    stroke: #0284c7 !important;
+}
+
+html body .nexus-update-text {
+    flex: 1 1 auto !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    white-space: nowrap !important;
+}
+
+html body .nexus-update-ver-label {
+    display: block !important;
+    font-size: 10.5px !important;
+    font-weight: 500 !important;
+    line-height: 1.3 !important;
+    color: #64748b !important;
+    background: transparent !important;
+    padding: 0 0 0 20px !important;
+    border-radius: 0 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+}
+
+html body .nexus-update-dot {
+    width: 7px !important;
+    height: 7px !important;
+    border-radius: 999px !important;
+    background: #ef4444 !important;
+    flex-shrink: 0 !important;
+}
+
+html body .sidebar-footer {
+    display: none !important;
+}
+
+/* Schedule search input icon spacing & single clean border */
+html body label.schedmon-search-field,
+html body .schedmon-search-field {
+    position: relative !important;
+    display: block !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+html body label.schedmon-search-field svg,
+html body .schedmon-search-field svg {
+    position: absolute !important;
+    left: 13px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 2 !important;
+    color: #64748b !important;
+    stroke: #64748b !important;
+    pointer-events: none !important;
+}
+
+html body label.schedmon-search-field input:not([type="checkbox"]):not([type="radio"]),
+html body .schedmon-search-field input {
+    width: 100% !important;
+    padding: 9px 12px 9px 40px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+}
+
+html body .nexus-ripple {
+    opacity: .14 !important;
+    z-index: 0 !important;
+}
+
+/* Khoảng cách giữa Sidebar và Nội dung trên tất cả các trang */
+@media (min-width: 901px) {
+    :root, html, body {
+        --nexus-sidebar: 240px !important;
+        --ux-sidebar-width: 240px !important;
+        --nx-sidebar-fixed: 240px !important;
+        --nexus-sidebar-width: 240px !important;
+        --nexus-page-gap: 32px !important;
+    }
+    html body .app-sidebar.header,
+    html body .header.app-sidebar,
+    html body aside.app-sidebar {
+        width: 240px !important;
+        min-width: 240px !important;
+        max-width: 240px !important;
+        border-right: 1px solid #e2e8f0 !important;
+    }
+    html body .page,
+    html body > .page,
+    html body main.page,
+    html body > main,
+    html body .accounts-shell,
+    html body .dash-shell,
+    html body .groups-page,
+    html body .members-data-page,
+    html body.members-page .page,
+    html body .personal-page,
+    html body .friends-page,
+    html body .campaign-page,
+    html body .campaign-builder-page .page,
+    html body .marketing-page,
+    html body .guide-shell,
+    html body .schedmon-shell,
+    html body .group-copy-page,
+    html body .settings-page,
+    html body .activation-page,
+    html body .devices-page,
+    html body .gateway-page {
+        margin-left: 240px !important;
+        width: calc(100vw - 240px) !important;
+        max-width: calc(100vw - 240px) !important;
+        padding-left: 32px !important;
+        padding-right: 32px !important;
+        padding-top: 22px !important;
+        padding-bottom: 28px !important;
+        box-sizing: border-box !important;
+    }
+    html body .chatbot-page {
+        margin-left: 240px !important;
+        width: calc(100vw - 240px) !important;
+        max-width: calc(100vw - 240px) !important;
+        padding: 14px 20px 24px 20px !important;
+        box-sizing: border-box !important;
+    }
 }

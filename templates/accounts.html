@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tài khoản Zalo - Nexus</title>
+    <title>Tài khoản Zalo - Jimmy BOT CHAT</title>
     <link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=accounts-limit-v1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/accounts.css') }}?v=accounts-v7-editmodal">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=nexus-light-v3-20260728">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=accounts-v9-fixempty">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/accounts.css') }}?v=accounts-v9-fixempty">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=accounts-v9-fixempty">
 </head>
 <body>
 
@@ -30,10 +30,16 @@
         </div>
         <div class="acc-topbar-actions">
             <div class="acc-topbar-actions-bulk">
-                <button class="btn btn-ghost btn-sm" type="button" id="btnStopAll" onclick="stopAllAccounts()">Dừng tất cả</button>
-                <button class="btn btn-ghost btn-sm" type="button" id="btnStartAll" onclick="startAllAccounts()">Chạy tất cả</button>
+                <button class="btn btn-ghost btn-sm" type="button" id="btnStopAll" onclick="stopAllAccounts()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                    Dừng tất cả
+                </button>
+                <button class="btn btn-ghost btn-sm" type="button" id="btnStartAll" onclick="startAllAccounts()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Chạy tất cả
+                </button>
                 <button class="btn btn-ghost btn-icon" type="button" id="btnRefreshAccounts" onclick="loadAccountsList()" title="Làm mới" aria-label="Làm mới">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6.2 6.2L4 8M5.5 15A7 7 0 0 0 17.8 17.8L20 16"/></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6.2 6.2L4 8M5.5 15A7 7 0 0 0 17.8 17.8L20 16"/></svg>
                 </button>
             </div>
             <button class="btn btn-primary" id="btnAddAccount" onclick="openNewAccountModal()">
@@ -48,8 +54,16 @@
     <div id="accountLimitHint" class="account-limit-hint" style="display:none"></div>
     <div id="accountsStatus" class="status-bar" hidden></div>
 
-    <div class="card">
-        <div id="accountsEmpty" class="accounts-empty">
+    <div class="card accounts-card-wrapper">
+        <div class="accounts-header-strip">
+            <div class="accounts-strip-title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                <span>Danh sách tài khoản Zalo</span>
+            </div>
+            <div class="accounts-strip-hint">Click «Khởi chạy» để mở phiên Chrome riêng biệt hoặc quản lý proxy</div>
+        </div>
+
+        <div id="accountsEmpty" class="accounts-empty" style="display:none;">
             <p>Chưa có tài khoản nào.</p>
             <p class="hint">Nhấn «Thêm tài khoản» để thiết lập tên và proxy trước khi khởi chạy.</p>
         </div>
@@ -82,7 +96,7 @@
     </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/app.js') }}?v=accounts-v7-editmodal"></script>
-<script src="{{ url_for('static', filename='js/accounts.js') }}?v=accounts-limit-v1"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v=accounts-v8-modern"></script>
+<script src="{{ url_for('static', filename='js/accounts.js') }}?v=accounts-v8-modern"></script>
 </body>
 </html>

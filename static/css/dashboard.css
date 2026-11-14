@@ -493,13 +493,14 @@ body.dashboard-page > .page.dash-shell,
 body.dashboard-page > main.page.dash-shell,
 body.dashboard-page .page.dash-shell {
     display: block !important;
-    width: calc(100vw - var(--ux-sidebar-width, 224px)) !important;
+    width: calc(100vw - 240px) !important;
     height: auto !important;
     min-height: 100vh !important;
     max-height: none !important;
-    margin-left: var(--ux-sidebar-width, 224px) !important;
-    padding: 18px !important;
+    margin-left: 240px !important;
+    padding: 20px 28px 30px 28px !important;
     overflow: visible !important;
+    box-sizing: border-box !important;
 }
 
 body.dashboard-page .dash-hero,
@@ -601,10 +602,13 @@ body.dashboard-page .dashboard-activity-meta {
     font-weight: 800 !important;
 }
 
+/* Hover: nền #226aa5 + chữ trắng = 4.08:1 (dưới WCAG AA 4.5:1).
+   Dùng nền kem của theme + chữ nâu đậm để đồng bộ với sidebar. */
 .sidebar-updater.sidebar-updater-button-only #nexusUpdateBtn:hover {
-    color: #ffffff !important;
-    background: #226aa5 !important;
-    border-color: #226aa5 !important;
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    background: #fff4e9 !important;
+    border-color: #ff7542 !important;
 }
 
 @media (max-width: 1300px) {

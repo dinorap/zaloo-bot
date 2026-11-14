@@ -5,15 +5,21 @@ from __future__ import annotations
 import json
 from typing import Any
 
-import requests
-
 from core.zalo.dec import zalo_decode
 from core.zalo.enc import zalo_encode
+from core.zalo import http as zalo_http
 from core.zalo.zalo_config import get_zpw_ver
 from core.zalo.zalo_headers import zalo_mobile_headers
 
 GROUP_LINK_NEW_URL = "https://tt-group-wpa.chat.zalo.me/api/group/link/new"
 GROUP_LINK_DETAIL_URL = "https://tt-group-wpa.chat.zalo.me/api/group/link/detail"
+
+
+class GroupLinkNotEnabledError(RuntimeError):
+    """Nhóm chưa bật link tham gia — đây là trạng thái bình thường, không phải lỗi hệ thống.
+
+    Tách riêng để tầng UI phân biệt "nhóm không có link" với "lỗi kỹ thuật".
+    """
 
 
 def _cookie_dict(cookies: str) -> dict[str, str]:
@@ -70,7 +76,7 @@ def _call_group_link_api(
         f"&zpw_type=30&params={encoded_params}"
     )
 
-    response = requests.get(
+    response = zalo_http.get(
         request_url,
         headers=zalo_mobile_headers(),
         cookies=_cookie_dict(cookies),
@@ -119,11 +125,20 @@ def _normalize_group_link_result(response_json: dict, decoded_data: dict) -> dic
         enabled = 0
 
     if error_code != 0:
+        if int(error_code) == 166:
+            raise RuntimeError(
+                "Không đủ quyền tạo link nhóm (Zalo error 166). "
+                "Tài khoản hiện tại không phải chủ nhóm/admin nên Zalo từ chối kích hoạt link."
+            )
         raise RuntimeError(error_message or f"Zalo trả về mã lỗi {error_code} khi lấy link nhóm.")
     if not link:
+        if enabled == 0:
+            raise GroupLinkNotEnabledError(
+                "Nhóm chưa bật link tham gia (enabled=0) nên Zalo không trả về link."
+            )
         raise RuntimeError("Zalo báo thành công nhưng không trả về link tham gia nhóm.")
     if enabled != 1:
-        raise RuntimeError("Link tham gia nhóm hiện chưa được bật.")
+        raise GroupLinkNotEnabledError("Link tham gia nhóm hiện chưa được bật.")
 
     return {
         "link": link,

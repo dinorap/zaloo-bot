@@ -45,6 +45,30 @@
 .gc-topbar > .btn-icon { flex: 0 0 auto; }
 
 /* ─── Overlay tạo tác vụ: khu cấu hình lưới ngang 12 cột ───────────────── */
+.overlay-backdrop.gc-create-overlay,
+.overlay-backdrop.gc-picker-overlay,
+.overlay-backdrop.group-copy-detail-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(80, 44, 22, .30) !important;
+    backdrop-filter: blur(7px) saturate(108%) !important;
+    -webkit-backdrop-filter: blur(7px) saturate(108%) !important;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.overlay-backdrop.gc-create-overlay.show,
+.overlay-backdrop.gc-create-overlay.visible,
+.overlay-backdrop.gc-picker-overlay.show,
+.overlay-backdrop.gc-picker-overlay.visible,
+.overlay-backdrop.group-copy-detail-overlay.show,
+.overlay-backdrop.group-copy-detail-overlay.visible {
+    display: flex !important;
+}
+.overlay-backdrop.gc-picker-overlay {
+    z-index: 1050 !important;
+}
 .gc-create-overlay .overlay-card.gc-create-card { max-width: 1180px; width: 94%; max-height: 88vh; display: flex; flex-direction: column; padding: 0; }
 .gc-create-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--border); flex: 0 0 auto; }
 .gc-create-head strong { display: block; font-size: 16px; color: var(--text); }
@@ -58,6 +82,7 @@
 .gc-col-2 { grid-column: span 2; }
 .gc-col-3 { grid-column: span 3; }
 .gc-col-4 { grid-column: span 4; }
+.gc-col-6 { grid-column: span 6; }
 
 .gc-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .gc-field > label { font-size: 12px; font-weight: 700; color: #bfd0de; }
@@ -159,6 +184,81 @@
 .gc-advanced summary::before { content: "▸ "; }
 .gc-advanced[open] summary::before { content: "▾ "; }
 .gc-advanced-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 10px; }
+.gc-advanced-grid .gc-col-12 { grid-column: 1 / -1; }
+
+/* Ô nhập nội dung tin nhắn mời + hàng nút chèn biến placeholder */
+.gc-advanced textarea,
+html body .gc-advanced textarea {
+    width: 100%;
+    min-height: 62px;
+    padding: 10px 12px;
+    border: 1px solid #dcd3cb !important;
+    border-radius: 11px;
+    background: #ffffff !important;
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+    box-sizing: border-box;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.gc-advanced textarea:focus,
+html body .gc-advanced textarea:focus {
+    outline: none !important;
+    border-color: #d2471c !important;
+    box-shadow: 0 0 0 3px rgba(210, 71, 28, .12) !important;
+}
+.gc-token-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+.gc-token,
+html body .gc-token {
+    padding: 5px 11px;
+    border: 1px dashed rgba(210, 71, 28, .4) !important;
+    border-radius: 999px;
+    background: #fff8f5 !important;
+    color: #b03a16 !important;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: all .15s ease;
+}
+.gc-token:hover,
+html body .gc-token:hover {
+    background: #ffede6 !important;
+    border-color: #d2471c !important;
+    color: #d2471c !important;
+    box-shadow: 0 2px 6px rgba(210, 71, 28, .15);
+}
+
+/* Preview tin nhắn mời: Nền trắng, viền cam, chữ đen rõ ràng */
+.gc-invite-preview,
+html body .gc-invite-preview,
+html body #groupCopyInvitePreview {
+    margin: 0;
+    padding: 11px 13px;
+    border: 1.5px solid #d2471c !important;
+    border-radius: 11px !important;
+    background: #ffffff !important;
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    line-height: 1.55 !important;
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 44px;
+    box-sizing: border-box;
+    box-shadow: 0 2px 8px rgba(210, 71, 28, .08) !important;
+}
 
 .group-copy-toggle-card {
     display: flex;
@@ -196,48 +296,127 @@
 
 /* ─── Ô xác nhận + nút chạy: luôn nằm trong vùng nhìn thấy đầu tiên ────── */
 .gc-run-cell { justify-content: flex-end; gap: 8px; }
-.gc-consent-check {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    color: var(--text-muted);
-    font-size: 11px;
-    line-height: 1.45;
-    cursor: pointer;
-}
-.gc-consent-check input { flex: 0 0 auto; width: 15px; height: 15px; margin: 1px 0 0; accent-color: var(--accent); }
 
-/* Ô "Bỏ qua trưởng/phó nhóm": trình bày như một input trong grid để thẳng hàng
-   với các ô cạnh bên (label 12px phía trên + khung cao 42px). */
-.gc-skip-leaders {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-sizing: border-box;
-    height: 42px;
-    padding: 0 12px;
-    border: 1px solid var(--border);
-    border-radius: 11px;
-    background: var(--input-bg, rgba(8, 16, 27, .55));
-    color: var(--text);
-    font-size: 13px;
-    line-height: 1.35;
-    cursor: pointer;
-    user-select: none;
-    transition: border-color .15s ease, box-shadow .15s ease;
+/* Ô xác nhận quyền: căn giữa thẳng hàng tuyệt đối với chữ */
+.gc-consent-check,
+html body .gc-consent-check {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+    min-height: 24px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    color: var(--text, #2b1a10) !important;
+    font-size: 12.5px !important;
+    line-height: 1.35 !important;
+    cursor: pointer !important;
+    user-select: none !important;
 }
-.gc-skip-leaders:hover { border-color: rgba(72, 184, 255, .4); }
-.gc-skip-leaders input {
-    flex: 0 0 auto;
-    width: 15px;
-    height: 15px;
-    margin: 0;
-    accent-color: var(--accent);
+.gc-consent-check:hover,
+html body .gc-consent-check:hover {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
-.gc-skip-leaders span {
+.gc-consent-check input,
+html body .gc-consent-check input,
+html body #groupCopyConsent {
+    flex: 0 0 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+    max-width: 16px !important;
+    max-height: 16px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    accent-color: #d2471c !important;
+    outline: none !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+    align-self: center !important;
+    vertical-align: middle !important;
+}
+.gc-consent-check span,
+html body .gc-consent-check span {
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.35 !important;
+    align-self: center !important;
+    vertical-align: middle !important;
+}
+
+/* Ô "Bỏ qua trưởng/phó nhóm": bỏ viền khung xanh, hiển thị gọn và thẳng hàng */
+.gc-skip-leaders,
+html body .gc-skip-leaders {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+    height: 42px !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    color: var(--text, #2b1a10) !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    cursor: pointer !important;
+    user-select: none !important;
+}
+.gc-skip-leaders:hover,
+html body .gc-skip-leaders:hover {
+    border: none !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+.gc-skip-leaders input,
+.gc-consent-check input,
+html body .gc-config-grid input[type="checkbox"],
+html body input[type="checkbox"] {
+    flex: 0 0 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    accent-color: #d2471c !important;
+    outline: none !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+    align-self: center !important;
+    vertical-align: middle !important;
+}
+.gc-skip-leaders input:focus,
+.gc-skip-leaders input:focus-visible,
+.gc-consent-check input:focus,
+.gc-consent-check input:focus-visible,
+html body .gc-config-grid input[type="checkbox"]:focus,
+html body .gc-config-grid input[type="checkbox"]:focus-visible,
+html body input[type="checkbox"]:focus,
+html body input[type="checkbox"]:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+.gc-skip-leaders span,
+html body .gc-skip-leaders span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    align-self: center !important;
+    line-height: 1.35 !important;
+    vertical-align: middle !important;
 }
 .gc-run-btn {
     width: 100%;
@@ -429,7 +608,40 @@
 .group-copy-job-badge.cancelled { color: #b5bec8; }
 .gc-warn-chip { color: #ffa0ad; font-size: 13px; cursor: help; }
 
-.gc-btn-sm { padding: 6px 11px; border: 1px solid rgba(255, 255, 255, .1); border-radius: 8px; background: rgba(255, 255, 255, .03); color: var(--text-muted); font-size: 11.5px; font-weight: 600; cursor: pointer; transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
+.gc-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 12px;
+    min-height: 32px;
+    height: 32px;
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .03);
+    color: var(--text-muted);
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1;
+    vertical-align: middle;
+    cursor: pointer;
+    box-sizing: border-box;
+    white-space: nowrap;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.gc-btn-sm span {
+    display: inline-block;
+    line-height: 1;
+    vertical-align: middle;
+}
+.gc-btn-sm svg {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    vertical-align: middle;
+}
 .gc-btn-sm:hover { color: #55c2ff; border-color: rgba(85, 194, 255, .4); background: rgba(85, 194, 255, .1); }
 .gc-btn-sm.is-primary { color: #55c2ff; border-color: rgba(85, 194, 255, .3); }
 .gc-btn-sm.is-warning:hover { color: #fbc257; border-color: rgba(251, 194, 87, .4); background: rgba(251, 194, 87, .1); }
@@ -541,19 +753,22 @@
     .gc-col-2 { grid-column: span 2; }
     .gc-col-3 { grid-column: span 3; }
     .gc-col-4 { grid-column: span 6; }
-    .gc-run-cell { grid-column: span 3; }
+    .gc-col-6 { grid-column: span 6; }
+    .gc-run-cell { grid-column: span 6; }
 }
 @media (max-width: 1023px) {
     .group-copy-page { height: auto; }
     .gc-config-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .gc-col-2, .gc-col-3, .gc-col-4 { grid-column: span 2; }
+    .gc-col-2, .gc-col-3, .gc-col-4, .gc-col-6 { grid-column: span 2; }
+    .gc-run-cell { grid-column: span 2; }
     .gc-topbar { flex-wrap: wrap; }
     .group-copy-jobs-card { min-height: 320px; }
     .group-copy-jobs-table, .group-copy-member-table { min-width: 640px; }
 }
 @media (max-width: 640px) {
     .gc-config-grid { grid-template-columns: 1fr; }
-    .gc-col-2, .gc-col-3, .gc-col-4 { grid-column: span 1; }
+    .gc-col-2, .gc-col-3, .gc-col-4, .gc-col-6 { grid-column: span 1; }
+    .gc-run-cell { grid-column: span 1; }
     .gc-job-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .gc-jobs-toolbar { width: 100%; }
     #groupCopyJobsSearch { min-width: 0; width: 100%; }
@@ -566,6 +781,15 @@
     max-width: 1600px;
     min-height: calc(100vh - 64px);
     gap: 0;
+}
+@media (min-width: 901px) {
+    .group-copy-page {
+        margin-left: 240px !important;
+        width: calc(100vw - 240px) !important;
+        max-width: calc(100vw - 240px) !important;
+        padding: 22px 32px 28px 32px !important;
+        box-sizing: border-box !important;
+    }
 }
 .group-copy-jobs-card {
     min-height: calc(100vh - 92px);
@@ -1088,18 +1312,152 @@
     font-size: 9.8px;
 }
 .gc-job-timing b { color: #c5d8e7; }
-.gc-btn-sm {
-    min-height: 34px;
-    padding: 7px 10px;
-    border-radius: 10px;
-    font-size: 10px;
+/* Nút thao tác nhanh dưới card tác vụ: căn chỉnh icon và chữ thẳng hàng tuyệt đối */
+html body .gc-job-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
 }
-.gc-btn-sm.is-primary {
-    color: #fff;
-    border-color: rgba(67, 151, 255, .32);
-    background: linear-gradient(145deg, rgba(47, 84, 255, .82), rgba(25, 143, 232, .78));
+
+html body .gc-btn-sm,
+html body button.gc-btn-sm {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 12px !important;
+    border-radius: 9px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+    border: 1px solid #dcd3cb !important;
+    background: #ffffff !important;
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    transition: all .15s ease !important;
+    white-space: nowrap !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .04) !important;
 }
+
+html body .gc-btn-sm span {
+    display: inline-block !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+    color: inherit !important;
+    -webkit-text-fill-color: inherit !important;
+}
+
+html body .gc-btn-sm svg {
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+    width: 15px !important;
+    height: 15px !important;
+    margin: 0 !important;
+    vertical-align: middle !important;
+    color: currentColor !important;
+    stroke: currentColor !important;
+}
+
+html body .gc-btn-sm svg rect,
+html body .gc-btn-sm svg polygon,
+html body .gc-btn-sm svg[fill="currentColor"] {
+    fill: currentColor !important;
+    stroke: none !important;
+}
+
+/* Chi tiết */
+html body .gc-btn-sm.is-primary {
+    color: #b03a16 !important;
+    -webkit-text-fill-color: #b03a16 !important;
+    border-color: rgba(210, 71, 28, .32) !important;
+    background: #fff8f3 !important;
+}
+html body .gc-btn-sm.is-primary:hover {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    border-color: #b03a16 !important;
+    background: linear-gradient(135deg, #d2471c 0%, #b03a16 100%) !important;
+}
+html body .gc-btn-sm.is-primary:hover svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+}
+
+/* Kiểm tra ngay */
+html body .gc-btn-sm[data-job-verify]:hover {
+    color: #b03a16 !important;
+    -webkit-text-fill-color: #b03a16 !important;
+    border-color: #ff7542 !important;
+    background: #fff4e9 !important;
+}
+html body .gc-btn-sm[data-job-verify]:hover svg {
+    color: #b03a16 !important;
+    stroke: #b03a16 !important;
+}
+
+/* Tạm dừng */
+html body .gc-btn-sm.is-warning {
+    color: #92400e !important;
+    -webkit-text-fill-color: #92400e !important;
+    border-color: rgba(245, 158, 11, .36) !important;
+    background: #fffbeb !important;
+}
+html body .gc-btn-sm.is-warning:hover {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    border-color: #d97706 !important;
+    background: #d97706 !important;
+}
+html body .gc-btn-sm.is-warning:hover svg,
+html body .gc-btn-sm.is-warning:hover svg rect {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+}
+
+/* Tiếp tục */
+html body .gc-btn-sm.is-success {
+    color: #166534 !important;
+    -webkit-text-fill-color: #166534 !important;
+    border-color: rgba(22, 163, 74, .32) !important;
+    background: #f0fdf4 !important;
+}
+html body .gc-btn-sm.is-success:hover {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    border-color: #16a34a !important;
+    background: #16a34a !important;
+}
+html body .gc-btn-sm.is-success:hover svg,
+html body .gc-btn-sm.is-success:hover svg polygon {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+}
+
 .group-copy-empty { min-height: 190px; }
+
+/* Icon tiêu đề trang rõ nét, tương phản cao, không mờ */
+html[data-theme="light"] .gc-page-icon,
+html body .gc-page-icon {
+    border: 1px solid rgba(210, 71, 28, .28) !important;
+    background: linear-gradient(135deg, rgba(255, 117, 66, .16), rgba(245, 179, 1, .16)) !important;
+    color: #d2471c !important;
+    box-shadow: 0 10px 24px rgba(210, 71, 28, .12), inset 0 1px 0 rgba(255, 255, 255, .7) !important;
+}
+html[data-theme="light"] .gc-page-icon svg,
+html body .gc-page-icon svg {
+    width: 32px !important;
+    height: 32px !important;
+    stroke: #d2471c !important;
+    stroke-width: 2.2 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+    filter: drop-shadow(0 1px 2px rgba(210, 71, 28, .18));
+}
 
 html[data-theme="light"] .group-copy-jobs-card {
     border-color: rgba(35, 95, 150, .13) !important;

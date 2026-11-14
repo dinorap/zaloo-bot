@@ -12,7 +12,7 @@
                 <button class="btn btn-primary btn-sm" id="btnRefreshPersonalGroups" onclick="schedRefreshPersonalGroups()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6.2 6.2L4 8M5.5 15A7 7 0 0 0 17.8 17.8L20 16"/></svg>Làm mới</button>
             </div>
 
-            <div class="form-group">
+            <div class="form-group sched-account-narrow">
                 <label>Chọn tài khoản gửi</label>
                 <div id="schedPersonalGroupAccountDropdown" class="account-dropdown"></div>
                 <input type="hidden" id="schedPersonalGroupAccountId">
@@ -75,8 +75,8 @@
         <section class="sched-panel sched-groups-right">
             <div class="sched-panel-head">
                 <div>
-                    <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>Cấu hình lịch</h3>
-                    <p>Nội dung, thời gian và tốc độ gửi nhóm.</p>
+                    <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>Cấu hình lịch gửi</h3>
+                    <p>Hỗ trợ gửi nhiều nội dung tin nhắn và nhiều khung giờ.</p>
                 </div>
             </div>
 
@@ -86,32 +86,54 @@
             </div>
 
             <div class="form-group">
-                <label>Nội dung *</label>
-                <textarea id="schedPersonalGroupMessage" placeholder="Nhập nội dung..."></textarea>
+                <label>Nội dung tin nhắn *</label>
+                <div class="sched-msg-list">
+                    <div class="sched-msg-card">
+                        <div class="sched-msg-head">
+                            <span class="sched-msg-badge">Tin nhắn #1</span>
+                        </div>
+                        <textarea id="schedPersonalGroupMessage" placeholder="Nhập nội dung tin nhắn..."></textarea>
+                        <input type="file" id="schedPersonalGroupPhotoInput" accept="image/*" style="display:none">
+                        <div class="sched-msg-photo-row">
+                            <button type="button" class="btn btn-secondary btn-sm" id="schedPersonalGroupPhotoBtn">Chọn ảnh đính kèm</button>
+                            <div id="schedPersonalGroupPhotoWrap" style="display:none;align-items:center;gap:8px">
+                                <img id="schedPersonalGroupPhotoPreview" src="" alt="" style="width:36px;height:36px;border-radius:8px;object-fit:cover;border:1px solid var(--border,#ddd)">
+                                <span id="schedPersonalGroupPhotoName" style="font-size:12px;color:var(--text-secondary);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+                                <button type="button" id="schedPersonalGroupPhotoRemove" title="Bỏ ảnh" class="sched-del-mini">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="schedPersonalGroupExtraMsgs" class="sched-msg-list"></div>
+                </div>
+                <button type="button" class="sched-add-row-btn" onclick="schedAddExtraMsg('personal-groups')">+ Thêm nội dung tin</button>
             </div>
 
-            <div class="form-group">
-                <label>Ảnh đính kèm (tùy chọn)</label>
-                <input type="file" id="schedPersonalGroupPhotoInput" accept="image/*" style="display:none">
-                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                    <button type="button" class="btn btn-secondary btn-sm" id="schedPersonalGroupPhotoBtn">📷 Chọn ảnh</button>
-                    <div id="schedPersonalGroupPhotoWrap" style="display:none;align-items:center;gap:8px">
-                        <img id="schedPersonalGroupPhotoPreview" src="" alt="" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid var(--border,#ddd)">
-                        <span id="schedPersonalGroupPhotoName" style="font-size:12px;color:var(--text-secondary);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-                        <button type="button" id="schedPersonalGroupPhotoRemove" title="Bỏ ảnh" style="border:none;background:rgba(239,68,68,0.12);color:#ef4444;border-radius:6px;width:22px;height:22px;cursor:pointer;font-size:13px;line-height:1">&times;</button>
-                    </div>
-                </div>
-                <small style="color:var(--text-secondary)">Có ảnh: hệ thống gửi ảnh trước, nội dung gửi thành tin nhắn ngay sau.</small>
+            <div class="form-group" id="schedPersonalGroupMultiModeWrap" style="display:none">
+                <label>Cách gửi khi có nhiều tin nhắn</label>
+                <select id="schedPersonalGroupMultiMode">
+                    <option value="sequence">1 khung giờ gửi lần lượt tất cả tin (1 time nhiều tin)</option>
+                    <option value="per_time">Mỗi khung giờ gửi 1 tin kế tiếp (đủ nhiều giờ)</option>
+                    <option value="rotate_recipient">Xoay vòng từng tin cho mỗi nhóm</option>
+                </select>
             </div>
 
             <div class="form-group">
                 <label>Thời gian gửi *</label>
-                <input type="datetime-local" id="schedPersonalGroupRunAt">
+                <div class="sched-time-list">
+                    <input type="datetime-local" id="schedPersonalGroupRunAt">
+                    <div id="schedPersonalGroupExtraTimes" class="sched-time-list"></div>
+                </div>
+                <div class="sched-quick-times">
+                    <button type="button" class="sched-chip-btn" onclick="schedQuickAddTime('personal-groups', 60)">+1 giờ</button>
+                    <button type="button" class="sched-chip-btn" onclick="schedQuickAddTime('personal-groups', '20:00')">Tối 20:00</button>
+                    <button type="button" class="sched-chip-btn" onclick="schedQuickAddTime('personal-groups', 'tomorrow_09:00')">Mai 09:00</button>
+                </div>
+                <button type="button" class="sched-add-row-btn" onclick="schedAddExtraTime('personal-groups')">+ Thêm khung giờ</button>
             </div>
 
-            <details class="sched-details">
-                <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>Cài đặt nâng cao</summary>
-                <div class="sched-mini-grid">
+            <details class="sched-details" style="margin-top:8px">
+                <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>Cài đặt nâng cao (tốc độ gửi, chia đợt)</summary>
+                <div class="sched-mini-grid" style="margin-top:10px">
                     <div class="form-group">
                         <label>Min Delay (s)</label>
                         <input type="number" id="schedPersonalGroupMinDelay" value="3" min="1">
@@ -134,6 +156,11 @@
                     </div>
                 </div>
             </details>
+
+            <button type="button" class="sched-save-cta" onclick="schedSaveSchedule()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Lưu lịch gửi
+            </button>
         </section>
     </div>
 </div>

@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title or "Chiến dịch gửi" }} - Nexus</title>
+    <title>{{ page_title or "Chiến dịch gửi" }} - Jimmy BOT CHAT</title>
     <link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=sched-exec-picker-v1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/overlay.css') }}" >
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=schedules-gap32">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/overlay.css') }}?v=schedules-gap32">
     <style>
         .tab-nav { display: flex; gap: 16px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
         .tab-btn { padding: 12px 16px; border: none; background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 14px; border-bottom: 3px solid transparent; margin-bottom: -1px; transition: all 0.3s ease; font-weight: 500; }
@@ -151,6 +151,420 @@
         .view-btn:hover { background: var(--accent); opacity: 0.8; }
     </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=nexus-light-v3-20260728">
+    <style>
+        /* Layout tong the phang, sang, dong bo kich thuoc cac o 40px tren ca 3 tab Chien dich */
+        body.campaign-builder-page .page {
+            background: #f4f7fb !important;
+            overflow-y: auto !important;
+            margin-left: 240px !important;
+            width: calc(100vw - 240px) !important;
+            padding: 22px 32px 56px 32px !important;
+            box-sizing: border-box !important;
+        }
+        body.campaign-builder-page .page > .card {
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            flex: none !important;
+            display: block !important;
+        }
+        body.campaign-builder-page .card-title {
+            font-size: 18px !important;
+            font-weight: 800 !important;
+            color: #0f172a !important;
+            margin-bottom: 12px !important;
+            padding: 0 2px !important;
+        }
+        body.campaign-builder-page .tab-nav {
+            background: #ffffff !important;
+            border: 1px solid #dbe5f0 !important;
+            border-radius: 12px !important;
+            padding: 5px !important;
+            gap: 6px !important;
+            margin-bottom: 16px !important;
+            width: fit-content;
+            max-width: 100%;
+            flex-wrap: wrap;
+            box-shadow: 0 1px 4px rgba(15,23,42,.04);
+        }
+        body.campaign-builder-page .tab-btn {
+            background: transparent !important;
+            color: #475569 !important;
+            border: 1px solid transparent !important;
+            border-radius: 8px !important;
+            padding: 8px 15px !important;
+            height: 36px !important;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            white-space: nowrap !important;
+            box-shadow: none !important;
+        }
+        body.campaign-builder-page .tab-btn:hover {
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+        }
+        body.campaign-builder-page .tab-nav button.active,
+        body.campaign-builder-page .tab-btn.active {
+            background: #246fa2 !important;
+            border-color: #1d5fa3 !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(36,111,162,.22) !important;
+        }
+        body.campaign-builder-page .sched-groups-layout {
+            grid-template-columns: minmax(0, 1fr) minmax(390px, 440px) !important;
+            gap: 16px !important;
+            align-items: start !important;
+        }
+        @media (max-width: 1120px) {
+            body.campaign-builder-page .sched-groups-layout {
+                grid-template-columns: 1fr !important;
+            }
+        }
+        body.campaign-builder-page .sched-panel {
+            background: #ffffff !important;
+            border: 1px solid #dce5f0 !important;
+            border-radius: 14px !important;
+            padding: 18px 20px !important;
+            box-shadow: 0 2px 10px rgba(15,23,42,.035) !important;
+        }
+        body.campaign-builder-page .sched-panel-head {
+            align-items: center !important;
+            padding-bottom: 12px !important;
+            margin-bottom: 14px !important;
+            border-bottom: 1px solid #eef2f7 !important;
+        }
+        body.campaign-builder-page .sched-panel-head h3 {
+            margin: 0 !important;
+            font-size: 15.5px !important;
+            font-weight: 800 !important;
+            color: #0f172a !important;
+        }
+        body.campaign-builder-page .sched-panel-head p {
+            margin: 3px 0 0 !important;
+            font-size: 12.5px !important;
+            color: #64748b !important;
+        }
+        body.campaign-builder-page .sched-source-grid {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+            gap: 14px !important;
+            align-items: start !important;
+        }
+        @media (max-width: 860px) {
+            body.campaign-builder-page .sched-source-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+        /* Dong bo CHUAN chieu cao 40px cho tat ca o nhap don / dropdown */
+        body.campaign-builder-page .form-group {
+            margin-bottom: 14px !important;
+        }
+        body.campaign-builder-page .form-group:last-child {
+            margin-bottom: 0 !important;
+        }
+        body.campaign-builder-page .form-group label {
+            color: #1e293b !important;
+            font-weight: 700 !important;
+            font-size: 12.5px !important;
+            margin-bottom: 6px !important;
+            display: block !important;
+        }
+        body.campaign-builder-page .form-group input[type="text"],
+        body.campaign-builder-page .form-group input[type="number"],
+        body.campaign-builder-page .form-group input[type="datetime-local"],
+        body.campaign-builder-page .form-group input:not([type]):not([type="file"]):not([type="checkbox"]):not([type="hidden"]),
+        body.campaign-builder-page .form-group select,
+        body.campaign-builder-page .account-dropdown-button,
+        body.campaign-builder-page .sched-exec-pick-btn {
+            height: 40px !important;
+            min-height: 40px !important;
+            box-sizing: border-box !important;
+            padding: 0 12px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 10px !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            font-size: 13.5px !important;
+            font-weight: 500 !important;
+            width: 100% !important;
+            box-shadow: none !important;
+        }
+        body.campaign-builder-page .sched-exec-pick-btn {
+            background: #f8fafc !important;
+            border: 1px dashed #93c5fd !important;
+            font-weight: 600 !important;
+        }
+        body.campaign-builder-page .sched-exec-pick-btn:hover {
+            background: #eff6ff !important;
+            border-color: #246fa2 !important;
+        }
+        body.campaign-builder-page .account-dropdown-avatar,
+        body.campaign-builder-page .account-dropdown-avatar.placeholder {
+            width: 26px !important;
+            height: 26px !important;
+            min-width: 26px !important;
+            max-width: 26px !important;
+            min-height: 26px !important;
+            max-height: 26px !important;
+            flex: 0 0 26px !important;
+            border-radius: 50% !important;
+            object-fit: cover !important;
+            display: block !important;
+        }
+        body.campaign-builder-page .sched-groups-left .personal-groups-table th:nth-child(1),
+        body.campaign-builder-page .sched-groups-left .personal-groups-table td:nth-child(1),
+        body.campaign-builder-page .recipient-table th:first-child,
+        body.campaign-builder-page .recipient-table td:first-child {
+            width: 44px !important;
+            padding: 8px !important;
+            text-align: center !important;
+        }
+        body.campaign-builder-page .personal-groups-table input[type="checkbox"],
+        body.campaign-builder-page .recipient-table input[type="checkbox"] {
+            margin: 0 auto !important;
+            vertical-align: middle !important;
+            display: inline-block !important;
+        }
+        body.campaign-builder-page .sched-groups-left .personal-groups-table th:nth-child(2),
+        body.campaign-builder-page .sched-groups-left .personal-groups-table td:nth-child(2) {
+            width: 56px !important;
+            padding: 8px !important;
+            text-align: center !important;
+        }
+        body.campaign-builder-page .sched-groups-left .personal-groups-table div.recipient-avatar,
+        body.campaign-builder-page .sched-groups-left .personal-groups-table .av-placeholder,
+        body.campaign-builder-page div.recipient-avatar {
+            width: 34px !important;
+            height: 34px !important;
+            border-radius: 50% !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            line-height: 1 !important;
+            background: #eff6ff !important;
+            border: 1px solid #bfdbfe !important;
+            color: #1d5fa3 !important;
+        }
+        body.campaign-builder-page .sched-groups-left .personal-groups-table img.recipient-avatar,
+        body.campaign-builder-page img.recipient-avatar {
+            width: 34px !important;
+            height: 34px !important;
+            border-radius: 50% !important;
+            object-fit: cover !important;
+            display: block !important;
+            margin: 0 auto !important;
+        }
+        body.campaign-builder-page .form-group textarea {
+            min-height: 84px !important;
+            padding: 10px 12px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 10px !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            font-size: 13.5px !important;
+            line-height: 1.45 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        body.campaign-builder-page .form-group input:focus,
+        body.campaign-builder-page .form-group select:focus,
+        body.campaign-builder-page .form-group textarea:focus,
+        body.campaign-builder-page .account-dropdown-button:focus {
+            border-color: #246fa2 !important;
+            box-shadow: 0 0 0 3px rgba(36,111,162,.12) !important;
+        }
+        body.campaign-builder-page input[type="datetime-local"] {
+            font-weight: 600 !important;
+        }
+        body.campaign-builder-page input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: none !important;
+            opacity: .75;
+            cursor: pointer;
+        }
+        body.campaign-builder-page .sched-panel-head .btn,
+        body.campaign-builder-page .sched-toolbar-actions .btn {
+            height: 36px !important;
+            min-height: 36px !important;
+            padding: 0 14px !important;
+            border-radius: 9px !important;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            white-space: nowrap !important;
+        }
+        body.campaign-builder-page .sched-toolbar-actions .sched-check-pill {
+            height: 36px !important;
+            min-height: 36px !important;
+            border-radius: 9px !important;
+        }
+        body.campaign-builder-page .table-scroll,
+        body.campaign-builder-page .sched-table-wrap,
+        body.campaign-builder-page .personal-groups-table-wrap {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 10px !important;
+            min-height: 0 !important;
+            height: auto !important;
+        }
+        body.campaign-builder-page .recipient-table,
+        body.campaign-builder-page .personal-groups-table {
+            margin: 0 !important;
+            background: #ffffff !important;
+        }
+        body.campaign-builder-page .recipient-table th,
+        body.campaign-builder-page .personal-groups-table thead th {
+            background: #f8fafc !important;
+            color: #334155 !important;
+            font-size: 12px !important;
+            font-weight: 700 !important;
+        }
+        body.campaign-builder-page .sched-today-btn {
+            height: 40px !important;
+            min-height: 40px !important;
+            padding: 0 14px !important;
+            border-radius: 10px !important;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            white-space: nowrap !important;
+        }
+        .sched-account-narrow {
+            max-width: 440px;
+        }
+        .sched-msg-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sched-msg-card {
+            background: #f8fafc;
+            border: 1px solid #dce5f0;
+            border-radius: 11px;
+            padding: 10px 12px;
+        }
+        .sched-msg-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .sched-msg-badge {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #1d5fa3;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 999px;
+            padding: 2px 9px;
+        }
+        .sched-msg-card textarea {
+            min-height: 78px !important;
+            resize: vertical;
+            background: #ffffff !important;
+        }
+        .sched-msg-photo-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .sched-del-mini {
+            border: 1px solid #fca5a5;
+            background: #fff;
+            color: #dc2626;
+            border-radius: 7px;
+            width: 26px;
+            height: 26px;
+            cursor: pointer;
+            font-weight: 700;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sched-del-mini:hover { background: #fee2e2; }
+        .sched-time-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .sched-time-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sched-time-row input[type="datetime-local"] {
+            flex: 1;
+            min-width: 0;
+        }
+        .sched-time-row .sched-del-mini {
+            width: 40px;
+            height: 40px;
+            flex: none;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        .sched-quick-times {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .sched-chip-btn {
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #334155;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 11.5px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .sched-chip-btn:hover {
+            background: #eff6ff;
+            border-color: #93c5fd;
+            color: #1d5fa3;
+        }
+        .sched-add-row-btn {
+            margin-top: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px dashed #93c5fd;
+            background: #f8fbff;
+            color: #1d5fa3;
+            border-radius: 8px;
+            padding: 6px 11px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .sched-add-row-btn:hover { background: #eff6ff; border-color: #246fa2; }
+        .sched-save-cta {
+            margin-top: 14px;
+            width: 100%;
+            height: 40px !important;
+            background: #16a34a !important;
+            border: 1px solid #15803d !important;
+            color: #ffffff !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+            border-radius: 10px !important;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .sched-save-cta:hover { background: #15803d !important; }
+    </style>
 </head>
 <body class="campaign-builder-page">
 

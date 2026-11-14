@@ -1,0 +1,87 @@
+{# ══════════════════════════════════════════════════════════════════════════
+   CẤU HÌNH BOT DÙNG CHUNG — cho mọi nền tảng (Zalo, Telegram)
+   Gồm: kiểu trả lời, Gemini API key, từ khóa gọi bot, tài liệu,
+   system prompt, global context, chế độ chỉ-trả-lời-theo-tài-liệu,
+   câu báo handoff và thứ tự model dự phòng.
+   ══════════════════════════════════════════════════════════════════════════ #}
+
+<!-- ══════ BƯỚC 1: CHẾ ĐỘ TRẢ LỜI & AI (dùng chung) ══════ -->
+<section class="cb-card" id="botSharedCard">
+  <div class="cb-step-head">
+    <span class="cb-step-num">1</span>
+    <h3>Cấu hình bot dùng chung</h3>
+    <span class="cb-step-badge" id="cbTriggerBadge">Lệnh: /bot</span>
+  </div>
+  <p class="cb-shared-note">
+    <svg class="cb-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a4 4 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a4 4 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a4 4 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a4 4 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+    Phần này <b>dùng chung cho cả Zalo và Telegram</b> — sửa một lần là bot ở mọi nền tảng đều dùng.
+  </p>
+
+  <div class="cb-grid">
+    <div class="cb-field full">
+      <div class="cb-trigger-box">
+        <label class="cb-switch-row" style="padding:0;background:transparent;border:0">
+          <span class="cb-switch-copy">
+            <strong>Chỉ trả lời khi có từ khóa / lệnh gọi bot</strong>
+            <span>Bật: tin nhắn phải chứa lệnh gọi (vd: <code>/bot câu hỏi</code>) thì bot mới trả lời. Tắt: bot trả lời mọi tin nhắn mới.</span>
+          </span>
+          <input id="cbTriggerEnabled" type="checkbox" checked onchange="chatbotTriggerChanged()">
+        </label>
+        <div id="cbTriggerFields" class="cb-trigger-fields">
+          <div class="cb-field">
+            <label for="cbTriggerKeywords">Từ khóa / lệnh gọi bot (cách nhau dấu phẩy)</label>
+            <input id="cbTriggerKeywords" type="text" value="/bot" placeholder="vd: /bot, @bot, !hoi" oninput="chatbotTriggerChanged()">
+            <div class="cb-trigger-chips">
+              <span style="font-size:11.5px;color:#7a6455;font-weight:600">Gợi ý nhanh:</span>
+              <button type="button" class="cb-chip-btn" onclick="cbAddTriggerChip('/bot')">/bot</button>
+              <button type="button" class="cb-chip-btn" onclick="cbAddTriggerChip('@bot')">@bot</button>
+              <button type="button" class="cb-chip-btn" onclick="cbAddTriggerChip('!hoi')">!hoi</button>
+              <button type="button" class="cb-chip-btn" onclick="cbAddTriggerChip('bot ơi')">bot ơi</button>
+            </div>
+          </div>
+          <div class="cb-field">
+            <label for="cbTriggerMode">Cách nhận diện từ khóa</label>
+            <select id="cbTriggerMode" onchange="chatbotTriggerChanged()">
+              <option value="prefix">Bắt đầu bằng từ khóa (vd: /bot giá sao?)</option>
+              <option value="contains">Chứa từ khóa trong câu (vd: alo /bot giá sao?)</option>
+            </select>
+            <small>Bot sẽ tự cắt bỏ phần từ khóa trước khi đưa câu hỏi cho AI trả lời.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cb-field">
+      <label for="cbMode">Kiểu trả lời</label>
+      <select id="cbMode" onchange="chatbotModeChanged()">
+        <option value="gemini">AI tự trả lời (Gemini)</option>
+        <option value="echo">Trả lời mẫu thử (Echo)</option>
+      </select>
+      <small>Echo chỉ trả lời thử — dùng để kiểm tra kết nối trước khi bật AI.</small>
+    </div>
+
+    <div class="cb-field">
+      <label for="cbCascade">Thứ tự model AI dự phòng (cách nhau dấu phẩy)</label>
+      <input id="cbCascade" placeholder="gemini-3.8-flash, gemini-3.5-flash-lite, gemini-3.1-flash-lite">
+      <small>Khi model đầu hết quota hoặc lỗi, bot tự động chuyển sang model tiếp theo.</small>
+    </div>
+
+    <div class="cb-field full" id="cbKeyWrap">
+      <label>
+        <span>Danh sách Gemini API Key (tự xoay khi hết limit)</span>
+        <span class="cb-step-badge" id="cbKeySummary">0 key sẵn sàng</span>
+      </label>
+      <input id="cbKey" type="hidden">
+      <div id="cbKeyRows" class="cb-key-rows"></div>
+      <div class="cb-key-actions">
+        <button type="button" class="cb-btn cb-btn-sm" id="cbAddKeyBtn" onclick="cbAddKeyRow()">
+          <svg class="cb-ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Thêm API Key
+        </button>
+        <button type="button" class="cb-btn cb-btn-sm" id="cbUnmarkAllBtn" style="display:none;border-color:#fca5a5;color:#b91c1c" onclick="cbUnmarkLimit('')">
+          <svg class="cb-ico" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Bỏ đánh dấu tất cả limit
+        </button>
+      </div>
+      <small>Nhập nhiều key (AIza...) từ nhiều tài khoản Google. Khi 1 key hết quota/limit, bot tự đánh dấu <b>Hết limit</b> và xoay ngay sang key tiếp theo. Key chỉ lưu trên máy bạn và dùng chung cho mọi nền tảng.</small>
+    </div>
+  </div>
+</section>

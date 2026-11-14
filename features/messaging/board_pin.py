@@ -15,6 +15,7 @@ import requests
 from core.zalo.enc import zalo_encode
 from core.zalo.dec import zalo_decode
 from core.zalo.zalo_headers import zalo_mobile_headers
+from core.zalo import http as zalo_http
 
 BOARD_PIN_LIST_URL = "https://groupboard-wpa.chat.zalo.me/api/board/pin/list"
 
@@ -102,7 +103,7 @@ def fetch_board_pins(group_id: str, cookies: str, zpw_enk: str, imei: str,
     encoded = zalo_encode(plaintext, zpw_enk, url_encode=False)
 
     try:
-        response = requests.get(
+        response = zalo_http.get(
             BOARD_PIN_LIST_URL,
             params={"zpw_ver": zpw_ver, "zpw_type": "30", "params": encoded},
             headers=zalo_mobile_headers(),

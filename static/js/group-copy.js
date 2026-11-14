@@ -24,19 +24,23 @@
         sourcePreviewToken: 0,
         sourcePreviewController: null,
         sourceDebounceTimer: null,
+        sourceMode: 'link',
+        sourceGroup: null,
+        targetMode: 'new',
         targetGroup: null,
         groupLinkPollCount: 0,
         groupLinkPollTimer: null,
         pickerOpen: false,
+        pickerTarget: 'target',
         pickerSearch: '',
         pickerSort: 'name',
         highlightJobId: ''
     };
 
-    var ICON_DETAIL = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
-    var ICON_VERIFY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6.2 6.2L4 8M5.5 15A7 7 0 0 0 17.8 17.8L20 16"/></svg>';
-    var ICON_PAUSE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
-    var ICON_RESUME = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 4 20 12 6 20 6 4"/></svg>';
+    var ICON_DETAIL = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3.2"/></svg>';
+    var ICON_VERIFY = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>';
+    var ICON_PAUSE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5.5" y="4" width="4.5" height="16" rx="1.5"/><rect x="14" y="4" width="4.5" height="16" rx="1.5"/></svg>';
+    var ICON_RESUME = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>';
 
     function $(id) { return document.getElementById(id); }
 
@@ -356,12 +360,14 @@
         renderAccountMenu();
         setAccountMenu(false);
         if (changed) {
-            // Đổi tài khoản: bỏ nhóm đích và tiến trình lấy link của tài khoản cũ.
+            // Đổi tài khoản: bỏ nhóm nguồn, nhóm đích và tiến trình lấy link của tài khoản cũ.
             state.targetGroup = null;
+            state.sourceGroup = null;
             state.groupLinkPollCount = 0;
             clearTimeout(state.groupLinkPollTimer);
             state.groupLinkPollTimer = null;
             renderTargetPreview();
+            renderSourcePickerPreview();
         }
         // Tài khoản chủ không được đồng thời là tài khoản phụ.
         if (state.extraAccountIds && state.extraAccountIds.has(accountId)) {
@@ -458,6 +464,26 @@
         if (ov && e.target === ov) ov.classList.remove('open');
     });
 
+    // ─── Segmented: loại nhóm nguồn ──────────────────────────────────────────
+    function setSourceMode(mode) {
+        state.sourceMode = mode === 'existing' ? 'existing' : 'link';
+        document.querySelectorAll('[data-source-mode]').forEach(function (button) {
+            button.classList.toggle('active', button.getAttribute('data-source-mode') === state.sourceMode);
+        });
+        var isExisting = state.sourceMode === 'existing';
+        var linkWrap = $('groupCopyLinkSourceWrap');
+        var existWrap = $('groupCopyExistingSourceWrap');
+        if (linkWrap) linkWrap.hidden = isExisting;
+        if (existWrap) existWrap.hidden = !isExisting;
+        if (isExisting) {
+            if (state.sourceGroup) {
+                $('groupCopySource').value = getGroupLink(state.sourceGroup) || getGroupId(state.sourceGroup);
+            }
+            renderSourcePickerPreview();
+        }
+        updateRunButtonState();
+    }
+
     // ─── Segmented: loại nhóm đích ──────────────────────────────────────────
     function setTargetMode(mode) {
         state.targetMode = mode === 'existing' ? 'existing' : 'new';
@@ -472,6 +498,7 @@
                 ? '<span>▶</span> Tạo nhóm và bắt đầu sao chép'
                 : '<span>▶</span> Bắt đầu sao chép vào nhóm';
         }
+        renderInvitePreview();
         updateRunButtonState();
     }
 
@@ -534,6 +561,11 @@
             if (state.targetMode === 'existing') setStatus(friendlyFetchError(error, 'Không thể tải danh sách nhóm hiện tại.'), 'error');
         }
         if (state.pickerOpen) renderPickerList();
+        if (state.sourceGroup) {
+            var selectedSrcId = getGroupId(state.sourceGroup);
+            var refreshedSrc = state.groups.find(function (g) { return getGroupId(g) === selectedSrcId; });
+            if (refreshedSrc) { state.sourceGroup = refreshedSrc; renderSourcePickerPreview(); }
+        }
         if (state.targetGroup) {
             var selectedId = getGroupId(state.targetGroup);
             var refreshed = state.groups.find(function (g) { return getGroupId(g) === selectedId; });
@@ -583,7 +615,7 @@
 
     function scheduleSourcePreview(delayMs) {
         clearTimeout(state.sourceDebounceTimer);
-        if (state.sourcePreviewController) { try { state.sourcePreviewController.abort(); } catch (e) {} }
+        if (state.sourcePreviewController) { try { state.sourcePreviewController.abort(); } catch (e) { } }
         var raw = (($('groupCopySource') || {}).value || '').trim();
         state.sourceGroupInfo = null;
         updateRunButtonState();
@@ -620,7 +652,24 @@
         }
     }
 
-    // ─── Nhóm đích hiện tại: preview + modal chọn nhóm ─────────────────────
+    // ─── Nhóm nguồn & nhóm đích hiện tại: preview + modal chọn nhóm ──────
+    function renderSourcePickerPreview() {
+        var el = $('groupCopySourceTargetPreview');
+        if (!el) return;
+        if (!state.sourceGroup) {
+            el.className = 'gc-target-preview-empty';
+            el.textContent = '+ Chọn nhóm nguồn hiện có';
+        } else {
+            var g = state.sourceGroup;
+            el.className = 'gc-target-preview';
+            var count = getGroupMemberCount(g);
+            var linkLabel = getGroupLinkLabel(g);
+            el.innerHTML = '<span class="gc-gp-avatar">' + (g.avatar ? '<img src="' + esc(safeImageUrl(g.avatar)) + '" alt="">' : '') + '<span>' + esc(initials(getGroupName(g))) + '</span></span>' +
+                '<span class="gc-gp-copy"><strong>' + esc(getGroupName(g)) + '</strong><small title="' + esc(linkLabel) + '">' + (count ? count + ' thành viên · ' : '') + esc(linkLabel) + '</small></span>';
+        }
+        updateRunButtonState();
+    }
+
     function renderTargetPreview() {
         var el = $('groupCopyTargetPreview');
         if (!el) return;
@@ -639,22 +688,74 @@
         updateRunButtonState();
     }
 
-    function openGroupPicker() {
+    function renderInvitePreview() {
+        var preview = $('groupCopyInvitePreview');
+        if (!preview) return;
+        var tplEl = $('groupCopyInviteTemplate');
+        var tpl = (tplEl ? tplEl.value : '') || 'Xin chào mời {gender} {name} tham gia nhóm {group} này:\n{link}';
+
+        var groupName = 'Nhóm mới';
+        var groupLink = 'https://zalo.me/g/xxxxxx';
+
+        if (state.targetMode === 'existing' && state.targetGroup) {
+            groupName = getGroupName(state.targetGroup) || groupName;
+            groupLink = getGroupLink(state.targetGroup) || groupLink;
+        } else if (state.targetMode === 'new') {
+            var newNameInput = $('groupCopyNewGroupName');
+            if (newNameInput && newNameInput.value.trim()) {
+                groupName = newNameInput.value.trim();
+            }
+        }
+
+        var extraLinksEl = $('groupCopyExtraLinks');
+        var extraLinksText = (extraLinksEl ? extraLinksEl.value : '').trim();
+
+        var rendered = tpl
+            .replace(/\{gender\}/g, 'Chị')
+            .replace(/\{name\}/g, 'Lan')
+            .replace(/\{group\}/g, groupName)
+            .replace(/\{link\}/g, groupLink);
+
+        if (extraLinksText) {
+            rendered += '\n' + extraLinksText;
+        }
+
+        preview.textContent = rendered;
+    }
+
+    function openGroupPicker(targetType) {
+        state.pickerTarget = targetType === 'source' ? 'source' : 'target';
         var accountId = (($('groupCopyAccount') || {}).value || '').trim();
         if (!accountId) { showToast('Vui lòng chọn tài khoản thực hiện trước.', 'warning'); return; }
         state.pickerOpen = true;
         state.pickerSearch = '';
-        $('groupCopyPickerSearch').value = '';
-        $('groupCopyPickerOverlay').classList.add('show');
+        var searchInp = $('groupCopyPickerSearch');
+        if (searchInp) searchInp.value = '';
+        var overlay = $('groupCopyPickerOverlay');
+        if (overlay) {
+            overlay.classList.add('show');
+            overlay.classList.add('visible');
+            overlay.style.display = 'flex';
+        }
         var account = state.accounts.find(function (a) { return getAccountId(a) === accountId; });
-        $('groupCopyPickerSub').textContent = 'Nhóm đang tham gia của ' + getAccountName(account || {});
+        var titleEl = $('groupCopyPickerTitle');
+        if (titleEl) {
+            titleEl.textContent = state.pickerTarget === 'source' ? 'Chọn nhóm nguồn hiện tại' : 'Chọn nhóm đích hiện tại';
+        }
+        var subEl = $('groupCopyPickerSub');
+        if (subEl) subEl.textContent = 'Nhóm đang tham gia của ' + getAccountName(account || {});
         renderPickerList();
         if (!state.groups.length) loadGroups();
     }
 
     function closeGroupPicker() {
         state.pickerOpen = false;
-        $('groupCopyPickerOverlay').classList.remove('show');
+        var overlay = $('groupCopyPickerOverlay');
+        if (overlay) {
+            overlay.classList.remove('show');
+            overlay.classList.remove('visible');
+            overlay.style.display = 'none';
+        }
     }
 
     function renderPickerList() {
@@ -682,7 +783,8 @@
             return;
         }
 
-        var selectedId = state.targetGroup ? getGroupId(state.targetGroup) : '';
+        var selectedGroup = state.pickerTarget === 'source' ? state.sourceGroup : state.targetGroup;
+        var selectedId = selectedGroup ? getGroupId(selectedGroup) : '';
         list.innerHTML = groups.map(function (g) {
             var gid = getGroupId(g);
             var count = getGroupMemberCount(g);
@@ -693,17 +795,33 @@
                 '<span class="gc-picker-row-name"><strong>' + esc(getGroupName(g)) + '</strong><small title="' + esc(linkLabel) + '">' + esc(linkLabel) + '</small></span>' +
                 '<span class="gc-picker-row-members">' + (count ? count + ' thành viên' : '-') + '</span>' +
                 '<span class="gc-picker-row-mark">' + (selected ? '✓' : '') + '</span>' +
-            '</button>';
+                '</button>';
         }).join('');
     }
 
     function pickGroup(groupId) {
-        var group = state.groups.find(function (g) { return getGroupId(g) === groupId; });
-        if (!group) return;
-        state.targetGroup = group;
-        renderTargetPreview();
-        closeGroupPicker();
-        showToast('Đã chọn nhóm đích: ' + getGroupName(group), 'success');
+        try {
+            var group = state.groups.find(function (g) { return getGroupId(g) === groupId; });
+            if (!group) return;
+            if (state.pickerTarget === 'source') {
+                state.sourceGroup = group;
+                state.sourceGroupInfo = group;
+                var srcInp = $('groupCopySource');
+                if (srcInp) srcInp.value = getGroupLink(group) || getGroupId(group);
+                renderSourcePickerPreview();
+                showToast('Đã chọn nhóm nguồn: ' + getGroupName(group), 'success');
+            } else {
+                state.targetGroup = group;
+                renderTargetPreview();
+                renderInvitePreview();
+                showToast('Đã chọn nhóm đích: ' + getGroupName(group), 'success');
+            }
+        } catch (e) {
+            console.error('Lỗi khi chọn nhóm:', e);
+        } finally {
+            closeGroupPicker();
+            updateRunButtonState();
+        }
     }
 
     async function refreshPickerGroups() {
@@ -712,7 +830,7 @@
         var btn = $('groupCopyPickerRefresh');
         var orig = btn ? btn.innerHTML : '';
         if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;"></span> Đang làm mới...'; }
-        $('groupCopyPickerList').innerHTML = '<div class="gc-picker-loading"><span class="spinner"></span><p>Đang mở tài khoản và đồng bộ danh sách nhóm...</p></div>';
+        $('groupCopyPickerList').innerHTML = '<div class="gc-picker-loading"><span class="spinner"></span><p>Đang chạy ngầm đồng bộ danh sách nhóm...</p></div>';
         try {
             var response = await fetch('/api/groups/refresh-account', {
                 method: 'POST',
@@ -736,22 +854,30 @@
     function buildPayload() {
         var accountId = (($('groupCopyAccount') || {}).value || '').trim();
         var sourceInput = (($('groupCopySource') || {}).value || '').trim();
+        if (state.sourceMode === 'existing' && state.sourceGroup) {
+            sourceInput = getGroupLink(state.sourceGroup) || getGroupId(state.sourceGroup);
+        }
         var startAt = (($('groupCopyStartAt') || {}).value || '').trim();
         var limit = parseInt((($('groupCopyDailyLimit') || {}).value || '20'), 10);
         var campaignDays = parseInt((($('groupCopyCampaignDays') || {}).value || '30'), 10);
         var verifyMinutes = parseInt((($('groupCopyVerifyMinutes') || {}).value || '30'), 10);
+        var sourceGroupId = (state.sourceMode === 'existing' && state.sourceGroup)
+            ? getGroupId(state.sourceGroup)
+            : (state.sourceGroupInfo ? getGroupId(state.sourceGroupInfo) : '');
         var payload = {
             accountId: accountId,
             sourceInput: sourceInput,
-            // Khi preview đã xác minh được nhóm, gửi thêm ID đầy đủ cho backend.
-            // Backend vẫn giữ sourceInput gốc để link có thể tự join khi cần.
-            sourceGroupId: state.sourceGroupInfo ? getGroupId(state.sourceGroupInfo) : '',
+            // Khi preview đã xác minh được nhóm hoặc chọn nhóm có sẵn, gửi thêm ID đầy đủ cho backend.
+            sourceGroupId: sourceGroupId,
+            sourceMode: state.sourceMode,
             targetMode: state.targetMode,
             startAt: startAt,
             dailyLimit: limit,
             campaignDurationDays: campaignDays,
             verifyIntervalMinutes: verifyMinutes,
             removeFriendAfterJoin: !!(($('groupCopyRemoveFriend') || {}).checked),
+            friendRequestWithLink: !!(($('groupCopyFriendWithLink') || {}).checked),
+            statusPollMinutes: 2,
             skipLeaders: !!(($('groupCopySkipLeaders') || {}).checked),
             accountIds: [accountId].concat(Array.from(state.extraAccountIds || [])).filter(function (v, i, arr) { return v && arr.indexOf(v) === i; }),
             consentConfirmed: !!(($('groupCopyConsent') || {}).checked)
@@ -774,7 +900,11 @@
         if (!payload.accountId) return 'Vui lòng chọn tài khoản thực hiện.';
         var account = state.accounts.find(function (item) { return getAccountId(item) === payload.accountId; });
         if (account && !accountReady(account)) return 'Tài khoản chưa sẵn sàng: cần zpwEnk, zpw_sek và IMEI cùng phiên.';
-        if (!payload.sourceInput) return 'Vui lòng dán link hoặc ID nhóm nguồn.';
+        if (state.sourceMode === 'existing') {
+            if (!state.sourceGroup) return 'Vui lòng chọn một nhóm nguồn hiện có.';
+        } else {
+            if (!payload.sourceInput) return 'Vui lòng dán link hoặc ID nhóm nguồn.';
+        }
         if (payload.targetMode === 'new' && !payload.newGroupName) return 'Vui lòng nhập tên nhóm mới.';
         if (payload.targetMode === 'existing' && !payload.targetGroupId) return 'Vui lòng chọn một nhóm hiện tại.';
         if (!payload.startAt) return 'Vui lòng chọn thời gian bắt đầu.';
@@ -946,14 +1076,14 @@
         if ((status === 'failed' || status === 'cancelled') && Number(job.pendingCount || 0) > 0) kebabItems += '<button type="button" data-job-resume="' + esc(jobId) + '">Tiếp tục</button>';
         if (status !== 'running') kebabItems += '<button type="button" class="is-danger" data-job-delete="' + esc(jobId) + '">Xóa tác vụ</button>';
 
-        var quickActions = '<button type="button" class="gc-btn-sm is-primary" data-job-detail="' + esc(jobId) + '">' + ICON_DETAIL + ' Chi tiết</button>';
+        var quickActions = '<button type="button" class="gc-btn-sm is-primary" data-job-detail="' + esc(jobId) + '">' + ICON_DETAIL + '<span>Chi tiết</span></button>';
         if (job.targetGroupId && (status === 'pending' || status === 'monitoring' || status === 'failed')) {
-            quickActions += '<button type="button" class="gc-btn-sm" data-job-verify="' + esc(jobId) + '">' + ICON_VERIFY + ' Kiểm tra ngay</button>';
+            quickActions += '<button type="button" class="gc-btn-sm" data-job-verify="' + esc(jobId) + '">' + ICON_VERIFY + '<span>Kiểm tra ngay</span></button>';
         }
         if (status === 'pending' || status === 'monitoring') {
-            quickActions += '<button type="button" class="gc-btn-sm is-warning" data-job-cancel="' + esc(jobId) + '">' + ICON_PAUSE + ' Tạm dừng</button>';
+            quickActions += '<button type="button" class="gc-btn-sm is-warning" data-job-cancel="' + esc(jobId) + '">' + ICON_PAUSE + '<span>Tạm dừng</span></button>';
         } else if ((status === 'failed' || status === 'cancelled') && Number(job.pendingCount || 0) > 0) {
-            quickActions += '<button type="button" class="gc-btn-sm is-success" data-job-resume="' + esc(jobId) + '">' + ICON_RESUME + ' Tiếp tục</button>';
+            quickActions += '<button type="button" class="gc-btn-sm is-success" data-job-resume="' + esc(jobId) + '">' + ICON_RESUME + '<span>Tiếp tục</span></button>';
         }
 
         var card = document.createElement('div');
@@ -963,36 +1093,36 @@
         var accountNameText = String(job.accountName || job.accountId || 'Tài khoản');
         card.innerHTML =
             '<div class="gc-job-head">' +
-                '<div class="gc-job-heading">' +
-                    '<div class="gc-job-title-row"><span class="gc-job-title-icon">' + miniAvatarHtml(targetName, job.targetGroupAvatar) + '</span><div><strong class="gc-job-title" title="' + esc(jobTitle) + '">' + esc(jobTitle) + '</strong><small>Kế hoạch chuyển thành viên</small></div></div>' +
-                    '<div class="gc-job-route">' +
-                        '<span class="gc-job-route-node">' + miniAvatarHtml(sourceName, source.avt || source.avatar) +
-                            '<span class="gc-job-route-copy"><small>Nhóm nguồn</small><strong title="' + esc(sourceName) + '">' + esc(sourceName) + '</strong></span></span>' +
-                        '<span class="gc-job-route-arrow">→</span>' +
-                        '<span class="gc-job-route-node">' + miniAvatarHtml(targetName, job.targetGroupAvatar) +
-                            '<span class="gc-job-route-copy"><small>Nhóm đích</small><strong title="' + esc(targetName) + '">' + esc(targetName) + '</strong></span></span>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="gc-job-owner"><span>Người thực hiện</span><strong>' + esc(accountNameText) + '</strong></div>' +
-                '<div class="gc-job-head-meta">' +
-                    '<span class="group-copy-job-badge ' + esc(status) + '">' + esc(statusLabel(status)) + '</span>' +
-                    (problemNote ? '<span class="gc-warn-chip" title="' + esc(problemNote) + '">⚠</span>' : '') +
-                    '<div class="gc-kebab-wrap"><button type="button" class="gc-kebab-btn" data-kebab-toggle="' + esc(jobId) + '" aria-label="Thao tác khác">⋮</button>' +
-                        '<div class="gc-kebab-menu" data-kebab-menu="' + esc(jobId) + '" hidden>' + (kebabItems || '<button type="button" disabled>Không có thao tác</button>') + '</div></div>' +
-                '</div>' +
+            '<div class="gc-job-heading">' +
+            '<div class="gc-job-title-row"><span class="gc-job-title-icon">' + miniAvatarHtml(targetName, job.targetGroupAvatar) + '</span><div><strong class="gc-job-title" title="' + esc(jobTitle) + '">' + esc(jobTitle) + '</strong><small>Kế hoạch chuyển thành viên</small></div></div>' +
+            '<div class="gc-job-route">' +
+            '<span class="gc-job-route-node">' + miniAvatarHtml(sourceName, source.avt || source.avatar) +
+            '<span class="gc-job-route-copy"><small>Nhóm nguồn</small><strong title="' + esc(sourceName) + '">' + esc(sourceName) + '</strong></span></span>' +
+            '<span class="gc-job-route-arrow">→</span>' +
+            '<span class="gc-job-route-node">' + miniAvatarHtml(targetName, job.targetGroupAvatar) +
+            '<span class="gc-job-route-copy"><small>Nhóm đích</small><strong title="' + esc(targetName) + '">' + esc(targetName) + '</strong></span></span>' +
+            '</div>' +
+            '</div>' +
+            '<div class="gc-job-owner"><span>Người thực hiện</span><strong>' + esc(accountNameText) + '</strong></div>' +
+            '<div class="gc-job-head-meta">' +
+            '<span class="group-copy-job-badge ' + esc(status) + '">' + esc(statusLabel(status)) + '</span>' +
+            (problemNote ? '<span class="gc-warn-chip" title="' + esc(problemNote) + '">⚠</span>' : '') +
+            '<div class="gc-kebab-wrap"><button type="button" class="gc-kebab-btn" data-kebab-toggle="' + esc(jobId) + '" aria-label="Thao tác khác">⋮</button>' +
+            '<div class="gc-kebab-menu" data-kebab-menu="' + esc(jobId) + '" hidden>' + (kebabItems || '<button type="button" disabled>Không có thao tác</button>') + '</div></div>' +
+            '</div>' +
             '</div>' +
             '<div class="gc-job-progress-row"><div class="group-copy-progress"><span style="width:' + percent + '%"></span></div><span class="gc-job-progress-pct">' + percent + '%</span></div>' +
             '<div class="gc-job-stats">' +
-                '<div class="gc-job-stat"><span>Tổng nguồn</span><strong>' + total + '</strong></div>' +
-                '<div class="gc-job-stat is-success"><span>Thêm trực tiếp</span><strong>' + directAdded + '</strong></div>' +
-                '<div class="gc-job-stat"><span>Đã mời kết bạn</span><strong>' + invited + '</strong></div>' +
-                '<div class="gc-job-stat is-success"><span>Đã vào nhóm</span><strong>' + joined + '</strong></div>' +
-                '<div class="gc-job-stat"><span>Đang chờ</span><strong>' + pending + '</strong></div>' +
-                '<div class="gc-job-stat' + (failed ? ' is-danger' : '') + '"><span>Lỗi</span><strong>' + failed + '</strong></div>' +
+            '<div class="gc-job-stat"><span>Tổng nguồn</span><strong>' + total + '</strong></div>' +
+            '<div class="gc-job-stat is-success"><span>Thêm trực tiếp</span><strong>' + directAdded + '</strong></div>' +
+            '<div class="gc-job-stat"><span>Đã mời kết bạn</span><strong>' + invited + '</strong></div>' +
+            '<div class="gc-job-stat is-success"><span>Đã vào nhóm</span><strong>' + joined + '</strong></div>' +
+            '<div class="gc-job-stat"><span>Đang chờ</span><strong>' + pending + '</strong></div>' +
+            '<div class="gc-job-stat' + (failed ? ' is-danger' : '') + '"><span>Lỗi</span><strong>' + failed + '</strong></div>' +
             '</div>' +
             '<div class="gc-job-foot">' +
-                '<div class="gc-job-timing"><span>Kiểm tra gần nhất <b>' + esc(lastVerified) + '</b></span><span>Chạy tiếp theo <b>' + esc(nextRun) + '</b></span></div>' +
-                '<div class="gc-job-actions">' + quickActions + '</div>' +
+            '<div class="gc-job-timing"><span>Kiểm tra gần nhất <b>' + esc(lastVerified) + '</b></span><span>Chạy tiếp theo <b>' + esc(nextRun) + '</b></span></div>' +
+            '<div class="gc-job-actions">' + quickActions + '</div>' +
             '</div>';
         return card;
     }
@@ -1136,7 +1266,7 @@
             detailItem('Thời gian chiến dịch', Number(job.campaignDurationDays || 30) + ' ngày') +
             detailItem('Kết thúc chiến dịch', esc(formatDateTime(job.campaignEndAt))) +
             detailItem('Xóa bạn sau khi vào nhóm', job.removeFriendAfterJoin ? 'Đang bật' : 'Đang tắt') +
-        '</div>';
+            '</div>';
 
         var progressHtml = '<div class="group-copy-detail-grid">' +
             detailItem('Tổng thành viên nguồn', total + ' người') +
@@ -1152,7 +1282,7 @@
             detailItem('Thành viên nhóm đích hiện tại', Number(job.targetMemberCount || 0) + ' người') +
             detailItem('Kiểm tra gần nhất', esc(formatDateTime(job.lastVerifiedAt))) +
             detailItem('Lần xử lý kế tiếp', esc(formatDateTime(job.nextRunAt))) +
-        '</div>' + (job.lastVerificationError ? '<div class="gc-log-item-error">Lỗi kiểm tra gần nhất: ' + esc(job.lastVerificationError) + '</div>' : '');
+            '</div>' + (job.lastVerificationError ? '<div class="gc-log-item-error">Lỗi kiểm tra gần nhất: ' + esc(job.lastVerificationError) + '</div>' : '');
 
         // Gom trạng thái thành viên về 4 nhóm dễ quan sát.
         function memberBucket(m) {
@@ -1202,7 +1332,7 @@
                         '<td>' + attempts + '</td>' +
                         '<td>' + esc(lastAt ? formatDateTime(lastAt) : '-') + '</td>' +
                         '<td>' + esc(memberNote(member)) + '</td>' +
-                    '</tr>';
+                        '</tr>';
                 }).join('') +
                 '</tbody></table></div>';
             if (!visibleMembers.length) membersHtml += '<div class="group-copy-detail-empty" style="margin-top:10px;"><span>◎</span><strong>Không tìm thấy thành viên phù hợp</strong></div>';
@@ -1216,14 +1346,14 @@
                 var label = ACTION_LABELS[run.action] || run.action || 'Đợt xử lý';
                 return '<div class="gc-log-item"><div class="gc-log-item-head"><b>Đợt #' + esc(String(run.runNo || '')) + ' — ' + esc(label) + '</b><span>' + esc(formatDateTime(run.startedAt)) + '</span></div>' +
                     '<div class="gc-log-item-meta">' +
-                        '<span>Trạng thái: <b>' + esc(statusLabel(run.status) === run.status ? (run.status || '-') : statusLabel(run.status)) + '</b></span>' +
-                        '<span>Đã gửi: <b>' + Number(run.sentCount || run.friendRequestCount || 0) + '</b></span>' +
-                        '<span>Vào nhóm mới: <b>' + Number(run.newlyJoinedCount || run.joinedCount || 0) + '</b></span>' +
-                        '<span>Lỗi: <b>' + Number(run.failedCount || run.friendRequestFailedCount || 0) + '</b></span>' +
-                        '<span>Chuyển đổi: <b>' + Number(run.conversionRate || 0) + '%</b></span>' +
+                    '<span>Trạng thái: <b>' + esc(statusLabel(run.status) === run.status ? (run.status || '-') : statusLabel(run.status)) + '</b></span>' +
+                    '<span>Đã gửi: <b>' + Number(run.sentCount || run.friendRequestCount || 0) + '</b></span>' +
+                    '<span>Vào nhóm mới: <b>' + Number(run.newlyJoinedCount || run.joinedCount || 0) + '</b></span>' +
+                    '<span>Lỗi: <b>' + Number(run.failedCount || run.friendRequestFailedCount || 0) + '</b></span>' +
+                    '<span>Chuyển đổi: <b>' + Number(run.conversionRate || 0) + '%</b></span>' +
                     '</div>' +
                     (run.error ? '<div class="gc-log-item-error">' + esc(run.error) + '</div>' : '') +
-                '</div>';
+                    '</div>';
             }).join('') + '</div>';
         }
 
@@ -1349,40 +1479,81 @@
         var overlay = $('groupCopyCreateOverlay');
         if (!overlay) return;
         overlay.classList.add('show');
+        overlay.classList.add('visible');
+        overlay.style.display = 'flex';
         updateRunButtonState();
     }
 
     function closeCreateOverlay() {
         var overlay = $('groupCopyCreateOverlay');
-        if (overlay) overlay.classList.remove('show');
+        if (overlay) {
+            overlay.classList.remove('show');
+            overlay.classList.remove('visible');
+            overlay.style.display = 'none';
+        }
     }
 
     // ─── Gắn sự kiện ─────────────────────────────────────────────────────────
     function bindEvents() {
+        document.querySelectorAll('[data-source-mode]').forEach(function (button) {
+            button.addEventListener('click', function () { setSourceMode(button.getAttribute('data-source-mode')); });
+        });
         document.querySelectorAll('[data-target-mode]').forEach(function (button) {
             button.addEventListener('click', function () { setTargetMode(button.getAttribute('data-target-mode')); });
         });
-        $('groupCopyAccountTrigger').addEventListener('click', function () { setAccountMenu(!state.accountMenuOpen); });
-        $('groupCopySource').addEventListener('input', function () { scheduleSourcePreview(); });
+        var accTrigger = $('groupCopyAccountTrigger');
+        if (accTrigger) accTrigger.addEventListener('click', function () { setAccountMenu(!state.accountMenuOpen); });
+        var srcInput = $('groupCopySource');
+        if (srcInput) srcInput.addEventListener('input', function () { scheduleSourcePreview(); });
         ['groupCopyStartAt', 'groupCopyDailyLimit', 'groupCopyVerifyMinutes', 'groupCopyNewGroupName', 'groupCopyConsent', 'groupCopyCampaignDays'].forEach(function (id) {
             var el = $(id);
             if (el) el.addEventListener('input', updateRunButtonState);
             if (el) el.addEventListener('change', updateRunButtonState);
         });
+        var newGroupInp = $('groupCopyNewGroupName');
+        if (newGroupInp) newGroupInp.addEventListener('input', renderInvitePreview);
+        var inviteTpl = $('groupCopyInviteTemplate');
+        if (inviteTpl) inviteTpl.addEventListener('input', renderInvitePreview);
+        var extraLinksInp = $('groupCopyExtraLinks');
+        if (extraLinksInp) extraLinksInp.addEventListener('input', renderInvitePreview);
+        document.querySelectorAll('.gc-token').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var token = btn.getAttribute('data-token');
+                var ta = $('groupCopyInviteTemplate');
+                if (!ta || !token) return;
+                var start = ta.selectionStart || 0;
+                var end = ta.selectionEnd || 0;
+                var val = ta.value;
+                ta.value = val.substring(0, start) + token + val.substring(end);
+                ta.focus();
+                ta.selectionStart = ta.selectionEnd = start + token.length;
+                renderInvitePreview();
+            });
+        });
 
-        $('groupCopyPickGroupBtn').addEventListener('click', openGroupPicker);
-        $('groupCopyPickerClose').addEventListener('click', closeGroupPicker);
-        $('groupCopyPickerOverlay').addEventListener('click', function (event) { if (event.target === $('groupCopyPickerOverlay')) closeGroupPicker(); });
-        $('groupCopyPickerSearch').addEventListener('input', function () { state.pickerSearch = $('groupCopyPickerSearch').value; renderPickerList(); });
-        $('groupCopyPickerSort').addEventListener('change', function () { state.pickerSort = $('groupCopyPickerSort').value; renderPickerList(); });
-        $('groupCopyPickerRefresh').addEventListener('click', refreshPickerGroups);
-        $('groupCopyPickerList').addEventListener('click', function (event) {
+        var pickSourceBtn = $('groupCopyPickSourceGroupBtn');
+        if (pickSourceBtn) pickSourceBtn.addEventListener('click', function () { openGroupPicker('source'); });
+        var pickTargetBtn = $('groupCopyPickGroupBtn');
+        if (pickTargetBtn) pickTargetBtn.addEventListener('click', function () { openGroupPicker('target'); });
+        var pickerClose = $('groupCopyPickerClose');
+        if (pickerClose) pickerClose.addEventListener('click', closeGroupPicker);
+        var pickerOverlay = $('groupCopyPickerOverlay');
+        if (pickerOverlay) pickerOverlay.addEventListener('click', function (event) { if (event.target === pickerOverlay) closeGroupPicker(); });
+        var pickerSearch = $('groupCopyPickerSearch');
+        if (pickerSearch) pickerSearch.addEventListener('input', function () { state.pickerSearch = pickerSearch.value; renderPickerList(); });
+        var pickerSort = $('groupCopyPickerSort');
+        if (pickerSort) pickerSort.addEventListener('change', function () { state.pickerSort = pickerSort.value; renderPickerList(); });
+        var pickerRefresh = $('groupCopyPickerRefresh');
+        if (pickerRefresh) pickerRefresh.addEventListener('click', refreshPickerGroups);
+        var pickerList = $('groupCopyPickerList');
+        if (pickerList) pickerList.addEventListener('click', function (event) {
             var row = event.target.closest('[data-pick-group]');
             if (row) pickGroup(row.getAttribute('data-pick-group'));
         });
 
         document.addEventListener('click', function (event) {
-            if (!$('groupCopyAccountPicker').contains(event.target)) setAccountMenu(false);
+            var picker = $('groupCopyAccountPicker');
+            if (picker && !picker.contains(event.target)) setAccountMenu(false);
             if (!event.target.closest('.gc-kebab-wrap')) closeAllKebabMenus();
         });
         document.addEventListener('keydown', function (event) {
@@ -1394,13 +1565,18 @@
             }
         });
 
-        $('groupCopyAddBtn').addEventListener('click', openCreateOverlay);
-        $('groupCopyCreateClose').addEventListener('click', closeCreateOverlay);
-        $('groupCopyCreateOverlay').addEventListener('click', function (event) { if (event.target === $('groupCopyCreateOverlay')) closeCreateOverlay(); });
+        var addBtn = $('groupCopyAddBtn');
+        if (addBtn) addBtn.addEventListener('click', openCreateOverlay);
+        var createClose = $('groupCopyCreateClose');
+        if (createClose) createClose.addEventListener('click', closeCreateOverlay);
+        var createOverlay = $('groupCopyCreateOverlay');
+        if (createOverlay) createOverlay.addEventListener('click', function (event) { if (event.target === createOverlay) closeCreateOverlay(); });
 
-        $('groupCopyStartBtn').addEventListener('click', startJob);
-        $('groupCopyRefreshJobsBtn').addEventListener('click', async function () {
-            var button = $('groupCopyRefreshJobsBtn');
+        var startBtn = $('groupCopyStartBtn');
+        if (startBtn) startBtn.addEventListener('click', startJob);
+        var refreshJobsBtn = $('groupCopyRefreshJobsBtn');
+        if (refreshJobsBtn) refreshJobsBtn.addEventListener('click', async function () {
+            var button = refreshJobsBtn;
             var previous = button.innerHTML;
             button.disabled = true;
             button.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;"></span> Đang làm mới';
@@ -1423,12 +1599,14 @@
                 renderJobs(state.jobs);
             });
         });
-        $('groupCopyJobsSearch').addEventListener('input', function () {
-            state.jobSearch = $('groupCopyJobsSearch').value;
+        var jobsSearch = $('groupCopyJobsSearch');
+        if (jobsSearch) jobsSearch.addEventListener('input', function () {
+            state.jobSearch = jobsSearch.value;
             renderJobs(state.jobs);
         });
 
-        $('groupCopyJobs').addEventListener('click', async function (event) {
+        var jobsContainer = $('groupCopyJobs');
+        if (jobsContainer) jobsContainer.addEventListener('click', async function (event) {
             var kebabToggle = event.target.closest('[data-kebab-toggle]');
             if (kebabToggle) {
                 var id = kebabToggle.getAttribute('data-kebab-toggle');
@@ -1484,8 +1662,11 @@
     async function init() {
         bindEvents();
         setDefaultStartTime();
+        setSourceMode('link');
+        renderSourcePickerPreview();
         setTargetMode('new');
         renderTargetPreview();
+        renderInvitePreview();
         await loadAccounts();
         await applyPlanCapabilities();
         await loadJobs();

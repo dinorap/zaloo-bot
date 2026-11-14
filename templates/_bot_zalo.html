@@ -1,0 +1,178 @@
+{# ══════════════════════════════════════════════════════════════════════════
+   TAB CHATBOT ZALO — phần setup riêng cho nền tảng Zalo
+   (tài khoản, nhóm, chống loop, nhóm nhận gộp, gửi thử, nhật ký)
+   ══════════════════════════════════════════════════════════════════════════ #}
+
+<!-- ══════ HEADER TAB ZALO ══════ -->
+<header class="cb-hero">
+  <div>
+    <h2 class="cb-hero-title">
+      <svg class="cb-ico cb-ico-lg" style="color:#ff7542" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="11" rx="3"/><path d="M12 8V4M8 13h.01M16 13h.01M9 16.5h6"/></svg>
+      Chatbot Zalo
+    </h2>
+    <p class="cb-hero-sub">Chọn tài khoản, tick nhóm muốn trả lời rồi bấm <b>Lưu &amp; Bật bot</b> là chạy ngay. Tài liệu và phong cách trả lời được cài đặt riêng cho Zalo.</p>
+  </div>
+  <div class="cb-hero-acts">
+    <span id="cbStatusDot" class="cb-status-pill"><span class="cb-dot"></span><span>Đang kiểm tra…</span></span>
+    <button class="cb-btn cb-btn-green" type="button" onclick="chatbotSave(true)">
+      <svg class="cb-ico" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>Lưu &amp; Bật bot
+    </button>
+    <button class="cb-btn cb-btn-red" type="button" onclick="chatbotStop()">
+      <svg class="cb-ico" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Tắt bot
+    </button>
+    <button class="cb-btn" type="button" onclick="chatbotRefresh()" title="Tải lại cấu hình & nhóm">
+      <svg class="cb-ico" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Làm mới
+    </button>
+  </div>
+</header>
+
+<!-- ══════ BƯỚC 2: NỘI DUNG TƯ VẤN & PHONG CÁCH TRẢ LỜI (ZALO) ══════ -->
+<section class="cb-card" id="botZaloCard2">
+  <div class="cb-step-head">
+    <span class="cb-step-num">2</span>
+    <h3>Nội dung tư vấn &amp; Phong cách trả lời (Zalo)</h3>
+    <span class="cb-step-badge">Dành riêng cho Zalo</span>
+  </div>
+  <div class="cb-grid">
+    <div class="cb-field full">
+      <label for="cbKnowledge">
+        <span>Tài liệu sản phẩm / Bảng giá / Câu trả lời chuẩn (<span id="cbKnowChars">0</span> ký tự)</span>
+        <button class="cb-btn cb-btn-sm" type="button" onclick="chatbotSaveKnowledge()">
+          <svg class="cb-ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Lưu tài liệu
+        </button>
+      </label>
+      <textarea id="cbKnowledge" rows="7" placeholder="Dán vào đây: bảng giá, chính sách đổi trả, thông tin sản phẩm, câu hỏi thường gặp… Bot Zalo sẽ ưu tiên trả lời chính xác theo tài liệu này."></textarea>
+      <small>Kho tài liệu riêng cho bot Zalo — độc lập với bot Telegram.</small>
+    </div>
+    <div class="cb-field">
+      <label for="cbSystem">Vai trò trợ lý (System Prompt)</label>
+      <textarea id="cbSystem" rows="3" placeholder="vd: Bạn là trợ lý Zalo của shop, trả lời ngắn gọn, lịch sự, đúng ý khách…"></textarea>
+    </div>
+    <div class="cb-field">
+      <label for="cbGlobal">Quy chuẩn chung / Cách xưng hô</label>
+      <textarea id="cbGlobal" rows="3" placeholder="vd: Luôn xưng em - gọi anh/chị. Không tự bịa giá ngoài tài liệu."></textarea>
+    </div>
+    <div class="cb-field full">
+      <label class="cb-switch-row">
+        <span class="cb-switch-copy">
+          <strong>Thêm tên người gửi vào câu hỏi (Khuyên dùng cho nhóm Zalo)</strong>
+          <span>Giúp AI nhận biết người hỏi để xưng hô lịch sự và gọi tên khách (vd: "Thưa Anh/Chị Nam...", "Dạ Anh/Chị Nam..."), giúp câu trả lời sát với từng khách hơn khi nhóm có nhiều người.</span>
+        </span>
+        <input id="cbSenderName" type="checkbox" checked>
+      </label>
+    </div>
+    <div class="cb-field full">
+      <label class="cb-switch-row">
+        <span class="cb-switch-copy">
+          <strong>Chỉ trả lời theo tài liệu (khuyên dùng nếu cần chính xác tuyệt đối)</strong>
+          <span>Bật: câu nào ngoài tài liệu sẽ gửi câu báo nhân viên hỗ trợ bên dưới, không đoán bừa.</span>
+        </span>
+        <input id="cbStrict" type="checkbox" onchange="chatbotStrictChanged()">
+      </label>
+    </div>
+    <div class="cb-field full" id="cbHandoffWrap">
+      <label for="cbHandoff">Câu trả lời khi tài liệu chưa có thông tin</label>
+      <input id="cbHandoff" placeholder="vd: Dạ câu này em chưa có thông tin chính xác, để em bảo tư vấn viên hỗ trợ Anh/Chị ngay ạ.">
+    </div>
+  </div>
+</section>
+
+<!-- ══════ BƯỚC 3: TÀI KHOẢN & NHÓM ══════ -->
+<section class="cb-card">
+  <div class="cb-step-head">
+    <span class="cb-step-num">3</span>
+    <h3>Chọn tài khoản &amp; nhóm cần trả lời</h3>
+    <span class="cb-step-badge" id="cbGroupCount">0 nhóm đã chọn</span>
+  </div>
+  <div class="cb-grid">
+    <div class="cb-field full">
+      <label for="cbAccount">Tài khoản Zalo chạy bot</label>
+      <select id="cbAccount" onchange="chatbotAccountChanged()"><option value="">-- Chọn tài khoản --</option></select>
+      <small id="cbAccountHint">Chọn tài khoản đã đăng nhập ở trang Tài khoản.</small>
+    </div>
+    <div class="cb-field full">
+      <label>
+        <span>Nhóm để bot tự trả lời</span>
+        <span style="display:inline-flex;gap:6px">
+          <button type="button" class="cb-btn cb-btn-sm" onclick="chatbotSelectAllGroups(true)">Chọn tất cả</button>
+          <button type="button" class="cb-btn cb-btn-sm" onclick="chatbotSelectAllGroups(false)">Bỏ chọn</button>
+        </span>
+      </label>
+      <div class="cb-group-toolbar">
+        <input type="text" id="cbGroupSearch" placeholder="Tìm nhanh theo tên nhóm..." oninput="chatbotFilterGroups()">
+      </div>
+      <div id="cbGroupList" class="cb-group-box">Đang tải danh sách nhóm…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ CÀI ĐẶT NÂNG CAO ZALO ══════ -->
+<details class="cb-adv">
+  <summary>
+    <svg class="cb-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a4 4 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a4 4 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a4 4 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a4 4 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+    Cài đặt nâng cao Zalo (ID nhóm thủ công, chống loop, tốc độ)
+  </summary>
+  <div class="cb-grid">
+    <div class="cb-field full">
+      <label class="cb-switch-row">
+        <span class="cb-switch-copy">
+          <strong>Cho phép bot trả lời cả tin từ chính nick này (dùng khi test 1 tài khoản)</strong>
+          <span>Nên tắt khi chạy thật cùng khách hàng để tránh bot tự trả lời tin nhắn của nhân viên.</span>
+        </span>
+        <input id="cbSelf" type="checkbox" checked>
+      </label>
+    </div>
+    <div class="cb-field full">
+      <label class="cb-switch-row">
+        <span class="cb-switch-copy">
+          <strong>Trả lời trực tiếp tại từng nhóm nguồn (mặc định nên bật)</strong>
+          <span>Tắt nếu bạn muốn gom tất cả câu trả lời dồn về 1 nhóm đích duy nhất bên dưới.</span>
+        </span>
+        <input id="cbReplySrc" type="checkbox" checked onchange="chatbotReplySrcChanged()">
+      </label>
+    </div>
+    <div class="cb-field">
+      <label for="cbDest">Nhóm nhận gộp (chỉ dùng khi tắt "Trả lời tại từng nhóm nguồn")</label>
+      <input id="cbDest" placeholder="Để trống nếu trả lời trực tiếp từng nhóm">
+    </div>
+    <div class="cb-field">
+      <label for="cbTargets">Danh sách Group ID (tự đồng bộ hoặc dán tay, cách nhau dấu phẩy)</label>
+      <textarea id="cbTargets" rows="2" placeholder="vd: 96302920342544918" oninput="chatbotUpdateGroupCount()"></textarea>
+    </div>
+    <div class="cb-field">
+      <label for="cbPoll">Chu kỳ kiểm tra tin mới (giây)</label>
+      <input id="cbPoll" type="number" min="0.5" step="0.1" value="1.5">
+    </div>
+    <div class="cb-field">
+      <label for="cbGap">Giãn cách giữa các lần gửi (giây, chống khóa nick)</label>
+      <input id="cbGap" type="number" min="0.5" step="0.1" value="1.2">
+    </div>
+  </div>
+</details>
+
+<!-- ══════ GỬI THỬ & NHẬT KÝ ZALO ══════ -->
+<details class="cb-adv">
+  <summary>
+    <svg class="cb-ico" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+    Gửi tin thử &amp; Nhật ký hoạt động của bot Zalo
+  </summary>
+  <div class="cb-grid">
+    <div class="cb-field full">
+      <label for="cbTestMsg">Gửi tin nhắn thử tới nhóm đã chọn</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="cbTestMsg" value="Test tin nhắn tự động từ Jimmy BOT CHAT" style="flex:1">
+        <button class="cb-btn cb-btn-primary" type="button" onclick="chatbotSendTest()">
+          <svg class="cb-ico" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Gửi thử
+        </button>
+      </div>
+      <small id="cbSendStatus"></small>
+    </div>
+    <div class="cb-field full">
+      <label>
+        <span>Nhật ký bot (tự cập nhật 3 giây/lần)</span>
+        <button class="cb-btn cb-btn-sm" type="button" onclick="chatbotLoadLogs()">Tải lại</button>
+      </label>
+      <div id="cbLogs" class="cb-log">Đang tải nhật ký…</div>
+    </div>
+  </div>
+</details>

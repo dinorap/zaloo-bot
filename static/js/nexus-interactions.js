@@ -32,8 +32,8 @@
     function bindRipple(root) {
         root.addEventListener('pointerdown', function (event) {
             if (event.button !== 0) return;
-            var target = event.target.closest('.btn, .header-nav a, .sidebar-mini-link, .sidebar-policy-link, .theme-toggle, .nexus-mobile-menu-btn, .nexus-mobile-theme, .dashboard-metric, .dashboard-quick-grid a, .group-copy-mode-switch button');
-            if (!target) return;
+            var target = event.target.closest('.btn, .theme-toggle, .nexus-mobile-menu-btn, .nexus-mobile-theme, .dashboard-metric, .dashboard-quick-grid a, .group-copy-mode-switch button');
+            if (!target || target.closest('.app-sidebar')) return;
             target.classList.add('nexus-ripple-host');
             addRipple(event, target);
         });
@@ -49,7 +49,7 @@
                 setSidebar(false);
                 return;
             }
-            if (window.innerWidth <= 900 && event.target.closest('.header-nav a, .sidebar-mini-link, .sidebar-policy-link')) {
+            if (window.innerWidth <= 900 && event.target.closest('.header-nav a, .sidebar-mini-link, .sidebar-policy-link, .sidebar-link-item')) {
                 setSidebar(false);
             }
         });
@@ -377,15 +377,21 @@
             }
         }
 
+        // Đồng bộ trạng thái active của toàn bộ link điều hướng trong sidebar.
+        // Phải gồm cả các link KHÔNG có data-nexus-workspace-nav (Kích hoạt,
+        // Chính sách) vì khi điều hướng bằng SPA sang trang khác, class active
+        // cũ của chúng sẽ còn sót lại và bị hiện sai cùng lúc với trang mới.
+        var NAV_LINK_SELECTOR = '.header-nav a, .sidebar-mini-link, .sidebar-policy-link, .sidebar-link-item';
+
         function syncActiveNavigation(newDocument) {
-            var currentLinks = document.querySelectorAll('[data-nexus-workspace-nav]');
+            var currentLinks = document.querySelectorAll(NAV_LINK_SELECTOR);
             currentLinks.forEach(function (currentLink) {
                 var currentPath;
                 try { currentPath = new URL(currentLink.href, window.location.href).pathname; }
                 catch (error) { currentPath = currentLink.getAttribute('href') || ''; }
 
                 var matched = Array.prototype.find.call(
-                    newDocument.querySelectorAll('[data-nexus-workspace-nav]'),
+                    newDocument.querySelectorAll(NAV_LINK_SELECTOR),
                     function (candidate) {
                         try { return new URL(candidate.href, window.location.href).pathname === currentPath; }
                         catch (error) { return (candidate.getAttribute('href') || '') === currentPath; }
@@ -405,6 +411,76 @@
             if (newDocument.documentElement.dataset.theme) {
                 document.documentElement.dataset.theme = newDocument.documentElement.dataset.theme;
             }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // Đồng bộ stylesheet giữa các trang khi điều hướng SPA.
+        // Khi swap vùng làm việc, chỉ phần nằm SAU marker #nexusWorkspaceStart
+        // được thay thế — còn lại (sidebar, theme cam-vàng trong <body>) giữ nguyên.
+        // Vì vậy những stylesheet đặt trong <head> của trang mới (vd. guide.html
+        // có <style> nội tuyến, dashboard.html có dashboard.css) sẽ bị mất →
+        // giao diện "xấu" cho tới khi F5.
+        // Cách sửa: gom <link>/<style> của <head> trang mới vào <head> hiện tại.
+        // ─────────────────────────────────────────────────────────────────
+        var MANAGED_STYLE_ATTR = 'data-nexus-workspace-style';
+
+        function collectHeadStyles(doc) {
+            var head = doc.head || doc.getElementsByTagName('head')[0];
+            if (!head) return [];
+            var nodes = Array.prototype.slice.call(head.querySelectorAll('link[rel="stylesheet"], style'));
+            return nodes.map(function (node) {
+                return {
+                    tag: node.tagName,
+                    href: node.tagName === 'LINK' ? (node.getAttribute('href') || '') : '',
+                    html: node.tagName === 'STYLE' ? (node.innerHTML || '') : ''
+                };
+            });
+        }
+
+        function removeManagedStyles() {
+            Array.prototype.slice.call(document.querySelectorAll('[' + MANAGED_STYLE_ATTR + ']')).forEach(function (node) {
+                if (node.parentNode) node.parentNode.removeChild(node);
+            });
+        }
+
+        function mountManagedStyles(newDocument) {
+            removeManagedStyles();
+            var wanted = collectHeadStyles(newDocument);
+
+            var fragment = document.createDocumentFragment();
+            wanted.forEach(function (item) {
+                if (item.tag === 'LINK') {
+                    if (!item.href) return;
+                    var link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = item.href;
+                    link.setAttribute(MANAGED_STYLE_ATTR, '1');
+                    fragment.appendChild(link);
+                    return;
+                }
+                var style = document.createElement('style');
+                style.innerHTML = item.html;
+                style.setAttribute(MANAGED_STYLE_ATTR, '1');
+                fragment.appendChild(style);
+            });
+            document.head.appendChild(fragment);
+        }
+
+        function syncWorkspaceStyles(newDocument) {
+            // Chỉ các trang hỗ trợ chuyển vùng mới cần đồng bộ.
+            if (!newDocument.getElementById('nexusWorkspaceStart')) return;
+            mountManagedStyles(newDocument);
+        }
+
+        // Gom style của trang đầu tiên về <head> và đánh dấu để quản lý.
+        function adoptInitialStyles() {
+            var items = collectManagedStyles(document);
+            var fragment = document.createDocumentFragment();
+            items.forEach(function (item) {
+                item.node.setAttribute(MANAGED_STYLE_ATTR, '1');
+                fragment.appendChild(item.node);
+            });
+            document.head.appendChild(fragment);
         }
 
         function loadExternalScript(node, owner) {
@@ -496,6 +572,7 @@
                 currentNodes.forEach(function (node) { node.remove(); });
 
                 copyBodyState(newDocument);
+                syncWorkspaceStyles(newDocument);
                 syncActiveNavigation(newDocument);
                 document.title = newDocument.title || document.title;
 
@@ -538,7 +615,18 @@
             navigateWorkspace(window.location.href, { push: false });
         });
 
+        // Đánh dấu các stylesheet sẵn có trong <head> là "quản lý" để khi
+        // điều hướng SPA ta gỡ đúng bộ CSS của trang cũ, tránh dồn CSS.
+        function adoptInitialStyles() {
+            var head = document.head;
+            if (!head) return;
+            Array.prototype.slice.call(head.querySelectorAll('link[rel="stylesheet"], style')).forEach(function (node) {
+                node.setAttribute(MANAGED_STYLE_ATTR, '1');
+            });
+        }
+
         nativeDocumentAdd('DOMContentLoaded', function () {
+            adoptInitialStyles();
             var nodes = workspaceNodes(document);
             var owners = ownerListFromNodes(nodes);
             owners.forEach(function (owner) {

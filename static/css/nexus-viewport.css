@@ -57,12 +57,16 @@ body {
 /* Khung nội dung luôn vừa đúng phần màn hình còn lại bên cạnh sidebar. */
 .page {
     box-sizing: border-box !important;
-    width: calc(100vw - var(--ux-sidebar-width)) !important;
+    width: calc(100vw - var(--ux-sidebar-width, 240px)) !important;
     max-width: none !important;
     height: 100dvh !important;
     min-height: 0 !important;
     max-height: 100dvh !important;
-    margin-left: var(--ux-sidebar-width) !important;
+    margin-left: var(--ux-sidebar-width, 240px) !important;
+    padding-left: 28px !important;
+    padding-right: 28px !important;
+    padding-top: 20px !important;
+    padding-bottom: 24px !important;
     overflow: hidden !important;
 }
 

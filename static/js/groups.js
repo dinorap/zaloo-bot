@@ -107,8 +107,28 @@
         if (link) return link;
         var status = String((g && g.linkStatus) || '').toLowerCase();
         if (status === 'loading' || status === 'pending') return 'Đang lấy link nhóm...';
+        // Nhóm chưa bật link: đây là trạng thái bình thường, không phải lỗi.
+        if (status === 'none' || status === 'no_link') return 'Nhóm chưa bật link';
         if (status === 'error') return 'Chưa lấy được link · bấm để thử lại';
         return 'Đang lấy link nhóm...';
+    }
+
+    // Thông điệp lỗi thân thiện: gọi tên đúng vấn đề và cách khắc phục,
+    // không tràn thông báo kỹ thuật của Zalo ra ngoài.
+    function getGroupLinkErrorMessage(g) {
+        var status = String((g && g.linkStatus) || '').toLowerCase();
+        if (status === 'none' || status === 'no_link') {
+            return 'Nhóm này chưa bật link mời. Bật link trong Zalo rồi bấm lại để lấy.';
+        }
+        if (status === 'error') {
+            var raw = String((g && g.linkError) || '').trim();
+            // Chỉ hiện chi tiết nếu là lỗi do người dùng có thể tự xử lý.
+            if (/thiếu\s+imei|thiếu\s+zpwenk|thiếu\s+cookies/i.test(raw)) {
+                return 'Tài khoản Zalo chưa có phiên đăng nhập đầy đủ. Bấm "Làm mới tài khoản" rồi thử lại.';
+            }
+            return 'Chưa lấy được link nhóm. Bấm vào nhóm để thử lại.';
+        }
+        return '';
     }
 
     function getCompactGroupLink(g) {
@@ -200,7 +220,17 @@
         return String((m && (m.phoneNumber || m.phone || m.mobile)) || '').trim();
     }
 
+    function isMemberSelf(m) {
+        if (!m) return false;
+        if (m.isSelf === true) return true;
+        var uid = getMemberId(m);
+        var currentAcc = (state.accounts || []).find(function (item) { return getAccountId(item) === state.accountId; });
+        var ownUid = String((currentAcc && (currentAcc.userId || currentAcc.uid || currentAcc.id)) || '').trim();
+        return Boolean(uid && ownUid && uid === ownUid);
+    }
+
     function isMemberFriend(m) {
+        if (!m || isMemberSelf(m)) return false;
         return String((m && (m.isFr || m.friend)) || '') === '1' || (m && m.isFriend === true);
     }
 
@@ -503,8 +533,8 @@
         state.selectedMembers.clear();
         groupsRenderList();
         renderDetailEmpty();
-        setRefreshButtonLoading(true, 'Đang mở...');
-        setStatus('Đang mở tài khoản Zalo đã chọn...', 'loading');
+        setRefreshButtonLoading(true, 'Đang đồng bộ...');
+        setStatus('Đang đồng bộ ngầm danh sách nhóm...', 'loading');
 
         try {
             var res = await fetch('/api/groups/refresh-account', {
@@ -513,13 +543,33 @@
                 body: JSON.stringify({ accountId: state.accountId })
             });
             var data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Không mở được tài khoản Zalo');
+            if (!data.success) throw new Error(data.error || 'Không đồng bộ được danh sách nhóm');
 
             setRefreshButtonLoading(true, 'Đang đồng bộ...');
-            setStatus('Đã mở tài khoản Zalo. Đang bắt API danh sách nhóm...', 'loading');
+            setStatus(data.message || 'Đang đồng bộ ngầm danh sách nhóm...', 'loading');
             await groupsReloadAccounts();
             state.accountId = data.accountId || state.accountId;
             if ($('groupsAccountSelect')) $('groupsAccountSelect').value = state.accountId;
+
+            // Đồng bộ trực tiếp qua API: dữ liệu đã sẵn sàng ngay, không cần
+            // chờ monitor bắt request -> tải lại ngay thay vì poll 90 giây.
+            if (data.directApi) {
+                var direct = await fetchPersonalGroups(state.accountId);
+                state.groups = direct.groups || [];
+                groupsRenderList();
+                if (state.selectedGroupId) {
+                    state.selectedGroup = state.groups.find(function (g) {
+                        return getGroupId(g) === state.selectedGroupId;
+                    }) || state.selectedGroup;
+                    renderGroupDetail();
+                }
+                var directMsg = 'Đã đồng bộ ' + state.groups.length + ' nhóm trực tiếp qua API.';
+                setStatus(directMsg, 'success');
+                showToast(directMsg, 'success');
+                groupsScheduleLinkRefresh(state.accountId);
+                return;
+            }
+
             await groupsPollSyncedGroups(state.accountId, data.startedAt || 0);
         } catch (err) {
             setStatus('Lỗi làm mới nhóm: ' + err.message, 'error');
@@ -563,6 +613,21 @@
             var data = await response.json();
             if (requestSeq !== state.selectedLinkRequestSeq) return;
             if (!response.ok || !data.success || !data.groupLink) {
+                // Nhóm chưa bật link là trạng thái bình thường, không phải lỗi kỹ thuật.
+                if (data.linkStatus === 'none') {
+                    group.groupLink = '';
+                    group.group_link = '';
+                    group.inviteLink = '';
+                    group.linkStatus = 'none';
+                    group.linkError = data.linkError || '';
+                    if (state.selectedGroupId === groupId) {
+                        state.selectedGroup = group;
+                        renderGroupDetail();
+                    }
+                    groupsRenderList();
+                    showToast(getGroupLinkErrorMessage(group), 'warning');
+                    return;
+                }
                 throw new Error(data.error || data.linkError || 'Zalo chưa trả về link nhóm.');
             }
 
@@ -588,7 +653,7 @@
                 renderGroupDetail();
             }
             groupsRenderList();
-            showToast('Không lấy được link nhóm: ' + group.linkError, 'error');
+            showToast(getGroupLinkErrorMessage(group), 'error');
         } finally {
             if (requestSeq === state.selectedLinkRequestSeq) {
                 state.selectedLinkLoadingGroupId = '';
@@ -669,9 +734,13 @@
 
         if ($('groupsDetailName')) $('groupsDetailName').textContent = name;
         if ($('groupsDetailMembers')) $('groupsDetailMembers').textContent = count + ' thành viên';
+        if ($('groupsDetailGid')) {
+            $('groupsDetailGid').textContent = gid || '(chưa có)';
+            $('groupsDetailGid').title = gid ? 'Bấm để sao chép Group ID: ' + gid : 'Chưa có Group ID';
+        }
         if ($('groupsDetailId')) {
             var detailLink = getGroupLinkLabel(g);
-            var linkError = String(g.linkError || '').trim();
+            var linkError = getGroupLinkErrorMessage(g);
             $('groupsDetailId').textContent = detailLink;
             $('groupsDetailId').classList.toggle('is-loading', String(g.linkStatus || '').toLowerCase() === 'loading');
             $('groupsDetailId').classList.toggle('is-error', String(g.linkStatus || '').toLowerCase() === 'error');
@@ -808,24 +877,32 @@
                 var name = getMemberName(m);
                 var avatar = normalizeAvatar(m.avatar || m.avatarUrl || m.avt || '');
                 var phone = getMemberPhoneText(m);
-                var friend = isMemberFriend(m);
+                var isSelf = isMemberSelf(m);
+                var friend = isSelf ? false : isMemberFriend(m);
                 var checked = state.selectedMembers.has(uid) ? 'checked' : '';
                 var gender = getMemberGenderText(m);
                 var dob = getMemberDobText(m);
-                var friendText = friend ? 'Đã kết bạn' : 'Chưa';
-                var friendClass = friend ? 'success' : 'muted';
+                var friendText = isSelf ? 'Bạn (Tôi)' : (friend ? 'Đã kết bạn' : 'Chưa');
+                var friendClass = isSelf ? 'info' : (friend ? 'success' : 'muted');
+                var friendStyle = isSelf ? 'background:rgba(2, 132, 199, 0.12);color:#0284c7;font-weight:600;' : '';
                 var avatarHtml = avatar
                     ? '<img class="groups-member-avatar" src="' + esc(avatar) + '" alt="" onerror="this.style.display=\'none\'">'
                     : '<div class="groups-member-avatar fallback">' + esc(name.charAt(0).toUpperCase() || '?') + '</div>';
+                var checkboxHtml = isSelf
+                    ? '<span title="Tài khoản của bạn" style="font-size:12px;color:var(--text-secondary);display:inline-block;width:14px;text-align:center;">-</span>'
+                    : '<input type="checkbox" ' + checked + ' onchange="groupsToggleMember(\'' + esc(uid) + '\')">';
+                var nameHtml = isSelf
+                    ? '<div class="groups-member-name">' + esc(name) + ' <span class="muted" style="font-size:11px;font-weight:normal;">(Bạn)</span></div>'
+                    : '<div class="groups-member-name">' + esc(name) + '</div>';
                 return '<tr>'
-                    + '<td><input type="checkbox" ' + checked + ' onchange="groupsToggleMember(\'' + esc(uid) + '\')"></td>'
+                    + '<td style="text-align:center;">' + checkboxHtml + '</td>'
                     + '<td>' + avatarHtml + '</td>'
-                    + '<td><div class="groups-member-name">' + esc(name) + '</div></td>'
+                    + '<td>' + nameHtml + '</td>'
                     + '<td>' + buildMemberRoleCell(m) + '</td>'
                     + '<td>' + esc(gender) + '</td>'
                     + '<td><span class="muted">' + esc(dob) + '</span></td>'
                     + '<td>' + (phone ? esc(phone) : '<span class="muted">Chưa có</span>') + '</td>'
-                    + '<td><span class="pill ' + friendClass + '">' + esc(friendText) + '</span></td>'
+                    + '<td><span class="pill ' + friendClass + '" style="' + friendStyle + '">' + esc(friendText) + '</span></td>'
                     + '<td><button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); groupsShowMemberProfile(\'' + esc(uid) + '\')">Xem</button></td>'
                     + '</tr>';
             }).join('');
@@ -846,8 +923,15 @@
 
     function groupsToggleSelectAllMembers(cb) {
         var members = getFilteredMembers();
-        if (cb && cb.checked) members.forEach(function (m) { var uid = getMemberId(m); if (uid) state.selectedMembers.add(uid); });
-        else members.forEach(function (m) { state.selectedMembers.delete(getMemberId(m)); });
+        if (cb && cb.checked) {
+            members.forEach(function (m) {
+                if (isMemberSelf(m)) return;
+                var uid = getMemberId(m);
+                if (uid) state.selectedMembers.add(uid);
+            });
+        } else {
+            members.forEach(function (m) { state.selectedMembers.delete(getMemberId(m)); });
+        }
         groupsRenderMembers();
     }
 
@@ -881,7 +965,7 @@
 
     function getInviteMemberIds() {
         if (state.selectedMembers.size) return Array.from(state.selectedMembers);
-        return (state.members || []).map(getMemberId).filter(Boolean);
+        return (state.members || []).filter(function (m) { return !isMemberSelf(m); }).map(getMemberId).filter(Boolean);
     }
 
     function groupsOpenInviteModal() {
@@ -959,7 +1043,14 @@
             });
             var data = await res.json();
             if (!res.ok && !data.partial) throw new Error(data.error || data.message || 'Mời vào nhóm thất bại');
-            showToast(data.message || 'Đã gửi lời mời vào nhóm.', data.success ? 'success' : 'warn');
+            var linkSent = Number(data.strangerLinkSentCount || 0);
+            var linkFailed = Number(data.strangerLinkFailedCount || 0);
+            var detail = data.message || 'Đã gửi lời mời vào nhóm.';
+            if (linkSent || linkFailed) {
+                detail += ' Người chưa kết bạn: ' + linkSent + ' đã nhận link nhóm'
+                    + (linkFailed ? ', ' + linkFailed + ' lỗi.' : '.');
+            }
+            showToast(detail, data.success ? 'success' : 'warn');
             groupsCloseInviteModal();
         } catch (err) {
             if (st) st.textContent = err.message;
@@ -986,7 +1077,13 @@
 
     // Giữ alias cũ để các template cache trước đó không phát sinh lỗi JavaScript.
     function groupsCopyCurrentGroupId() {
-        groupsCopyCurrentGroupLink();
+        var group = state.selectedGroup || {};
+        var gid = getGroupId(group) || state.selectedGroupId || '';
+        if (!gid) {
+            showToast('Chưa chọn nhóm.', 'warn');
+            return;
+        }
+        groupsCopyText(gid);
     }
 
     function groupsCopyText(text) {
@@ -1031,7 +1128,7 @@
             ['Trạng thái', profile.status || '-'],
             ['Giới tính', getMemberGenderText(profile)],
             ['Ngày sinh', getMemberDobText(profile)],
-            ['Kết bạn', isMemberFriend(profile) ? 'Đã kết bạn' : 'Chưa kết bạn']
+            ['Kết bạn', isMemberSelf(profile) ? 'Chính mình (Tài khoản hiện tại)' : (isMemberFriend(profile) ? 'Đã kết bạn' : 'Chưa kết bạn')]
         ];
         var html = fields.map(function (f) {
             return '<div style="display:flex;align-items:flex-start;border-bottom:1px solid var(--border);padding:8px 0;font-size:13px">'

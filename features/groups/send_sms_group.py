@@ -1,4 +1,5 @@
 import sys
+from core.zalo import http as zalo_http
 
 def _safe_reconfigure():
     try:
@@ -11,7 +12,6 @@ _safe_reconfigure()
 
 import json
 import time
-import requests
 from core.zalo.enc import zalo_encode
 from core.zalo.dec import zalo_decode
 from core.zalo.debugs import save
@@ -35,6 +35,7 @@ def send_group_msg(
     message: str = "demo",
     ttl: int = 0,
     zpw_ver: str = None,
+    client_id: int = None,
 ) -> tuple:
     """
     Gửi tin nhắn text vào nhóm Zalo qua API Zalo Web.
@@ -51,7 +52,7 @@ def send_group_msg(
         Tuple (response_json, decoded_data)
     """
 
-    client_id = int(time.time() * 1000)
+    client_id = int(client_id or int(time.time() * 1000))
 
     payload = {
         "message": message,
@@ -81,7 +82,7 @@ def send_group_msg(
     print("[GROUP SEND] Params:")
     print(params[:150] + "...")
 
-    response = requests.post(
+    response = zalo_http.post(
         url,
         params=query_params,
         data=f"params={params}",
@@ -102,6 +103,9 @@ def send_group_msg(
         decoded_data = zalo_decode(data_field, zpw_enk)
     else:
         decoded_data = data_field
+
+    if isinstance(decoded_data, dict):
+        decoded_data.setdefault("_clientId", client_id)
 
     return response_json, decoded_data
 

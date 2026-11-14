@@ -90,45 +90,70 @@ function renderAccountCard(acc) {
         avatarWrap.appendChild(defaultAvatarEl(acc.name));
     }
 
+    var isRunning = !!acc.remoteDebugPort;
     var st = accountStatusLabel(acc);
 
     var nameCell = document.createElement('div');
     nameCell.className = 'account-card-name-cell';
+    
+    var metaHtml = '';
+    if (acc.phoneNumber) {
+        var phoneFormatted = acc.phoneNumber.startsWith('84') ? ('0' + acc.phoneNumber.slice(2)) : acc.phoneNumber;
+        metaHtml += '<span class="account-meta-badge account-phone-badge" title="Số điện thoại Zalo"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>' + escHtml(phoneFormatted) + '</span>';
+    }
+    if (acc.uid) {
+        metaHtml += '<span class="account-meta-badge account-uid-badge" title="UID Zalo">UID: ' + escHtml(acc.uid) + '</span>';
+    } else if (acc.accountId) {
+        metaHtml += '<span class="account-meta-badge account-id-badge" title="Profile ID: ' + escHtml(acc.accountId) + '">ID: ' + escHtml(acc.accountId.slice(0, 8)) + '...</span>';
+    }
+
     nameCell.innerHTML =
         '<div class="account-card-name">' + escHtml(acc.name || 'Tài khoản') + '</div>' +
-        '<div class="account-card-id mono">' + escHtml(acc.accountId) + '</div>';
+        '<div class="account-card-meta">' + metaHtml + '</div>';
 
     var statusCell = document.createElement('div');
     statusCell.className = 'account-card-status-cell';
-    statusCell.innerHTML = '<span class="account-card-status ' + st.cls + '">' + escHtml(st.text) + '</span>';
+    statusCell.innerHTML =
+        '<span class="account-card-status ' + st.cls + '">' +
+        '<span class="status-indicator-dot ' + (isRunning ? 'dot-running' : 'dot-wait') + '"></span>' +
+        escHtml(st.text) + '</span>';
 
     var proxyCell = document.createElement('div');
-    proxyCell.className = 'account-card-proxy-cell mono';
-    proxyCell.textContent = acc.proxy ? ('Proxy: ' + acc.proxy.split('@').pop()) : 'Chưa cấu hình proxy';
+    proxyCell.className = 'account-card-proxy-cell';
+    if (acc.proxy) {
+        proxyCell.innerHTML =
+            '<span class="account-proxy-chip has-proxy" title="' + escHtml(acc.proxy) + '">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' +
+            '<span>Proxy: ' + escHtml(acc.proxy.split('@').pop()) + '</span></span>';
+    } else {
+        proxyCell.innerHTML =
+            '<span class="account-proxy-chip no-proxy">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' +
+            '<span>Trực tiếp (Không proxy)</span></span>';
+    }
 
     var actions = document.createElement('div');
     actions.className = 'account-card-actions';
 
     var btnOpen = document.createElement('button');
-    btnOpen.className = 'btn btn-primary btn-sm';
-
-    // Nếu đang chạy, hiển thị "Dừng", ngược lại "Khởi chạy"
-    if (acc.remoteDebugPort) {
-        btnOpen.textContent = 'Dừng';
+    if (isRunning) {
+        btnOpen.className = 'btn btn-danger btn-sm btn-account-action';
+        btnOpen.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> <span>Dừng</span>';
         btnOpen.onclick = function() { closeAccount(acc.accountId); };
     } else {
-        btnOpen.textContent = 'Khởi chạy';
+        btnOpen.className = 'btn btn-primary btn-sm btn-account-action';
+        btnOpen.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> <span>Khởi chạy</span>';
         btnOpen.onclick = function() { openAccount(acc.accountId); };
     }
 
     var btnEdit = document.createElement('button');
-    btnEdit.className = 'btn btn-ghost btn-sm';
-    btnEdit.textContent = 'Sửa';
+    btnEdit.className = 'btn btn-ghost btn-sm btn-account-action';
+    btnEdit.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> <span>Sửa</span>';
     btnEdit.onclick = function() { editAccount(acc.accountId, acc.name, acc.proxy || '', !!acc.remoteDebugPort); };
 
     var btnDelete = document.createElement('button');
-    btnDelete.className = 'btn btn-danger btn-sm';
-    btnDelete.textContent = 'Xóa';
+    btnDelete.className = 'btn btn-danger-ghost btn-sm btn-account-action';
+    btnDelete.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> <span>Xóa</span>';
     btnDelete.onclick = function() { deleteAccount(acc.accountId, acc.name); };
 
     actions.appendChild(btnOpen);

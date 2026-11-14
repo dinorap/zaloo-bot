@@ -1,0 +1,322 @@
+{# ══════════════════════════════════════════════════════════════════════════
+   TAB CHATBOT TELEGRAM — phần setup riêng cho nền tảng Telegram
+   (token, chat ID, hướng dẫn @BotFather, tuỳ chọn riêng, gửi thử, nhật ký)
+   ══════════════════════════════════════════════════════════════════════════ #}
+
+<!-- ══════ HEADER TAB TELEGRAM ══════ -->
+<header class="cb-hero">
+  <div>
+    <h2 class="cb-hero-title">
+      <svg class="cb-ico cb-ico-lg" style="color:#f5b301" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg>
+      Chatbot Telegram
+    </h2>
+    <p class="cb-hero-sub">Trợ lý tự trả lời trên Telegram. Tài liệu và phong cách trả lời được cài đặt riêng cho Telegram. Làm theo hướng dẫn bên dưới là chạy được — không cần mở port, không cần HTTPS.</p>
+  </div>
+  <div class="cb-hero-acts">
+    <span id="tgStatus" class="cb-status"><span class="tg-dot"></span><span>Đang kiểm tra…</span></span>
+    <button class="cb-btn cb-btn-green" type="button" id="tgSaveBtn" onclick="tgSave(true)">
+      <svg class="cb-ico" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>Lưu &amp; Bật bot
+    </button>
+    <button class="cb-btn cb-btn-red" type="button" onclick="tgSave(false)">
+      <svg class="cb-ico" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Tắt bot
+    </button>
+  </div>
+</header>
+
+<!-- ══════ BƯỚC 2: NỘI DUNG TƯ VẤN & PHONG CÁCH TRẢ LỜI (TELEGRAM) ══════ -->
+<section class="cb-card" id="botTelegramCard2">
+  <div class="cb-step-head">
+    <span class="cb-step-num">2</span>
+    <h3>Nội dung tư vấn &amp; Phong cách trả lời (Telegram)</h3>
+    <span class="cb-step-badge gold">Dành riêng cho Telegram</span>
+  </div>
+  <div class="cb-grid">
+    <div class="cb-field full">
+      <label for="tgKnowledge">
+        <span>Tài liệu sản phẩm / Bảng giá / Câu trả lời chuẩn (<span id="tgKnowChars">0</span> ký tự)</span>
+        <button class="cb-btn cb-btn-sm" type="button" onclick="tgSaveKnowledge()">
+          <svg class="cb-ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Lưu tài liệu
+        </button>
+      </label>
+      <textarea id="tgKnowledge" rows="7" placeholder="Dán vào đây: bảng giá, chính sách đổi trả, thông tin sản phẩm, câu hỏi thường gặp… Bot Telegram sẽ ưu tiên trả lời chính xác theo tài liệu này."></textarea>
+      <small>Kho tài liệu riêng cho bot Telegram — độc lập với bot Zalo.</small>
+    </div>
+    <div class="cb-field">
+      <label for="tgSystem">Vai trò trợ lý (System Prompt)</label>
+      <textarea id="tgSystem" rows="3" placeholder="vd: Bạn là trợ lý Telegram của shop, trả lời ngắn gọn, lịch sự, đúng ý khách…"></textarea>
+    </div>
+    <div class="cb-field">
+      <label for="tgGlobal">Quy chuẩn chung / Cách xưng hô</label>
+      <textarea id="tgGlobal" rows="3" placeholder="vd: Luôn xưng em - gọi anh/chị. Không tự bịa giá ngoài tài liệu."></textarea>
+    </div>
+    <div class="cb-field full">
+      <label class="cb-switch-row">
+        <span class="cb-switch-copy">
+          <strong>Thêm tên người gửi vào câu hỏi (Khuyên dùng cho nhóm Telegram)</strong>
+          <span>Giúp AI nhận biết người hỏi để xưng hô lịch sự và gọi tên khách (vd: "Thưa Anh/Chị Nam...", "Dạ Anh/Chị Nam..."), giúp câu trả lời sát với từng khách hơn khi nhóm có nhiều người.</span>
+        </span>
+        <input id="tgSenderName" type="checkbox" checked>
+      </label>
+    </div>
+    <div class="cb-field full">
+      <label class="cb-switch-row">
+        <span class="cb-switch-copy">
+          <strong>Chỉ trả lời theo tài liệu (khuyên dùng nếu cần chính xác tuyệt đối)</strong>
+          <span>Bật: câu nào ngoài tài liệu sẽ gửi câu báo nhân viên hỗ trợ bên dưới, không đoán bừa.</span>
+        </span>
+        <input id="tgStrict" type="checkbox" onchange="tgStrictChanged()">
+      </label>
+    </div>
+    <div class="cb-field full" id="tgHandoffWrap">
+      <label for="tgHandoff">Câu trả lời khi tài liệu chưa có thông tin</label>
+      <input id="tgHandoff" placeholder="vd: Dạ câu này em chưa có thông tin chính xác, để em bảo tư vấn viên hỗ trợ Anh/Chị ngay ạ.">
+    </div>
+  </div>
+</section>
+
+<!-- ══════ HƯỚNG DẪN 4 BƯỚC ══════ -->
+<section class="cb-card">
+  <div class="cb-step-head">
+    <span class="cb-step-num">3</span>
+    <h3>Làm theo 4 bước để bot Telegram chạy</h3>
+    <span class="cb-step-badge gold">Làm tuần tự từ trên xuống</span>
+  </div>
+
+  <div class="tg-guide">
+
+    <div class="tg-guide-item">
+      <span class="tg-guide-badge">1</span>
+      <div class="tg-guide-body">
+        <h4>Tạo bot Telegram và lấy Token</h4>
+        <p>Telegram gọi bot của bạn bằng một mã gọi là <b>Token</b>. Lấy mã đó ở <code>@BotFather</code>.</p>
+        <ol>
+          <li>Mở Telegram, tìm bot <code>@BotFather</code> (biểu tượng chính danh, màu xanh) và bấm <b>Start</b>.</li>
+          <li>Gõ lệnh <code>/newbot</code> rồi bấm Enter.</li>
+          <li>Đặt tên bot hiển thị cho khách, ví dụ <code>Jimmy BOT CHAT</code> → bấm Enter.</li>
+          <li>Đặt username bắt buộc kết thúc bằng <code>bot</code>, ví dụ <code>jimmy_shop_bot</code> → bấm Enter.</li>
+          <li>BotFather trả về một mã dài như <code>7123456789:AAH...</code>. <b>Đây chính là Token — dán vào ô ở Bước 4 bên dưới.</b></li>
+        </ol>
+        <p><b>Lưu ý:</b> Token giống mật khẩu. Ai có Token là điều khiển được bot của bạn. Không chia sẻ, không chụp màn hình rồi đăng lên mạng xã hội.</p>
+      </div>
+    </div>
+
+    <div class="tg-guide-item">
+      <span class="tg-guide-badge">2</span>
+      <div class="tg-guide-body">
+        <h4>Dán Token và kiểm tra</h4>
+        <p>Dán Token vào ô <b>Bot Token</b> ở Bước 4 bên dưới, rồi bấm nút <b>Kiểm tra Token</b>.
+          Nếu hợp lệ, tên bot của bạn sẽ hiện ra ngay bên cạnh — nghĩa là đã kết nối được.</p>
+        <p>Nếu báo lỗi, thường là do copy thiếu ký tự hoặc có khoảng trắng thừa ở đầu/cuối. Xoá rồi dán lại là được.</p>
+      </div>
+    </div>
+
+    <div class="tg-guide-item">
+      <span class="tg-guide-badge">3</span>
+      <div class="tg-guide-body">
+        <h4>Lấy Chat ID — cách tự động, không cần đoán</h4>
+        <p>Chat ID là mã định danh của cuộc trò chuyện. Cách nhanh nhất là <b>để bot tự báo</b>:</p>
+        <ol>
+          <li>Mở Telegram của bạn, tìm bot vừa tạo và bấm <b>Start</b> (hoặc nhắn một tin bất kỳ).</li>
+          <li>Quay lại tab này, bấm nút <b>Quét Chat ID từ tin nhắn mới</b>.</li>
+          <li>Bot sẽ tự liệt kê Chat ID vừa nhắn tới kèm tên — bấm <b>Dùng chat này</b> để chọn.</li>
+        </ol>
+        <p>Nếu muốn lấy Chat ID của một <b>nhóm</b>: thêm bot vào nhóm, nhắn một tin trong nhóm (ví dụ <code>xin chào</code>),
+          rồi bấm nút quét như trên. Bot sẽ thấy cả Chat ID của nhóm.</p>
+      </div>
+    </div>
+
+    <div class="tg-guide-item">
+      <span class="tg-guide-badge">4</span>
+      <div class="tg-guide-body">
+        <h4>Bật bot và kiểm tra</h4>
+        <ol>
+          <li>Chọn <b>Kiểu trả lời</b> ở Bước 1 phía trên: AI tự trả lời (Gemini) nếu bạn đã có API Key, hoặc Echo để thử trước.</li>
+          <li>Bấm <b>Lưu &amp; Bật bot</b> ở góc trên bên phải.</li>
+          <li>Vào Telegram nhắn bot một câu — bot sẽ trả lời trong vài giây.</li>
+          <li>Muốn bot trả lời hay hơn? Dán bảng giá / chính sách vào ô <b>Tài liệu</b> ở Bước 2 phía trên.</li>
+        </ol>
+        <p><b>Lưu ý về Chat ID:</b> nếu bạn để trống ô <b>Chat ID được phép trả lời</b>, bot sẽ trả lời mọi người nhắn tới.
+          Nên điền vào để tránh bị spam. Muốn cho phép thêm nhóm khác thì thêm Chat ID, cách nhau bằng dấu phẩy.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════ BƯỚC 4: TOKEN ══════ -->
+<section class="cb-card">
+  <div class="cb-step-head">
+    <span class="cb-step-num">4</span>
+    <h3>Bot Token</h3>
+    <span class="cb-step-badge" id="tgTokenBadge">Chưa cấu hình</span>
+  </div>
+
+  <div class="cb-grid">
+    <div class="cb-field full">
+      <label for="tgToken">Bot Token (lấy từ @BotFather)</label>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <input id="tgToken" type="password" placeholder="7123456789:AAHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" style="flex:1 1 280px;">
+        <button class="cb-btn cb-btn-sm" type="button" onclick="tgToggleToken()" title="Hiện/ẩn Token">
+          <svg class="cb-ico" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <button class="cb-btn cb-btn-sm cb-btn-primary" type="button" id="tgCheckTokenBtn" onclick="tgCheckToken()">
+          <svg class="cb-ico" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Kiểm tra Token
+        </button>
+      </div>
+      <small id="tgTokenHint">Token được giữ trên máy bạn, không gửi đi đâu khác. Bot dùng cơ chế long polling nên bạn không cần mở port hay cấu hình HTTPS.</small>
+    </div>
+
+    <div class="cb-field full" id="tgBotInfoWrap" style="display:none;">
+      <div class="tg-bot-row">
+        <span class="tg-bot-avatar" aria-hidden="true">
+          <svg class="cb-ico cb-ico-lg" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="11" rx="3"/><path d="M12 8V4M8 13h.01M16 13h.01M9 16.5h6"/></svg>
+        </span>
+        <div class="tg-bot-meta">
+          <strong id="tgBotName">—</strong>
+          <span id="tgBotUsername">—</span>
+        </div>
+        <a class="cb-btn cb-btn-sm" id="tgOpenBot" href="#" target="_blank" rel="noopener">
+          <svg class="cb-ico" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          Mở trên Telegram
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ BƯỚC 5: CHAT ID ══════ -->
+<section class="cb-card">
+  <div class="cb-step-head">
+    <span class="cb-step-num">5</span>
+    <h3>Chat ID được phép trả lời</h3>
+    <span class="cb-step-badge" id="tgChatCount">Chưa giới hạn</span>
+  </div>
+
+  <div class="cb-grid">
+    <div class="cb-field full">
+      <label>
+        <span>Chat ID (để trống = trả lời mọi người nhắn tới)</span>
+        <span style="display:inline-flex; gap:6px; flex-wrap:wrap;">
+          <button type="button" class="cb-btn cb-btn-sm cb-btn-gold" id="tgScanBtn" onclick="tgScanChats()">
+            <svg class="cb-ico" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>
+            Quét Chat ID từ tin nhắn mới
+          </button>
+        </span>
+      </label>
+      <textarea id="tgAllowedChatIds" rows="2" placeholder="123456789, -1001234567890" oninput="tgUpdateChatCount()"></textarea>
+      <small>
+        Nhắn cho bot một tin rồi bấm <b>Quét Chat ID</b> — bot sẽ tự liệt kê chat vừa nhắn tới.
+        Muốn cho phép thêm nhóm: thêm bot vào nhóm, nhắn một tin trong nhóm, rồi quét lại.
+      </small>
+    </div>
+
+    <div class="cb-field full" id="tgScanResultWrap" style="display:none;">
+      <label>Các chat bot vừa nhận được tin nhắn</label>
+      <div id="tgScanResult" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+
+    <div class="cb-field">
+      <label for="tgOnlyPrivate">Chỉ trả lời trong chat riêng</label>
+      <label class="cb-switch-row">
+        <span class="cb-switch-copy">
+          <strong>Không trả lời trong nhóm</strong>
+          <span>Bật nếu bạn chỉ muốn bot chat riêng với từng khách, không trả lời trong nhóm.</span>
+        </span>
+        <input id="tgOnlyPrivate" type="checkbox">
+      </label>
+    </div>
+
+    <div class="cb-field">
+      <label for="tgIgnoreBots">Bỏ qua tin nhắn từ bot khác</label>
+      <label class="cb-switch-row">
+        <span class="cb-switch-copy">
+          <strong>Không trả lời tin của bot khác</strong>
+          <span>Nên bật để tránh bot của bạn đáp lại bot của bot khác vô tận.</span>
+        </span>
+        <input id="tgIgnoreBots" type="checkbox" checked>
+      </label>
+    </div>
+  </div>
+</section>
+
+<!-- ══════ CÀI ĐẶT NÂNG CAO TELEGRAM ══════ -->
+<details class="cb-adv">
+  <summary>
+    <svg class="cb-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a4 4 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a4 4 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a4 4 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a4 4 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+    Cài đặt nâng cao Telegram (tốc độ, tên hiển thị, key riêng)
+  </summary>
+
+  <div class="cb-grid">
+    <div class="cb-field">
+      <label for="tgPoll">Chu kỳ kiểm tra tin mới (giây)</label>
+      <input id="tgPoll" type="number" min="1" step="0.5" value="2">
+      <small>Số nhỏ = phản hồi nhanh hơn nhưng tốn nhiều hơn một chút. Mặc định 2 giây là ổn.</small>
+    </div>
+
+    <div class="cb-field">
+      <label for="tgGap">Giãn cách giữa các lần gửi (giây)</label>
+      <input id="tgGap" type="number" min="0.3" step="0.1" value="1">
+    </div>
+
+    <div class="cb-field">
+      <label for="tgMaxChars">Độ dài tối đa mỗi tin trả lời</label>
+      <input id="tgMaxChars" type="number" min="200" step="100" value="4000">
+    </div>
+
+    <div class="cb-field">
+      <label for="tgSharedKeys">Nguồn Gemini API Key</label>
+      <select id="tgSharedKeys">
+        <option value="1">Dùng chung key với Chatbot Zalo</option>
+        <option value="0">Dùng key riêng cho Telegram</option>
+      </select>
+      <small id="tgKeyHint">Key dùng chung được lấy từ phần Cấu hình bot dùng chung phía trên.</small>
+    </div>
+
+    <div class="cb-field full" id="tgOwnKeyWrap" style="display:none;">
+      <label for="tgOwnKey">Gemini API Key riêng cho Telegram</label>
+      <input id="tgOwnKey" type="password" placeholder="AIza..." autocomplete="off">
+      <small>Key bắt đầu bằng <code>AIza</code>. Lấy ở <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com/app/apikey</a>.</small>
+    </div>
+
+    <div class="cb-field full">
+      <label for="tgBotNameInput">Tên hiển thị của bot</label>
+      <input id="tgBotNameInput" type="text" placeholder="Jimmy BOT CHAT — trợ lý của shop">
+      <small>Chỉ là nhãn hiển thị trong phần mô tả. Tên bot thật do @BotFather quyết định.</small>
+    </div>
+  </div>
+</details>
+
+<!-- ══════ GỬI THỬ & NHẬT KÝ TELEGRAM ══════ -->
+<details class="cb-adv">
+  <summary>
+    <svg class="cb-ico" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+    Gửi tin thử &amp; nhật ký hoạt động của bot Telegram
+  </summary>
+
+  <div class="cb-grid">
+    <div class="cb-field full">
+      <label for="tgTestChatId">Chat ID nhận tin thử</label>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <input id="tgTestChatId" placeholder="123456789" style="flex:1 1 200px;">
+        <button class="cb-btn cb-btn-sm" type="button" onclick="tgUseFirstChat()">Dùng chat đầu tiên</button>
+        <button class="cb-btn cb-btn-sm cb-btn-primary" type="button" onclick="tgSendTest()">
+          <svg class="cb-ico" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Gửi thử
+        </button>
+      </div>
+      <small id="tgSendStatus"></small>
+    </div>
+
+    <div class="cb-field full">
+      <label for="tgTestMsg">Nội dung tin thử</label>
+      <input id="tgTestMsg" value="Xin chào! Jimmy BOT CHAT đã kết nối thành công.">
+    </div>
+
+    <div class="cb-field full">
+      <label>
+        <span>Nhật ký bot (tự cập nhật 3 giây/lần)</span>
+        <button class="cb-btn cb-btn-sm" type="button" onclick="tgLoadLogs()">Tải lại</button>
+      </label>
+      <div id="tgLogs" class="cb-log">Đang tải nhật ký…</div>
+    </div>
+  </div>
+</details>

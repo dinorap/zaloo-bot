@@ -11,7 +11,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from core.zalo.dec import zalo_decode
 from core.zalo.zalo_config import get_zpw_ver
-from features.groups.group_link import create_group_link, get_group_link_detail
+from features.groups.group_link import (
+    GroupLinkNotEnabledError,
+    create_group_link,
+    get_group_link_detail,
+)
 
 
 def extract_groups_from_getlg_response(response_data: str, zpw_enk: str) -> list:
@@ -111,8 +115,14 @@ def _normalize_public_group_link(value: str) -> str:
 
 
 def _fetch_or_create_group_link(group_id: str, imei: str, zpw_enk: str, cookies: str, zpw_ver: str = None) -> dict:
-    """Lấy link nhóm hiện tại; nếu nhóm chưa bật link thì tự kích hoạt link mới."""
+    """Lấy link nhóm hiện tại; nếu nhóm chưa bật link thì tự kích hoạt link mới.
+
+    Phân biệt 2 trạng thái để tầng UI hiển thị đúng thông điệp:
+    - ``linkStatus="none"``: nhóm chưa bật link (bình thường, hành động được).
+    - ``linkStatus="error"``: lỗi kỹ thuật thực sự (mất phiên, không đủ quyền...).
+    """
     detail_error = ""
+    detail_not_enabled = False
     try:
         result = get_group_link_detail(
             group_id, imei, zpw_enk, cookies, zpw_ver=get_zpw_ver(zpw_ver), timeout=15
@@ -126,6 +136,9 @@ def _fetch_or_create_group_link(group_id: str, imei: str, zpw_enk: str, cookies:
                 "linkCreatedAutomatically": False,
                 "linkError": "",
             }
+    except GroupLinkNotEnabledError as exc:
+        detail_not_enabled = True
+        detail_error = str(exc)
     except Exception as exc:
         detail_error = str(exc)
 
@@ -142,6 +155,15 @@ def _fetch_or_create_group_link(group_id: str, imei: str, zpw_enk: str, cookies:
             "linkExpirationDate": int(result.get("expirationDate") or 0),
             "linkCreatedAutomatically": True,
             "linkError": "",
+        }
+    except GroupLinkNotEnabledError as exc:
+        # Nhóm không bật link và Zalo cũng không cho tạo -> trạng thái "chưa có link".
+        return {
+            "groupLink": "",
+            "linkStatus": "none",
+            "linkExpirationDate": 0,
+            "linkCreatedAutomatically": False,
+            "linkError": str(exc),
         }
     except Exception as exc:
         create_error = str(exc)
@@ -306,7 +328,7 @@ def fetch_and_update_group_details_parallel(account_id: str, group_ids: list, zp
                     "name": old.get("name") or f"Group {str(gid)[:8]}",
                     "avatar": old.get("avatar") or "",
                     "fullAvt": old.get("fullAvt") or "",
-                    "memberCount": old.get("memberCount") or 0,
+                    "memberCount": int(old.get("memberCount") or 0),
                     "groupLink": _normalize_public_group_link(old.get("groupLink") or old.get("group_link") or old.get("inviteLink") or old.get("link")),
                     "linkStatus": old.get("linkStatus") or "error",
                     "linkExpirationDate": int(old.get("linkExpirationDate") or old.get("expirationDate") or 0),
@@ -385,7 +407,7 @@ def fetch_and_update_group_details_parallel(account_id: str, group_ids: list, zp
                 "desc": new.get("desc") or old.get("desc") or "",
                 "avatar": new.get("avatar") or old.get("avatar") or "",
                 "fullAvt": new.get("fullAvt") or old.get("fullAvt") or "",
-                "memberCount": new.get("memberCount") or old.get("memberCount") or 0,
+                "memberCount": int(new.get("memberCount") or 0),
                 "groupLink": _normalize_public_group_link(
                     new.get("groupLink") or old.get("groupLink") or old.get("group_link") or old.get("inviteLink") or old.get("link")
                 ),
@@ -587,6 +609,49 @@ def ensure_group_link_for_account(account_id: str, group_id: str, force: bool = 
     }
 
 
+def merge_group_summaries(group_ids: list, summaries: dict, old_groups: list) -> list:
+    """Ghép danh sách nhóm mới (từ API) với dữ liệu cũ đã lưu.
+
+    Quy tắc quan trọng: ``memberCount`` LUÔN lấy từ API mới. Trước đây dùng
+    ``new.get("memberCount") or old.get("memberCount")`` nên khi nhóm có 0
+    thành viên (hoặc số liệu cũ lớn hơn) thì hệ thống giữ số cũ -> con số
+    "N thành viên" trên UI bị đóng băng và sai.
+    """
+    old_map = {
+        str(g.get("groupId")): g
+        for g in (old_groups or [])
+        if isinstance(g, dict) and g.get("groupId")
+    }
+    merged = []
+    for gid in group_ids or []:
+        gid = str(gid or "").strip()
+        if not gid:
+            continue
+        old = old_map.get(gid, {}) or {}
+        new = summaries.get(gid, {}) or {}
+        merged.append({
+            "groupId": gid,
+            "name": new.get("name") or old.get("name") or f"Group {gid[:8]}",
+            "desc": new.get("desc") or old.get("desc") or "",
+            "avatar": new.get("avatar") or old.get("avatar") or "",
+            "fullAvt": new.get("fullAvt") or old.get("fullAvt") or "",
+            # Số thành viên mới nhất từ API (0 là giá trị hợp lệ).
+            "memberCount": int(new.get("memberCount") or 0),
+            "groupLink": _normalize_public_group_link(
+                old.get("groupLink") or old.get("group_link") or old.get("inviteLink") or old.get("link")
+            ),
+            "linkStatus": old.get("linkStatus") or (
+                "ready" if old.get("groupLink") else "pending"
+            ),
+            "linkExpirationDate": int(old.get("linkExpirationDate") or old.get("expirationDate") or 0),
+            "linkCreatedAutomatically": bool(old.get("linkCreatedAutomatically", False)),
+            "linkError": old.get("linkError") or "",
+            "fetchStatus": "done" if not new.get("error") else "error",
+            "error": new.get("error") or "",
+        })
+    return merged
+
+
 def get_account_groups(account_id: str) -> list:
     """
     Lấy danh sách nhóm cá nhân của tài khoản.
@@ -608,6 +673,76 @@ def get_account_groups(account_id: str) -> list:
         return []
     
     return account.get("personalGroups", [])
+
+
+def refresh_member_counts(account_id: str) -> bool:
+    """Cập nhật lại số thành viên của các nhóm mà không đụng tới link/avatar.
+
+    Dùng ``getmg`` với ``mcount=1`` nên rất nhanh (~0.03s/nhóm). Mục tiêu là
+    để con số "N thành viên" trên UI không bị đóng băng theo lần đồng bộ nhóm
+    (trước đây người dùng phải đợi 30-90 giây đồng bộ lại mới thấy nhóm có
+    thêm người).
+
+    Trả về True nếu có ít nhất một số liệu thay đổi.
+    """
+    try:
+        from features.accounts.account_manager import get_account, update_account
+    except ImportError:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from features.accounts.account_manager import get_account, update_account
+
+    try:
+        from features.groups.group_sync_api import fetch_group_summaries
+    except ImportError:
+        return False
+
+    account = get_account(account_id) or {}
+    zpw_enk = str(account.get("zpwEnk") or "").strip()
+    cookies = str(account.get("cookies") or "").strip()
+    imei = str(account.get("imei") or "").strip()
+    if not zpw_enk or not cookies:
+        return False
+
+    groups = account.get("personalGroups") or []
+    group_ids = [
+        str(g.get("groupId") or "").strip()
+        for g in groups
+        if isinstance(g, dict) and str(g.get("groupId") or "").strip()
+    ]
+    if not group_ids:
+        return False
+
+    try:
+        summaries = fetch_group_summaries(group_ids, zpw_enk, cookies, imei)
+    except Exception as exc:
+        print(f"[group_manager] Refresh member counts lỗi: {exc}", flush=True)
+        return False
+
+    changed = False
+    updated = []
+    for group in groups:
+        if not isinstance(group, dict):
+            updated.append(group)
+            continue
+        gid = str(group.get("groupId") or "").strip()
+        summary = summaries.get(gid)
+        if not summary or summary.get("error"):
+            updated.append(group)
+            continue
+        new_count = int(summary.get("memberCount") or 0)
+        if new_count != int(group.get("memberCount") or 0):
+            group["memberCount"] = new_count
+            changed = True
+        updated.append(group)
+
+    if changed:
+        update_account(
+            account_id,
+            personalGroups=updated,
+            groupsSyncedAt=int(time.time() * 1000),
+        )
+        print(f"[group_manager] Đã cập nhật số thành viên cho account={account_id}", flush=True)
+    return changed
 
 
 if __name__ == "__main__":

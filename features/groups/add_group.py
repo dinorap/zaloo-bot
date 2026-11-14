@@ -1,4 +1,5 @@
 import sys
+from core.zalo import http as zalo_http
 
 def _safe_reconfigure():
     try:
@@ -11,7 +12,6 @@ _safe_reconfigure()
 
 import json
 import time
-import requests
 from core.zalo.enc import zalo_encode
 from core.zalo.dec import zalo_decode
 from core.zalo.debugs import save
@@ -66,7 +66,7 @@ def create_group(gname: str, members: list, zpw_enk: str, cookies: str, imei: st
             k, v = item.split("=", 1)
             cookie_dict[k] = v
 
-    response = requests.post(
+    response = zalo_http.post(
         url,
         params=query_params,
         data=f"params={params}",

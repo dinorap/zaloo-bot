@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot - Jimmy BOT CHAT</title>
+    <link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=jimmy-chatbot-v2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=jimmy-chatbot-v2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jimmy-bot-chat.css') }}?v=jimmy-orange-v5">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jimmy-contrast-fix.css') }}?v=jimmy-contrast-fix-20261113">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jimmy-bot-chatbot.css') }}?v=jimmy-chatbot-v2">
+    <style>
+    /* ── LAYOUT TRANG ── */
+    .page.chatbot-page{
+        overflow-y:auto!important;overflow-x:hidden!important;height:100dvh!important;max-height:100dvh!important;
+        display:block!important;scrollbar-gutter:stable;-webkit-overflow-scrolling:touch;
+        background:#fff8f1;
+        box-sizing:border-box!important;
+    }
+    @media (min-width: 901px) {
+        .page.chatbot-page {
+            margin-left: 240px !important;
+            width: calc(100vw - 240px) !important;
+            max-width: calc(100vw - 240px) !important;
+            padding: 14px 20px 24px 20px !important;
+        }
+    }
+    .cb-wrap{
+        max-width: 1400px;
+        width: 100%;
+        margin: 0;
+        padding: 0 0 20px 0 !important;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* ── TAB BAR ── */
+    .cb-tabs{
+        display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+        background:#fff;border:1px solid #f0d9c4;border-radius:14px;padding:7px 8px;
+        box-shadow:0 2px 10px rgba(43,26,16,.04);
+        position:sticky;top:0;z-index:20;
+    }
+    .cb-tab{
+        display:inline-flex;align-items:center;gap:8px;
+        padding:9px 16px;border-radius:10px;border:1px solid transparent;
+        background:transparent;color:#5b4133;font-size:13.5px;font-weight:700;
+        cursor:pointer;white-space:nowrap;transition:background .14s,color .14s,border-color .14s;
+    }
+    .cb-tab:hover{background:#fff4e9;color:#c93a18}
+    .cb-tab[aria-selected="true"]{
+        background:linear-gradient(135deg,#ff8a52 0%,#ff7542 45%,#e8451f 100%);
+        color:#fff;border-color:#e8451f;
+        box-shadow:0 4px 12px rgba(232,69,31,.22);
+    }
+    .cb-tab[aria-selected="true"] .cb-tab-ico{stroke:#fff}
+    .cb-tab-ico{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+    .cb-tab-hint{
+        margin-left:auto;font-size:12px;color:#7a6455;padding-right:6px;display:flex;align-items:center;gap:6px;
+    }
+    .cb-tab-hint b{color:#c93a18}
+
+    .cb-panel{display:none;flex-direction:column;gap:12px}
+    .cb-panel.active{display:flex}
+
+    /* ── Ghi chú dùng chung ── */
+    .cb-shared-note{
+        display:flex;align-items:flex-start;gap:8px;margin:0 0 14px;
+        padding:10px 13px;border-radius:11px;background:#fff3d4;border:1px solid #f0d9c4;
+        font-size:12.5px;color:#8a6200;line-height:1.5;
+    }
+    .cb-shared-note .cb-ico{margin-top:1px;color:#d19000;flex:none}
+    .cb-step-badge.gold{background:#fff3d4;border-color:#f0d9c4;color:#8a6200}
+
+    @media (max-width: 760px) {
+        .cb-tab-hint{display:none}
+        .cb-tab{padding:8px 12px;font-size:13px}
+    }
+    </style>
+</head>
+<body>
+{% set active_page = 'chatbot' %}
+{% include '_nav.html' %}
+<div class="page chatbot-page">
+  <div class="cb-wrap">
+
+    <!-- ══════ TAB BAR ══════ -->
+    <div class="cb-tabs" role="tablist" aria-label="Chọn nền tảng chatbot">
+      <button class="cb-tab" role="tab" id="tabZaloBtn" data-tab="zalo" aria-selected="true" aria-controls="panelZalo">
+        <svg class="cb-tab-ico" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="11" rx="3"/><path d="M12 8V4M8 13h.01M16 13h.01M9 16.5h6"/></svg>
+        Chatbot Zalo
+      </button>
+      <button class="cb-tab" role="tab" id="tabTelegramBtn" data-tab="telegram" aria-selected="false" aria-controls="panelTelegram">
+        <svg class="cb-tab-ico" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg>
+        Chatbot Telegram
+      </button>
+      <span class="cb-tab-hint">
+        <svg class="cb-tab-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a4 4 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a4 4 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a4 4 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a4 4 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+        API Key &amp; AI dùng chung — Nội dung tư vấn &amp; phong cách <b>cài đặt riêng</b> từng bot
+      </span>
+    </div>
+
+    <!-- ══════ PHẦN DÙNG CHUNG (nằm trên 2 panel để luôn thấy) ══════ -->
+    <div id="botSharedHost">
+      {% include '_bot_shared.html' %}
+    </div>
+
+    <!-- ══════ PANEL ZALO ══════ -->
+    <div class="cb-panel active" id="panelZalo" role="tabpanel" aria-labelledby="tabZaloBtn">
+      {% include '_bot_zalo.html' %}
+    </div>
+
+    <!-- ══════ PANEL TELEGRAM ══════ -->
+    <div class="cb-panel" id="panelTelegram" role="tabpanel" aria-labelledby="tabTelegramBtn">
+      {% include '_bot_telegram.html' %}
+    </div>
+
+  </div>
+</div>
+
+<div id="cbToast" class="cb-toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   CHUYỂN TAB
+   ══════════════════════════════════════════════════════════════════════ */
+(function(){
+  const TAB_KEY='jimmy_bot_tab';
+  function activate(name, push){
+    document.querySelectorAll('.cb-tab').forEach(b=>{
+      b.setAttribute('aria-selected', b.dataset.tab===name ? 'true':'false');
+    });
+    document.querySelectorAll('.cb-panel').forEach(p=>{
+      p.classList.toggle('active', p.id==='panel'+name.charAt(0).toUpperCase()+name.slice(1));
+    });
+    try{ localStorage.setItem(TAB_KEY, name); }catch(e){}
+    if(push){
+      const url=new URL(window.location.href);
+      url.searchParams.set('tab', name);
+      history.replaceState({},'',url);
+    }
+    window.dispatchEvent(new CustomEvent('botTabChanged',{detail:{tab:name}}));
+  }
+  document.querySelectorAll('.cb-tab').forEach(b=>{
+    b.addEventListener('click',()=>activate(b.dataset.tab,true));
+  });
+  let initial='zalo';
+  try{
+    const q=new URLSearchParams(window.location.search).get('tab');
+    if(q==='telegram'||q==='zalo') initial=q;
+    else{
+      const saved=localStorage.getItem(TAB_KEY);
+      if(saved==='telegram'||saved==='zalo') initial=saved;
+    }
+  }catch(e){}
+  activate(initial,false);
+  window.botActivateTab=activate;
+})();
+
+/* ══════════════════════════════════════════════════════════════════════
+   TOAST + TIỆN ÍCH CHUNG
+   ══════════════════════════════════════════════════════════════════════ */
+function cbToast(msg){
+  const el=document.getElementById('cbToast');
+  if(!el) return;
+  el.textContent=msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.classList.remove('show'),3000);
+}
+function cbEsc(s){
+  return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function tgToast(msg, kind){
+  cbToast(msg);
+  const el=document.getElementById('cbToast');
+  if(!el) return;
+  if(kind==='err'){ el.style.background='#a83220'; el.style.color='#fff'; }
+  else if(kind==='ok'){ el.style.background='#1f6b45'; el.style.color='#fff'; }
+  else { el.style.background='#2b1a10'; el.style.color='#fff'; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   CẤU HÌNH BOT DÙNG CHUNG (mode, key, trigger, tài liệu, prompt…)
+   ══════════════════════════════════════════════════════════════════════ */
+let cbTimer=null;
+let cbLastSavedKnowledge='';
+let cbKeysState=[];
+let cbSharedConfig={};
+
+function cbToggleRowKey(idx){
+  const inp=document.querySelector(`#cbKeyRows input[data-key-idx="${idx}"]`);
+  if(!inp) return;
+  inp.type=(inp.type==='password')?'text':'password';
+}
+
+function cbSyncKeyHidden(){
+  const items=cbCollectKeyRows();
+  const hidden=document.getElementById('cbKey');
+  const usable=items.filter(x=>x.key&&!x.limited);
+  if(hidden) hidden.value=(usable[0]||items[0]||{}).key||'';
+  const sum=document.getElementById('cbKeySummary');
+  const limCnt=items.filter(x=>x.key&&x.limited).length;
+  const okCnt=usable.length;
+  if(sum){
+    sum.textContent=limCnt>0?`${okCnt} sẵn sàng · ${limCnt} hết limit`:`${okCnt} key sẵn sàng`;
+    sum.style.background=limCnt>0&&okCnt===0?'#fee2e2':'#fff3d4';
+    sum.style.borderColor=limCnt>0&&okCnt===0?'#fca5a5':'#f0d9c4';
+    sum.style.color=limCnt>0&&okCnt===0?'#b91c1c':'#c93a18';
+  }
+  const unmAll=document.getElementById('cbUnmarkAllBtn');
+  if(unmAll) unmAll.style.display=limCnt>0?'inline-flex':'none';
+}
+
+function cbCollectKeyRows(){
+  const rows=Array.from(document.querySelectorAll('#cbKeyRows .cb-key-row'));
+  return rows.map((row, i)=>{
+    const prev=cbKeysState[i]||{};
+    const label=(row.querySelector('[data-key-label]')?.value||'').trim()||`Tài khoản ${i+1}`;
+    const key=(row.querySelector('[data-key-val]')?.value||'').trim();
+    const sameKey=(key&&key===prev.key);
+    return {
+      label,
+      key,
+      limited:sameKey?!!prev.limited:false,
+      limitedAt:sameKey?Number(prev.limitedAt||0):0,
+      limitReason:sameKey?String(prev.limitReason||''):'',
+    };
+  });
+}
+
+function cbRenderKeyRows(items){
+  const box=document.getElementById('cbKeyRows');
+  if(!box) return;
+  const list=(Array.isArray(items)&&items.length)?items:[{label:'Tài khoản 1',key:'',limited:false,limitReason:''}];
+  cbKeysState=list.map((x,i)=>({
+    label:String((x&&x.label)||`Tài khoản ${i+1}`),
+    key:String((x&&x.key)||''),
+    limited:!!(x&&x.limited),
+    limitedAt:Number((x&&x.limitedAt)||0),
+    limitReason:String((x&&x.limitReason||'')),
+  }));
+  box.innerHTML=cbKeysState.map((item, i)=>{
+    const lim=!!item.limited&&!!item.key;
+    const badge=item.key
+      ? (lim
+          ? `<span class="cb-key-badge limit" title="${cbEsc(item.limitReason||'Hết quota/limit')}">Hết limit</span>`
+          : `<span class="cb-key-badge ok">Sẵn sàng</span>`)
+      : '';
+    const unmarkBtn=lim
+      ? `<button type="button" class="cb-btn cb-btn-sm" onclick="cbUnmarkLimit('${cbEsc(item.key)}')" title="Bỏ đánh dấu limit để dùng lại key này">Bỏ limit</button>`
+      : '';
+    return `<div class="cb-key-row${lim?' is-limited':''}">
+      <input class="cb-key-label" data-key-label value="${cbEsc(item.label)}" placeholder="Tên tài khoản (${i+1})" oninput="cbSyncKeyHidden()">
+      <div class="cb-pw-wrap cb-key-input-wrap">
+        <input type="password" data-key-val data-key-idx="${i}" value="${cbEsc(item.key)}" placeholder="AIza... (Gemini API Key)" oninput="cbSyncKeyHidden()">
+        <button type="button" class="cb-pw-eye" onclick="cbToggleRowKey(${i})" title="Hiện/ẩn API Key">
+          <svg class="cb-ico" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      ${badge}
+      ${unmarkBtn}
+      <button type="button" class="cb-key-del" onclick="cbRemoveKeyRow(${i})" title="Xóa key này">×</button>
+    </div>`;
+  }).join('');
+  cbSyncKeyHidden();
+}
+
+function cbAddKeyRow(){
+  const cur=cbCollectKeyRows();
+  cur.push({label:`Tài khoản ${cur.length+1}`,key:'',limited:false,limitReason:''});
+  cbRenderKeyRows(cur);
+  const inputs=document.querySelectorAll('#cbKeyRows input[data-key-val]');
+  const last=inputs[inputs.length-1];
+  if(last) last.focus();
+}
+
+function cbRemoveKeyRow(idx){
+  const cur=cbCollectKeyRows();
+  cur.splice(idx, 1);
+  if(!cur.length) cur.push({label:'Tài khoản 1',key:'',limited:false,limitReason:''});
+  cbRenderKeyRows(cur);
+}
+
+async function cbUnmarkLimit(keyVal){
+  try{
+    const r=await fetch('/api/chatbot/keys/unmark',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(keyVal?{key:keyVal}:{all:true})
+    });
+    const d=await r.json();
+    if(!d.success){cbToast('Lỗi bỏ đánh dấu: '+(d.error||''));return;}
+    cbToast(keyVal?'Đã bỏ đánh dấu limit cho key.':'Đã bỏ đánh dấu limit cho tất cả key.');
+    await cbLoadShared();
+  }catch(e){
+    cbToast('Lỗi: '+e.message);
+  }
+}
+
+function chatbotModeChanged(){
+  const mode=document.getElementById('cbMode')?.value||'gemini';
+  const wrap=document.getElementById('cbKeyWrap');
+  if(wrap) wrap.style.display=(mode==='echo')?'none':'block';
+}
+
+function chatbotTriggerChanged(){
+  const on=!!document.getElementById('cbTriggerEnabled')?.checked;
+  const fields=document.getElementById('cbTriggerFields');
+  if(fields){
+    fields.style.opacity=on?'1':'0.55';
+    fields.querySelectorAll('input,select,button').forEach(el=>{ el.disabled=!on; });
+  }
+  const kw=(document.getElementById('cbTriggerKeywords')?.value||'').split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean);
+  const badge=document.getElementById('cbTriggerBadge');
+  if(badge){
+    badge.textContent=on?(kw.length?('Lệnh: '+kw.join(', ')):'Chưa nhập từ khóa'):'Trả lời mọi tin nhắn';
+    badge.style.background=(on&&!kw.length)?'#fef2f2':'#fff3d4';
+    badge.style.borderColor=(on&&!kw.length)?'#fca5a5':'#f0d9c4';
+    badge.style.color=(on&&!kw.length)?'#b91c1c':'#c93a18';
+  }
+}
+
+function cbAddTriggerChip(token){
+  const inp=document.getElementById('cbTriggerKeywords');
+  if(!inp||inp.disabled) return;
+  const parts=(inp.value||'').split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean);
+  if(!parts.some(p=>p.toLowerCase()===token.toLowerCase())){
+    parts.push(token);
+  }
+  inp.value=parts.join(', ');
+  chatbotTriggerChanged();
+}
+
+function chatbotStrictChanged(){
+  const on=!!document.getElementById('cbStrict')?.checked;
+  const wrap=document.getElementById('cbHandoffWrap');
+  if(wrap) wrap.style.opacity=on?'1':'0.72';
+}
+
+/* Gom phần cấu hình dùng chung để gửi đi. */
+function cbCollectShared(){
+  const keyItems=cbCollectKeyRows().filter(x=>x.key);
+  const firstUsable=(keyItems.find(x=>!x.limited)||keyItems[0]||{});
+  return {
+    mode:document.getElementById('cbMode').value,
+    geminiApiKey:firstUsable.key||'',
+    geminiApiKeys:keyItems,
+    modelCascade:document.getElementById('cbCascade').value,
+    triggerEnabled:document.getElementById('cbTriggerEnabled').checked,
+    triggerKeywords:document.getElementById('cbTriggerKeywords').value.trim(),
+    triggerMode:document.getElementById('cbTriggerMode').value||'prefix',
+  };
+}
+
+/* Lưu phần dùng chung. */
+async function cbSaveShared(showToast){
+  const body=cbCollectShared();
+  if(body.triggerEnabled&&!body.triggerKeywords){
+    cbToast('Vui lòng nhập ít nhất 1 từ khóa gọi bot (vd: /bot) hoặc tắt chế độ lọc từ khóa.');
+    return false;
+  }
+  try{
+    const r=await fetch('/api/bot/shared',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(!d.success){ cbToast('Lưu cấu hình chung lỗi: '+(d.error||'')); return false; }
+    if(showToast!==false) cbToast('Đã lưu cấu hình bot dùng chung.');
+    return true;
+  }catch(e){
+    cbToast('Lỗi lưu: '+e.message);
+    return false;
+  }
+}
+
+/* Tải phần dùng chung. */
+async function cbLoadShared(){
+  try{
+    const r=await fetch('/api/bot/shared');
+    const d=await r.json();
+    if(!d.success) return;
+    const cfg=d.config||{};
+    cbSharedConfig=cfg;
+    document.getElementById('cbMode').value=cfg.mode||'gemini';
+    chatbotModeChanged();
+    document.getElementById('cbTriggerEnabled').checked=cfg.triggerEnabled!==false;
+    document.getElementById('cbTriggerKeywords').value=(cfg.triggerKeywords!==undefined&&cfg.triggerKeywords!==null)?String(cfg.triggerKeywords):'/bot';
+    document.getElementById('cbTriggerMode').value=cfg.triggerMode||'prefix';
+    chatbotTriggerChanged();
+    const apiKeys=(Array.isArray(cfg.geminiApiKeys)&&cfg.geminiApiKeys.length)
+      ? cfg.geminiApiKeys
+      : (cfg.geminiApiKey?[{label:'Tài khoản 1',key:cfg.geminiApiKey,limited:false}]:[]);
+    cbRenderKeyRows(apiKeys);
+    document.getElementById('cbCascade').value=(cfg.modelCascade||[]).join(', ');
+  }catch(e){}
+}
+
+async function chatbotLoadKnowledge(){
+  try{
+    const r=await fetch('/api/chatbot/knowledge');
+    const d=await r.json();
+    if(d.success){
+      const val=d.text||'';
+      document.getElementById('cbKnowledge').value=val;
+      cbLastSavedKnowledge=val;
+      document.getElementById('cbKnowChars').textContent=d.chars||0;
+    }
+  }catch(_){}
+}
+
+async function chatbotSaveKnowledge(){
+  const t=document.getElementById('cbKnowledge').value||'';
+  const r=await fetch('/api/chatbot/knowledge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
+  const d=await r.json();
+  if(d.success){
+    cbLastSavedKnowledge=t;
+    document.getElementById('cbKnowChars').textContent=d.chars||0;
+    cbToast('Đã lưu tài liệu tư vấn Zalo ('+(d.chars||0)+' ký tự).');
+  }else{
+    cbToast('Lưu lỗi: '+(d.error||''));
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   TAB ZALO — phần riêng cho nền tảng Zalo
+   ══════════════════════════════════════════════════════════════════════ */
+function chatbotUpdateGroupCount(){
+  const ids=(document.getElementById('cbTargets')?.value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const b=document.getElementById('cbGroupCount');
+  if(b) b.textContent=ids.length+' nhóm đã chọn';
+}
+
+function chatbotFilterGroups(){
+  const q=(document.getElementById('cbGroupSearch')?.value||'').toLowerCase().trim();
+  document.querySelectorAll('#cbGroupList .cb-gitem').forEach(el=>{
+    const txt=(el.textContent||'').toLowerCase();
+    el.style.display=(!q||txt.includes(q))?'flex':'none';
+  });
+}
+
+function chatbotSelectAllGroups(flag){
+  document.querySelectorAll('#cbGroupList input[data-gid]').forEach(chk=>{
+    if(chk.closest('.cb-gitem')?.style.display!=='none') chk.checked=!!flag;
+  });
+  chatbotSyncTargets();
+}
+
+async function chatbotAccountChanged(){
+  const accId=document.getElementById('cbAccount')?.value||'';
+  const curIds=(document.getElementById('cbTargets')?.value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  await chatbotLoadGroups(accId, curIds);
+}
+
+async function chatbotLoadGroups(accountId, selected){
+  const box=document.getElementById('cbGroupList');
+  if(!box) return;
+  selected=selected||[];
+  const selSet=new Set(selected.map(s=>String(s).trim()).filter(Boolean));
+  if(!accountId){
+    box.innerHTML='<div style="padding:10px;color:#7a6455;font-size:13px">Chọn tài khoản ở trên để hiện danh sách nhóm.</div>';
+    return;
+  }
+  box.innerHTML='<div style="padding:10px;color:#7a6455;font-size:13px">Đang tải danh sách nhóm…</div>';
+  try{
+    const r=await fetch('/api/groups/personal?accountId='+encodeURIComponent(accountId));
+    const d=await r.json();
+    if(d.success===false){
+      box.innerHTML='<div style="padding:10px;color:#dc2626;font-size:13px">Không tải được nhóm: '+((d.error||'').replace(/</g,'&lt;'))+'</div>';
+      return;
+    }
+    const groups=d.groups||[];
+    if(!groups.length){
+      box.innerHTML='<div style="padding:10px;color:#7a6455;font-size:13px">Tài khoản chưa có nhóm trong bộ nhớ. Hãy vào trang <b>Nhóm Zalo</b> bấm đồng bộ trước, hoặc dán ID nhóm trong phần Cài đặt nâng cao.</div>';
+      return;
+    }
+    box.innerHTML=groups.map(g=>{
+      const gid=String(g.groupId||'');
+      const nm=String(g.name||gid);
+      const mc=g.memberCount||'';
+      const chk=selSet.has(gid)?'checked':'';
+      const escG=nm.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return '<label class="cb-gitem">'
+        +'<input type="checkbox" data-gid="'+gid+'" '+chk+' onchange="chatbotSyncTargets()">'
+        +'<span class="cb-gtext"><span class="cb-gname">'+escG+'</span><span class="cb-gid">'+(mc?mc+' thành viên':'')+'</span></span></label>';
+    }).join('');
+    chatbotFilterGroups();
+    chatbotUpdateGroupCount();
+  }catch(e){
+    box.innerHTML='<div style="padding:10px;color:#dc2626;font-size:13px">Lỗi tải nhóm: '+String(e.message||e).replace(/</g,'&lt;')+'</div>';
+  }
+}
+
+function chatbotSyncTargets(){
+  const box=document.getElementById('cbGroupList');
+  const allShown=new Set([...(box?box.querySelectorAll('input[data-gid]'):[])].map(i=>i.getAttribute('data-gid')));
+  const checked=[...(box?box.querySelectorAll('input[data-gid]:checked'):[])].map(i=>i.getAttribute('data-gid'));
+  const manual=(document.getElementById('cbTargets').value||'').split(',').map(s=>s.trim()).filter(id=>id&&!allShown.has(id));
+  const merged=[...checked];
+  manual.forEach(id=>{if(!merged.includes(id))merged.push(id);});
+  document.getElementById('cbTargets').value=merged.join(', ');
+  chatbotUpdateGroupCount();
+}
+
+function chatbotReplySrcChanged(){
+  const on=!!document.getElementById('cbReplySrc')?.checked;
+  const dest=document.getElementById('cbDest');
+  if(dest) dest.disabled=on;
+}
+
+async function chatbotRefresh(){
+  try{
+    const [accRes, cfgRes] = await Promise.all([fetch('/api/accounts'), fetch('/api/chatbot/config')]);
+    const accData = await accRes.json();
+    const cfgData = await cfgRes.json();
+    const cfg = cfgData.config||{};
+    const sel=document.getElementById('cbAccount');
+    sel.innerHTML='<option value="">-- Chọn tài khoản --</option>';
+    const accounts=accData.accounts||[];
+    accounts.forEach(a=>{
+      const id=a.accountId||'';
+      const ok=(a.cookies||'').includes('zpw_sek')&&a.zpwEnk;
+      const o=document.createElement('option');
+      o.value=id;
+      o.textContent=(a.name||id.slice(0,8))+' — '+(ok?'Đã sẵn sàng':'Chưa đủ session');
+      sel.appendChild(o);
+    });
+    if(cfg.accountId){
+      sel.value=cfg.accountId;
+    }else if(accounts.length===1){
+      sel.value=accounts[0].accountId||'';
+    }
+    document.getElementById('cbTargets').value=(cfg.targetGroupIds||[]).join(', ');
+    document.getElementById('cbDest').value=cfg.destGroupId||'';
+    document.getElementById('cbReplySrc').checked=cfg.replyToSource!==false;
+    chatbotReplySrcChanged();
+    await chatbotLoadGroups(sel.value, (cfg.targetGroupIds||[]));
+    document.getElementById('cbPoll').value=cfg.pollIntervalSec||1.5;
+    document.getElementById('cbGap').value=cfg.sendGapSec||1.2;
+    document.getElementById('cbSelf').checked=cfg.allowSelfReply!==false;
+    if(document.getElementById('cbGlobal')) document.getElementById('cbGlobal').value=cfg.globalContext||'';
+    if(document.getElementById('cbSystem')) document.getElementById('cbSystem').value=cfg.systemPrompt||'';
+    if(document.getElementById('cbSenderName')) document.getElementById('cbSenderName').checked=cfg.includeSenderName!==false;
+    if(document.getElementById('cbStrict')) document.getElementById('cbStrict').checked=cfg.strictDoc===true;
+    chatbotStrictChanged();
+    if(document.getElementById('cbHandoff')) document.getElementById('cbHandoff').value=cfg.handoffText||'';
+    chatbotUpdateGroupCount();
+
+    const dot=document.getElementById('cbStatusDot');
+    const st=cfgData.status||{};
+    if(st.enabled&&st.threadAlive){
+      const trgTxt=(st.triggerEnabled!==false&&st.triggerKeywords)?(' · Lệnh: '+st.triggerKeywords):'';
+      dot.className='cb-status-pill on';
+      dot.innerHTML='<span class="cb-dot"></span><span>Đang chạy · '+(st.targetGroupIds||[]).length+' nhóm · '+(st.mode==='echo'?'Echo':'Gemini AI')+cbEsc(trgTxt)+'</span>';
+    }else if(st.enabled){
+      dot.className='cb-status-pill';
+      dot.innerHTML='<span class="cb-dot"></span><span>Đang khởi động worker…</span>';
+    }else{
+      dot.className='cb-status-pill';
+      dot.innerHTML='<span class="cb-dot"></span><span>Bot đang tắt</span>';
+    }
+    const acc=accounts.find(a=>a.accountId===sel.value)||{};
+    document.getElementById('cbAccountHint').textContent=sel.value
+      ? ('Đang dùng: '+(acc.name||sel.value.slice(0,8))+(acc.uid?' (UID: '+acc.uid+')':''))
+      : 'Chọn tài khoản đã đăng nhập ở trang Tài khoản.';
+    chatbotLoadLogs();
+  }catch(e){
+    cbToast('Lỗi tải cấu hình: '+e.message);
+  }
+}
+
+async function chatbotSave(enable){
+  const body={
+    accountId:document.getElementById('cbAccount').value,
+    targetGroupIds:document.getElementById('cbTargets').value,
+    destGroupId:document.getElementById('cbDest').value.trim(),
+    replyToSource:document.getElementById('cbReplySrc').checked,
+    pollIntervalSec:parseFloat(document.getElementById('cbPoll').value||'1.5'),
+    sendGapSec:parseFloat(document.getElementById('cbGap').value||'1.2'),
+    allowSelfReply:document.getElementById('cbSelf').checked,
+    systemPrompt:document.getElementById('cbSystem')?.value||'',
+    globalContext:document.getElementById('cbGlobal')?.value||'',
+    strictDoc:!!document.getElementById('cbStrict')?.checked,
+    handoffText:document.getElementById('cbHandoff')?.value||'',
+    includeSenderName:!!document.getElementById('cbSenderName')?.checked,
+    enabled:enable!==false
+  };
+  if(body.replyToSource){body.destGroupId='';}
+  if(!body.accountId){cbToast('Vui lòng chọn tài khoản Zalo trước.');return;}
+  if(!document.getElementById('cbTargets').value.trim()){cbToast('Vui lòng chọn ít nhất 1 nhóm ở Bước 3.');return;}
+
+  // Tu dong luu tai lieu Zalo neu co thay doi
+  const knowTxt=document.getElementById('cbKnowledge')?.value||'';
+  if(knowTxt!==cbLastSavedKnowledge){
+    try{
+      const kr=await fetch('/api/chatbot/knowledge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:knowTxt})});
+      const kd=await kr.json();
+      if(kd.success){
+        cbLastSavedKnowledge=knowTxt;
+        if(document.getElementById('cbKnowChars')) document.getElementById('cbKnowChars').textContent=kd.chars||knowTxt.length;
+      }
+    }catch(_){}
+  }
+
+  // Luu phan cau hinh dung chung (AI key, mode, triggers)
+  const sharedOk=await cbSaveShared(false);
+  if(!sharedOk) return;
+
+  const r=await fetch('/api/chatbot/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(!d.success){cbToast('Lưu lỗi: '+(d.error||''));return;}
+  cbToast(body.enabled?'Đã lưu và bật chatbot Zalo!':'Đã lưu cấu hình chatbot Zalo.');
+  chatbotRefresh();
+}
+
+async function chatbotStop(){
+  await fetch('/api/chatbot/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:false})});
+  cbToast('Đã tắt chatbot Zalo.');
+  chatbotRefresh();
+}
+
+async function chatbotSendTest(){
+  const msg=document.getElementById('cbTestMsg').value||'Test tin nhắn từ Jimmy BOT CHAT';
+  document.getElementById('cbSendStatus').textContent='Đang gửi…';
+  const r=await fetch('/api/chatbot/send-test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+  const d=await r.json();
+  document.getElementById('cbSendStatus').textContent=d.success?('Đã gửi thành công tới '+d.dest):('Lỗi: '+(d.error||''));
+  chatbotLoadLogs();
+}
+
+async function chatbotLoadLogs(){
+  try{
+    const r=await fetch('/api/chatbot/logs?limit=80');
+    const d=await r.json();
+    const el=document.getElementById('cbLogs');
+    if(el){
+      el.textContent=(d.logs||[]).join('\n')||'(chưa có nhật ký)';
+      el.scrollTop=el.scrollHeight;
+    }
+  }catch(_){}
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   TAB TELEGRAM — phần riêng cho nền tảng Telegram
+   ══════════════════════════════════════════════════════════════════════ */
+let tgState = { config: {}, status: {} };
+
+function tgToggleToken(){
+  const inp=document.getElementById('tgToken');
+  if(!inp) return;
+  inp.type=(inp.type==='password')?'text':'password';
+}
+
+function tgUpdateChatCount(){
+  const raw=document.getElementById('tgAllowedChatIds').value||'';
+  const ids=raw.split(/[,\s]+/).filter(x=>x.trim());
+  const badge=document.getElementById('tgChatCount');
+  if(!badge) return;
+  if(!ids.length){
+    badge.textContent='Chưa giới hạn';
+    badge.className='cb-step-badge gold';
+  }else{
+    badge.textContent=ids.length+' chat được phép';
+    badge.className='cb-step-badge gold';
+  }
+}
+
+function tgUseFirstChat(){
+  const ids=(document.getElementById('tgAllowedChatIds').value||'').split(/[,\s]+/).map(x=>x.trim()).filter(Boolean);
+  if(!ids.length){
+    tgToast('Chưa có Chat ID nào để dùng.','err');
+    return;
+  }
+  document.getElementById('tgTestChatId').value=ids[0];
+}
+
+function tgSharedKeyChanged(){
+  const own=document.getElementById('tgSharedKeys')?.value==='0';
+  const wrap=document.getElementById('tgOwnKeyWrap');
+  if(wrap) wrap.style.display=own?'':'none';
+  const hint=document.getElementById('tgKeyHint');
+  if(hint){
+    hint.textContent=own
+      ? 'Đang dùng key riêng cho Telegram. Lấy key ở aistudio.google.com/app/apikey.'
+      : 'Key dùng chung được lấy từ phần Cấu hình bot dùng chung phía trên.';
+  }
+}
+
+function tgApplyConfig(cfg){
+  tgState.config=cfg||{};
+  const c=tgState.config;
+
+  const tokenInput=document.getElementById('tgToken');
+  if(tokenInput&&!tokenInput.value&&c.hasToken){
+    tokenInput.placeholder=c.botTokenMasked+'  (đã lưu — dán token mới để thay)';
+  }
+  const tokenBadge=document.getElementById('tgTokenBadge');
+  if(tokenBadge){
+    tokenBadge.textContent=c.hasToken?'Đã lưu token':'Chưa cấu hình';
+    tokenBadge.className=c.hasToken?'cb-step-badge':'cb-step-badge gold';
+  }
+  if(c.botUsername||c.botName){
+    document.getElementById('tgBotInfoWrap').style.display='';
+    document.getElementById('tgBotName').textContent=c.botName||c.botUsername;
+    document.getElementById('tgBotUsername').textContent=c.botUsername?'@'+c.botUsername:'';
+    const open=document.getElementById('tgOpenBot');
+    if(open&&c.botUsername) open.href='https://t.me/'+c.botUsername;
+  }
+  document.getElementById('tgAllowedChatIds').value=(c.allowedChatIds||[]).join(', ');
+  tgUpdateChatCount();
+  if(document.getElementById('tgSystem')) document.getElementById('tgSystem').value=c.systemPrompt||'';
+  if(document.getElementById('tgGlobal')) document.getElementById('tgGlobal').value=c.globalContext||'';
+  if(document.getElementById('tgSenderName')) document.getElementById('tgSenderName').checked=c.includeSenderName!==false;
+  if(document.getElementById('tgStrict')) document.getElementById('tgStrict').checked=c.strictDoc===true;
+  tgStrictChanged();
+  if(document.getElementById('tgHandoff')) document.getElementById('tgHandoff').value=c.handoffText||'';
+  document.getElementById('tgSharedKeys').value=c.useSharedGeminiKeys?'1':'0';
+  document.getElementById('tgPoll').value=c.pollIntervalSec||2;
+  document.getElementById('tgGap').value=c.sendGapSec||1;
+  document.getElementById('tgMaxChars').value=c.maxMessageChars||4000;
+  document.getElementById('tgSenderName').checked=c.includeSenderName!==false;
+  document.getElementById('tgOnlyPrivate').checked=!!c.onlyPrivateChats;
+  document.getElementById('tgIgnoreBots').checked=c.ignoreBotMessages!==false;
+  document.getElementById('tgBotNameInput').value=c.botName||'';
+  if(!c.useSharedGeminiKeys&&c.geminiApiKey){
+    const own=document.getElementById('tgOwnKey');
+    if(own&&!own.value) own.value=c.geminiApiKey;
+  }
+  tgSharedKeyChanged();
+}
+
+function tgApplyStatus(st){
+  const s=st||{};
+  const pill=document.getElementById('tgStatus');
+  if(!pill) return;
+  const on=!!(s.threadAlive&&s.enabled);
+  pill.className='cb-status-pill'+(on?' on':'');
+  const label=pill.querySelector('span:last-child');
+  if(label){
+    if(on) label.textContent='Bot đang chạy';
+    else if(s.enabled) label.textContent='Đang khởi động…';
+    else label.textContent='Bot đang tắt';
+  }
+}
+
+async function tgLoadConfig(){
+  try{
+    const r=await fetch('/api/telegram/config',{headers:{'Accept':'application/json'}});
+    const d=await r.json();
+    if(d&&d.success){
+      tgApplyConfig(d.config);
+      tgApplyStatus(d.status);
+    }
+  }catch(e){}
+}
+
+function tgStrictChanged(){
+  const on=!!document.getElementById('tgStrict')?.checked;
+  const wrap=document.getElementById('tgHandoffWrap');
+  if(wrap) wrap.style.opacity=on?'1':'0.72';
+}
+
+let tgLastSavedKnowledge='';
+async function tgLoadKnowledge(){
+  try{
+    const r=await fetch('/api/telegram/knowledge');
+    const d=await r.json();
+    if(d.success){
+      const val=d.text||'';
+      if(document.getElementById('tgKnowledge')) document.getElementById('tgKnowledge').value=val;
+      tgLastSavedKnowledge=val;
+      if(document.getElementById('tgKnowChars')) document.getElementById('tgKnowChars').textContent=d.chars||0;
+    }
+  }catch(_){}
+}
+
+async function tgSaveKnowledge(){
+  const t=document.getElementById('tgKnowledge')?.value||'';
+  const r=await fetch('/api/telegram/knowledge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
+  const d=await r.json();
+  if(d.success){
+    tgLastSavedKnowledge=t;
+    if(document.getElementById('tgKnowChars')) document.getElementById('tgKnowChars').textContent=d.chars||0;
+    tgToast('Đã lưu tài liệu tư vấn Telegram ('+(d.chars||0)+' ký tự).','ok');
+  }else{
+    tgToast('Lưu lỗi: '+(d.error||''),'err');
+  }
+}
+
+function tgCollect(){
+  const idsRaw=document.getElementById('tgAllowedChatIds').value||'';
+  const ids=idsRaw.split(/[,\s]+/).map(x=>x.trim()).filter(Boolean);
+  return {
+    botToken:(document.getElementById('tgToken').value||'').trim(),
+    allowedChatIds:ids,
+    useSharedGeminiKeys:document.getElementById('tgSharedKeys').value==='1',
+    geminiApiKey:(document.getElementById('tgOwnKey').value||'').trim(),
+    pollIntervalSec:parseFloat(document.getElementById('tgPoll').value)||2,
+    sendGapSec:parseFloat(document.getElementById('tgGap').value)||1,
+    maxMessageChars:parseInt(document.getElementById('tgMaxChars').value,10)||4000,
+    includeSenderName:!!document.getElementById('tgSenderName')?.checked,
+    onlyPrivateChats:document.getElementById('tgOnlyPrivate').checked,
+    ignoreBotMessages:document.getElementById('tgIgnoreBots').checked,
+    botName:document.getElementById('tgBotNameInput').value||'',
+    systemPrompt:document.getElementById('tgSystem')?.value||'',
+    globalContext:document.getElementById('tgGlobal')?.value||'',
+    strictDoc:!!document.getElementById('tgStrict')?.checked,
+    handoffText:document.getElementById('tgHandoff')?.value||''
+  };
+}
+
+async function tgSave(enable){
+  const btn=document.getElementById('tgSaveBtn');
+  const payload=tgCollect();
+  payload.enabled=!!enable;
+
+  if(enable&&!payload.botToken&&!tgState.config.hasToken){
+    tgToast('Chưa có Bot Token. Làm Bước 3 và 4 trước đã.','err');
+    document.getElementById('tgToken').focus();
+    return;
+  }
+
+  // Tu dong luu tai lieu Telegram neu co thay doi
+  const knowTxt=document.getElementById('tgKnowledge')?.value||'';
+  if(knowTxt!==tgLastSavedKnowledge){
+    try{
+      const kr=await fetch('/api/telegram/knowledge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:knowTxt})});
+      const kd=await kr.json();
+      if(kd.success){
+        tgLastSavedKnowledge=knowTxt;
+        if(document.getElementById('tgKnowChars')) document.getElementById('tgKnowChars').textContent=kd.chars||knowTxt.length;
+      }
+    }catch(_){}
+  }
+
+  // Luu phan cau hinh dung chung (AI key, mode, triggers)
+  if(enable){
+    const sharedOk=await cbSaveShared(false);
+    if(!sharedOk) return;
+  }
+
+  if(btn) btn.disabled=true;
+  try{
+    const r=await fetch('/api/telegram/config',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const d=await r.json();
+    if(!d||!d.success){
+      tgToast((d&&d.error)||'Lưu thất bại','err');
+      return;
+    }
+    tgApplyConfig(d.config);
+    tgApplyStatus(d.status);
+    tgToast(enable?'Đã lưu và bật bot Telegram.':'Đã tắt bot Telegram.','ok');
+    if(enable) tgLoadLogs();
+  }catch(e){
+    tgToast('Không lưu được: '+e.message,'err');
+  }finally{
+    if(btn) btn.disabled=false;
+  }
+}
+
+async function tgCheckToken(){
+  const btn=document.getElementById('tgCheckTokenBtn');
+  const token=(document.getElementById('tgToken').value||'').trim();
+  if(!token){
+    tgToast('Dán Bot Token vào trước đã.','err');
+    document.getElementById('tgToken').focus();
+    return;
+  }
+  if(btn){btn.disabled=true;btn.textContent='Đang kiểm tra…';}
+  try{
+    const r=await fetch('/api/telegram/check-token',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({botToken:token})
+    });
+    const d=await r.json();
+    if(!d||!d.success){
+      tgToast((d&&d.error)||'Token không hợp lệ.','err');
+      return;
+    }
+    document.getElementById('tgBotInfoWrap').style.display='';
+    document.getElementById('tgBotName').textContent=d.botName||d.botUsername;
+    document.getElementById('tgBotUsername').textContent=d.botUsername?'@'+d.botUsername:'';
+    const open=document.getElementById('tgOpenBot');
+    if(open&&d.botUsername) open.href='https://t.me/'+d.botUsername;
+    const badge=document.getElementById('tgTokenBadge');
+    if(badge){badge.textContent='Token hợp lệ';badge.className='cb-step-badge';}
+    tgToast('Token hợp lệ! Bot: @'+(d.botUsername||''),'ok');
+  }catch(e){
+    tgToast('Lỗi kết nối: '+e.message,'err');
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='<svg class="cb-ico" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Kiểm tra Token';}
+  }
+}
+
+async function tgScanChats(){
+  const btn=document.getElementById('tgScanBtn');
+  const token=(document.getElementById('tgToken').value||'').trim();
+  if(!token&&!tgState.config.hasToken){
+    tgToast('Dán Bot Token trước khi quét.','err');
+    return;
+  }
+  if(btn){btn.disabled=true;btn.textContent='Đang quét…';}
+  try{
+    const r=await fetch('/api/telegram/scan-chats',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({botToken:token})
+    });
+    const d=await r.json();
+    if(!d||!d.success){
+      tgToast((d&&d.error)||'Không quét được.','err');
+      return;
+    }
+    const chats=d.chats||[];
+    const wrap=document.getElementById('tgScanResultWrap');
+    const box=document.getElementById('tgScanResult');
+    if(!chats.length){
+      wrap.style.display='';
+      box.innerHTML='<div style="font-size:13.5px;color:#7a6455;padding:10px 2px">Chưa có tin nhắn nào. Hãy nhắn cho bot một tin rồi bấm Quét lại.</div>';
+      return;
+    }
+    wrap.style.display='';
+    box.innerHTML=chats.map(c=>`
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 13px;border-radius:11px;background:#fffaf5;border:1px solid #f0d9c4;">
+        <div style="min-width:0;flex:1 1 180px;">
+          <strong style="display:block;font-size:14px;color:#2b1a10">${cbEsc(c.title||'Không rõ tên')}</strong>
+          <span style="display:block;font-size:12px;color:#7a6455;margin-top:2px">ID: ${cbEsc(c.chatId)} · ${cbEsc(c.type||'')}</span>
+        </div>
+        <button type="button" class="cb-btn cb-btn-sm cb-btn-primary" onclick="tgPickChat('${cbEsc(c.chatId)}')">Dùng chat này</button>
+      </div>`).join('');
+    tgToast('Tìm thấy '+chats.length+' chat.','ok');
+  }catch(e){
+    tgToast('Lỗi quét: '+e.message,'err');
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='<svg class="cb-ico" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>Quét Chat ID từ tin nhắn mới';}
+  }
+}
+
+function tgPickChat(chatId){
+  const inp=document.getElementById('tgAllowedChatIds');
+  const ids=(inp.value||'').split(/[,\s]+/).map(x=>x.trim()).filter(Boolean);
+  if(!ids.includes(chatId)) ids.push(chatId);
+  inp.value=ids.join(', ');
+  tgUpdateChatCount();
+  document.getElementById('tgTestChatId').value=chatId;
+  tgToast('Đã thêm Chat ID '+chatId+' vào danh sách.','ok');
+}
+
+async function tgSendTest(){
+  const token=(document.getElementById('tgToken').value||'').trim();
+  const chatId=(document.getElementById('tgTestChatId').value||'').trim();
+  const message=(document.getElementById('tgTestMsg').value||'').trim();
+  const status=document.getElementById('tgSendStatus');
+  if(!token&&!tgState.config.hasToken){
+    tgToast('Cần có Bot Token.','err');
+    return;
+  }
+  if(!chatId){
+    tgToast('Cần có Chat ID nhận tin thử.','err');
+    return;
+  }
+  if(status) status.textContent='Đang gửi…';
+  try{
+    const r=await fetch('/api/telegram/send-test',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({botToken:token, chatId, message})
+    });
+    const d=await r.json();
+    if(!d||!d.success){
+      if(status) status.textContent='';
+      tgToast((d&&d.error)||'Gửi thất bại.','err');
+      return;
+    }
+    if(status) status.textContent='Đã gửi tới chat '+chatId+'. Mở Telegram kiểm tra nhé.';
+    tgToast('Đã gửi tin thử.','ok');
+  }catch(e){
+    if(status) status.textContent='';
+    tgToast('Lỗi gửi: '+e.message,'err');
+  }
+}
+
+async function tgLoadLogs(){
+  const box=document.getElementById('tgLogs');
+  try{
+    const r=await fetch('/api/telegram/logs',{headers:{'Accept':'application/json'}});
+    const d=await r.json();
+    if(!d||!d.success) return;
+    const lines=d.logs||[];
+    if(box){
+      box.textContent=lines.length?lines.join('\n'):'Chưa có hoạt động nào.';
+      box.scrollTop=box.scrollHeight;
+    }
+    tgApplyStatus(d.status);
+  }catch(e){}
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   KHỞI ĐỘNG
+   ══════════════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function(){
+  cbLoadShared();
+  chatbotLoadKnowledge();
+  chatbotRefresh();
+  tgLoadKnowledge();
+  tgLoadConfig();
+  tgLoadLogs();
+  if(cbTimer) clearInterval(cbTimer);
+  cbTimer=setInterval(function(){
+    chatbotLoadLogs();
+    tgLoadLogs();
+  },3000);
+});
+
+document.getElementById('cbKnowledge')?.addEventListener('input', e => {
+  document.getElementById('cbKnowChars').textContent=(e.target.value||'').length;
+});
+document.getElementById('tgKnowledge')?.addEventListener('input', e => {
+  if(document.getElementById('tgKnowChars')) document.getElementById('tgKnowChars').textContent=(e.target.value||'').length;
+});
+document.getElementById('tgSharedKeys')?.addEventListener('change', tgSharedKeyChanged);
+</script>
+</body>
+</html>

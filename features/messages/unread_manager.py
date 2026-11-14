@@ -202,7 +202,21 @@ def dismiss_group_messages(account_id: str, group_id: str) -> int:
 
 
 # Danh sách bạn bè chỉ làm mới sau mỗi 30 phút để tránh Zalo rate-limit (429).
+# Dinh 429 1 lan -> backoff 10 phut khong goi lai API getfriends.
 _FRIENDS_CACHE_TTL_SEC = 30 * 60
+_FRIENDS_429_BACKOFF_SEC = 10 * 60
+_friends_429_until: dict = {}
+
+
+def _short_err(exc, n=200) -> str:
+    """Cat ngan log loi (URL zalo ma hoa dai vai KB, chi giu 200 ky tu)."""
+    try:
+        s = str(exc or "")
+    except Exception:
+        s = "error"
+    if len(s) > n:
+        s = s[:n] + "..."
+    return " ".join(s.split())
 
 
 def _account_friends(account: dict) -> List[Dict[str, str]]:
@@ -216,6 +230,9 @@ def _account_friends(account: dict) -> List[Dict[str, str]]:
     cached_friends = cache.get("friends")
     fetched_at = float(cache.get("fetchedAt") or 0)
     if cached_friends is not None and time.time() - fetched_at < _FRIENDS_CACHE_TTL_SEC:
+        return cached_friends or []
+    # Vua dinh 429 -> nghi 10 phut, dung cache cu
+    if time.time() < float(_friends_429_until.get(aid) or 0):
         return cached_friends or []
 
     try:
@@ -239,7 +256,12 @@ def _account_friends(account: dict) -> List[Dict[str, str]]:
             _save_store(store)
         return slim
     except Exception as exc:
-        print(f"[unread_worker] Không làm mới được danh sách bạn bè ({aid}): {exc}", flush=True)
+        msg = _short_err(exc)
+        if "429" in msg:
+            _friends_429_until[aid] = time.time() + _FRIENDS_429_BACKOFF_SEC
+            print(f"[unread_worker] ban be 429 -> nghi 10 phut, dung cache cu ({len(cached_friends or [])} ban)", flush=True)
+        else:
+            print(f"[unread_worker] Không làm mới được danh sách bạn bè ({aid}): {msg}", flush=True)
         return cached_friends or []
 
 

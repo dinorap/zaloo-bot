@@ -1,0 +1,297 @@
+/* ==========================================================================
+   Jimmy BOT CHAT — Lớp vá bổ sung cho các lỗi tương phản còn sót
+
+   Lưu ý: phần lớn lỗi gốc đã được sửa trực tiếp trong `jimmy-bot-chat.css`
+   (nơi gây ra: `thead *{color:#fff}`, `button:hover{color:#fff}`, gradient
+   cam sáng + chữ trắng). File này chỉ bổ sung những biến thể mà file trên
+   không phủ tới — bảng biến thể, ô tìm kiếm, token muted, và các trường hợp
+   cụ thể theo trang.
+
+   Nguyên tắc: nền sáng → chữ tối. Nền tối → chữ sáng.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. TOKEN MUTED — nâng tương phản tối thiểu
+   ========================================================================== */
+/* #b08a6d (3.13:1) → #7a5c40 (6.12:1) */
+html body .app-sidebar .nav-section-label,
+html body .header.app-sidebar .nav-section-label {
+    color: #7a5c40 !important;
+    -webkit-text-fill-color: #7a5c40 !important;
+}
+
+/* #a3805f (3.61:1) → #7a5c40 */
+html body .app-sidebar .header-nav>a .nav-text.nav-text-stack small,
+html body .header.app-sidebar .header-nav>a .nav-text.nav-text-stack small {
+    color: #7a5c40 !important;
+    -webkit-text-fill-color: #7a5c40 !important;
+}
+
+/* #a3805f / #a3866f → #8a6d55 (4.7:1) */
+html body .guide-anchor-label,
+html body input::placeholder,
+html body textarea::placeholder {
+    color: #8a6d55 !important;
+    -webkit-text-fill-color: #8a6d55 !important;
+}
+
+/* #718096 (4.02:1) → #64748b (4.76:1) */
+html body .members-data-heading p,
+html body .page-subtitle {
+    color: #64748b !important;
+    -webkit-text-fill-color: #64748b !important;
+}
+
+/* #38506a trên nền trắng — đạt 8.32:1 nhưng đảm bảo label nhất quán */
+html body .form-group label,
+html body .overlay-label,
+html body .meta-label {
+    color: #4a5568 !important;
+    -webkit-text-fill-color: #4a5568 !important;
+}
+
+/* ==========================================================================
+   2. BẢNG — các biến thể mà rule chung chưa phủ
+   ========================================================================== */
+html body .members-table th,
+html body .groups-members-table th,
+html body .sched-table th,
+html body .recipient-table th,
+html body .personal-groups-table th,
+html body .group-copy-member-table th,
+html body .friends-table th,
+html body .accounts-table th {
+    color: #4a2f1d !important;
+    -webkit-text-fill-color: #4a2f1d !important;
+    background: #f6f8fb !important;
+    background-image: none !important;
+    border-color: #d7e1ec !important;
+}
+
+html body .members-table th *,
+html body .groups-members-table th *,
+html body .sched-table th *,
+html body .recipient-table th *,
+html body .personal-groups-table th *,
+html body .group-copy-member-table th *,
+html body .friends-table th *,
+html body .accounts-table th * {
+    color: #4a2f1d !important;
+    -webkit-text-fill-color: #4a2f1d !important;
+}
+
+/* ==========================================================================
+   3. Ô TÌM KIẾM — bỏ viền kép, icon đúng bảng màu
+   ========================================================================== */
+/* Input lồng trong .search-box mang sẵn border + border-radius của riêng nó,
+   cộng thêm border của container → 2 vòng viền chồng nhau ("chồng border").
+   Bỏ border/bo góc của input, chỉ để .search-box giữ 1 vòng viền.
+
+   LƯU Ý: phải dùng long-hand (`border-width/style/color`) chứ không dùng
+   shorthand `border: none` — vì các theme cũ đặt `border-width`, `border-style`,
+   `border-color` riêng lẻ với `!important`; long-hand đặt sau shorthand nên
+   thắng, khiến viền vẫn còn. */
+html body .search-box input,
+html body .search-box input:focus,
+html body .search-box input:hover {
+    border-width: 0 !important;
+    border-style: none !important;
+    border-color: transparent !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding-block: 0 !important;
+}
+
+/* Bản cứng: `input:not(...)` trong nexus-ux.css có specificity (0,3,1) và đặt
+   `border: ... !important` — cao hơn rule trên. Phải dùng selector đặc hơn nữa
+   (thêm lớp cha) để thắng, và dùng long-hand để không bị shorthand bên dưới reset. */
+html body .search-box input:not([type="checkbox"]):not([type="radio"]),
+html body .search-box input:not([type="checkbox"]):not([type="radio"]):focus,
+html body .search-box input:not([type="checkbox"]):not([type="radio"]):hover {
+    border-width: 0 !important;
+    border-style: none !important;
+    border-color: transparent !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+html body .search-box {
+    background: #fffdfa !important;
+    border: 1px solid var(--jimmy-border-strong) !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+    overflow: hidden;
+    gap: 8px !important;
+}
+
+html body .search-box:focus-within {
+    border-color: var(--jimmy-orange) !important;
+    box-shadow: 0 0 0 3px rgba(255, 117, 66, .18) !important;
+}
+
+/* Icon kính lúp: canh giữa theo trục dọc, dùng màu cam của theme
+   (bản gốc dùng `stroke="#667681"` cứng — xanh xám, lệch bảng màu). */
+html body .search-box svg {
+    flex: 0 0 auto !important;
+    align-self: center !important;
+    margin-left: 10px !important;
+    color: var(--jimmy-orange-dark) !important;
+    stroke: var(--jimmy-orange-dark) !important;
+}
+
+/* Chừa chỗ cho icon (tránh chữ đè lên kính lúp).
+   Dùng selector đặc hơn `input:not(...)` của nexus-ux.css để thắng padding-left. */
+html body .search-box input:not([type="checkbox"]):not([type="radio"]),
+html body .search-box input:not([type="checkbox"]):not([type="radio"]):focus,
+html body .search-box input:not([type="checkbox"]):not([type="radio"]):hover {
+    padding-left: 0 !important;
+    padding-right: 10px !important;
+}
+
+/* Ô nhập dùng icon nền (bg-image): canh đúng, không đè lên chữ */
+html body .group-copy-account-search,
+html body #groupsSearchInput,
+html body #groupsMemberSearch,
+html body .members-search-wrap input,
+html body .members-data-search input {
+    padding-left: 38px !important;
+    background-image: url('../icons/lucide/search.svg') !important;
+    background-repeat: no-repeat !important;
+    background-position: 13px center !important;
+    background-size: 16px 16px !important;
+}
+
+/* ==========================================================================
+   4. SỐ / CHIP — nâng tương phản
+   ========================================================================== */
+/* #ff7542 (2.67:1 trên trắng) → #c93a18 (5.12:1) */
+html body .stat-number,
+html body .stat .num {
+    color: #c93a18 !important;
+    -webkit-text-fill-color: #c93a18 !important;
+}
+
+/* #16a34a (3:1) → #15803d (5.02:1) */
+html body .account-card-status.running,
+html body .account-card-status.ok,
+html body .account-card-status.pending {
+    color: #15803d !important;
+    -webkit-text-fill-color: #15803d !important;
+}
+
+/* #0284c7 (3.72:1) → #0369a1 (5.93:1) */
+html body .status-pill.info,
+html body .schedule-status-badge.info {
+    color: #0369a1 !important;
+    -webkit-text-fill-color: #0369a1 !important;
+}
+
+/* #a36d2b (4.33:1) → #8a5a1e (5.81:1) */
+html body .eyebrow {
+    color: #8a5a1e !important;
+    -webkit-text-fill-color: #8a5a1e !important;
+}
+
+/* Chip số bước: nền cam sáng → chữ nâu đậm */
+html body .cb-step-num,
+html body .gw-step-num,
+html body .guide-anchor-num {
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+}
+
+/* ==========================================================================
+   5. TRANG CỤ THỂ (dùng bảng màu riêng, không đi qua theme cam)
+   ========================================================================== */
+/* /schedules — tab active nền xanh #246fa2 + chữ trắng (5.43:1) */
+html body.campaign-builder-page .tab-nav button.active,
+html body.campaign-builder-page .tab-btn.active {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: #246fa2 !important;
+    background-image: none !important;
+    border-color: #1a5580 !important;
+}
+
+/* /gateway — nút chính nền #1d5fa3 + chữ trắng (6.53:1) */
+html body.gateway-shell-page .gateway-page .btn-primary:not(:disabled) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: #1d5fa3 !important;
+    background-image: none !important;
+    border-color: #17497d !important;
+}
+
+html body.gateway-shell-page .gateway-page .btn-primary:not(:disabled):hover {
+    background: #17497d !important;
+    background-image: none !important;
+}
+
+/* /gateway — chip số bước nền #246fa2, chữ nâu đậm */
+html body .gw-step-num {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+/* /activation — code inline trong thẻ: nền tối, chữ cam đậm cần sáng hơn */
+html body .activation-page code,
+html body .guide-api-code code {
+    color: #b03a16 !important;
+    -webkit-text-fill-color: #b03a16 !important;
+}
+
+/* /messages — label toolbar */
+html body .messages-page .form-group label,
+html body .message-toolbar label {
+    color: #4a5568 !important;
+    -webkit-text-fill-color: #4a5568 !important;
+}
+
+/* ==========================================================================
+   6. HOVER — chống theme cũ ghi đè (dùng `!important` + selector đặc thù)
+   ========================================================================== */
+/* Nút "Xóa dữ liệu" ở /members: hover trước đây là chữ trắng trên nền
+   hồng nhạt → dùng nâu đỏ đậm trên nền hồng. */
+html body .members-page .members-clear-btn:hover,
+html body .members-page .btn-icon-danger:hover {
+    color: #7f1d1d !important;
+    -webkit-text-fill-color: #7f1d1d !important;
+    background: rgba(239, 68, 68, .16) !important;
+    background-image: none !important;
+    border-color: rgba(239, 68, 68, .55) !important;
+}
+
+/* Nút chính trong thẻ tài khoản: hover phải giữ nền xanh đậm (chữ trắng 6.53:1),
+   không được theme cũ ép lại cam sáng. */
+html body .account-card .account-card-actions .btn-primary:hover,
+html body .account-card .account-card-actions .btn-primary:focus {
+    background: #17497d !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    border-color: #17497d !important;
+}
+
+/* Pill "Kiểm tra phiên bản" trong sidebar: hover nền kem + chữ nâu đậm. */
+html body .app-sidebar .nexus-update-pill:hover,
+html body .header.app-sidebar .nexus-update-pill:hover,
+html body button.nexus-update-pill:hover,
+html body .nexus-update-pill:hover {
+    background: var(--jimmy-panel-soft) !important;
+    background-image: none !important;
+    color: var(--jimmy-text) !important;
+    -webkit-text-fill-color: var(--jimmy-text) !important;
+    border-color: var(--jimmy-orange) !important;
+}
+
+html body .nexus-update-pill:hover * {
+    color: var(--jimmy-text) !important;
+    -webkit-text-fill-color: var(--jimmy-text) !important;
+}

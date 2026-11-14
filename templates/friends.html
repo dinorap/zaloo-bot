@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý bạn bè - Nexus</title>
+    <title>Quản lý bạn bè - Jimmy BOT CHAT</title>
     <link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=friends-v1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/overlay.css') }}?v=friends-v1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=friends-v1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=friends-gap32">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/overlay.css') }}?v=friends-gap32">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=friends-gap32">
     <style>
         .friends-page { display: flex; flex-direction: column; gap: 14px; }
         .friends-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
@@ -53,6 +53,21 @@
             padding: 8px 12px; border-bottom: 1px solid var(--border);
             font-size: 13.5px; vertical-align: middle;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        /* Cột "#" là số thứ tự: số 3-4 chữ số (100, 999, 1000) phải hiện đầy đủ,
+           không bị cắt thành dấu "...". */
+        .friends-table td.friends-muted:first-child,
+        .friends-table th:first-child {
+            overflow: visible;
+            text-overflow: clip;
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+        }
+        .friends-table td.friends-muted:first-child { padding-right: 4px; }
+        .friends-table th:last-child,
+        .friends-table td:last-child {
+            overflow: visible;
+            text-overflow: clip;
         }
         .friends-table tbody tr:hover td { background: rgba(88, 166, 255, .06); }
         .friends-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; display: block; }
@@ -175,9 +190,9 @@
         <div class="friends-table-scroll">
             <table class="friends-table">
                 <colgroup>
-                    <col style="width:46px"><col style="width:54px"><col style="width:230px">
+                    <col style="width:64px"><col style="width:54px"><col style="width:230px">
                     <col><col style="width:84px"><col style="width:106px">
-                    <col style="width:128px"><col style="width:172px">
+                    <col style="width:128px"><col style="width:230px">
                 </colgroup>
                 <thead>
                     <tr>

@@ -5,6 +5,7 @@ import requests
 
 from core.zalo.enc import zalo_encode
 from core.zalo.dec import zalo_decode
+from core.zalo import http as zalo_http
 from core.zalo.zalo_headers import zalo_mobile_headers
 
 GETMG_URL = "https://tt-group-wpa.chat.zalo.me/api/group/getmg"
@@ -304,7 +305,7 @@ def get_members_by_group_id(
         plaintext = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
         try:
             encoded = zalo_encode(plaintext, zpw_enk, url_encode=True)
-            response = requests.post(
+            response = zalo_http.post(
                 GETMG_URL,
                 params={"zpw_ver": zpw_ver, "zpw_type": "30"},
                 data=f"params={encoded}",

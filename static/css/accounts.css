@@ -1,160 +1,552 @@
-/* Tài khoản — bảng điều khiển gọn: topbar + danh sách tài khoản dạng thẻ. */
+/* Tài khoản — bảng điều khiển gọn: topbar + danh sách tài khoản dạng thẻ hiện đại. */
 
-.accounts-shell { max-width: 1640px; }
+.accounts-shell {
+    max-width: 1600px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+}
 
-/* ─── Thanh điều khiển gọn (thay banner lớn) ───────────────────────────── */
+/* ─── Thanh điều khiển gọn (acc-topbar) ───────────────────────────── */
 .acc-topbar {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 14px;
-    margin-bottom: 16px;
-    padding: 12px 16px;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    background: linear-gradient(135deg, rgba(34, 80, 129, .16), rgba(14, 25, 39, .58));
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 16px !important;
+    padding: 14px 20px !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
 }
-.acc-topbar-title { display: flex; align-items: center; gap: 10px; min-width: 200px; flex: 1 1 260px; }
+
+.acc-topbar-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    min-width: 220px !important;
+    flex: 1 1 260px !important;
+}
+
 .acc-topbar-dot {
-    flex: 0 0 auto;
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 10px rgba(105, 223, 164, .75);
+    flex: 0 0 auto !important;
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 50% !important;
+    background: #16a34a !important;
+    box-shadow: 0 0 8px rgba(22, 163, 74, 0.5) !important;
 }
-.acc-topbar-title strong { display: block; font-size: 15px; }
-.acc-topbar-title small { display: block; margin-top: 2px; overflow: hidden; color: var(--text-muted); font-size: 10.5px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
-.acc-topbar-stats { display: flex; flex: 0 0 auto; gap: 8px; }
+
+.acc-topbar-title strong {
+    display: block !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    line-height: 1.3 !important;
+}
+
+.acc-topbar-title small {
+    display: block !important;
+    margin-top: 2px !important;
+    color: #64748b !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+}
+
+/* Stats chips */
+.acc-topbar-stats {
+    display: flex !important;
+    align-items: center !important;
+    flex: 0 0 auto !important;
+    gap: 10px !important;
+}
+
 .acc-stat {
-    flex: 0 0 96px;
-    padding: 7px 11px;
-    border: 1px solid rgba(174, 205, 232, .1);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, .025);
-    text-align: center;
+    min-width: 105px !important;
+    height: 50px !important;
+    padding: 6px 14px !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 9px !important;
+    background: #f8fafc !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    transition: all 0.15s ease !important;
 }
-.acc-stat span { display: block; overflow: hidden; color: var(--text-muted); font-size: 8px; letter-spacing: .04em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
-.acc-stat strong { display: block; margin-top: 3px; overflow: hidden; color: var(--text); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
 
+.acc-stat:hover {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+}
+
+.acc-stat span {
+    display: block !important;
+    color: #64748b !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+    line-height: 1.1 !important;
+}
+
+.acc-stat strong {
+    display: block !important;
+    margin-top: 3px !important;
+    color: #0f172a !important;
+    font-size: 17px !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+}
+
+/* Số thống kê: #0284c7 (3.72:1) và #16a34a (3.0:1) đều dưới WCAG AA
+   trên nền #fff2e6 → nâng lên #0369a1 (5.93:1) và #15803d (5.02:1). */
+#accStatTotal { color: #0369a1 !important; }
+#accStatRunning { color: #15803d !important; }
+#accStatReady { color: #0f172a !important; }
+
+/* Topbar action buttons */
 .acc-topbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-left: auto;
-    padding-left: 14px;
-    border-left: 1px solid rgba(174, 205, 232, .14);
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-left: auto !important;
+    padding-left: 14px !important;
+    border-left: 1px solid #e2e8f0 !important;
 }
-.acc-topbar-actions-bulk { display: flex; align-items: center; gap: 8px; }
-.acc-topbar-actions .btn.btn-primary { margin-left: 6px; }
 
-/* #accountsStatus reuses the shared .status-bar component (style.css / nexus-ux.css). */
-#accountsStatus { margin-bottom: 12px; margin-top: 0; }
+.acc-topbar-actions-bulk {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
 
-/* ─── Danh sách tài khoản: mỗi dòng là một tài khoản, trải hết chiều rộng ─ */
+#btnStopAll {
+    color: #dc2626 !important;
+    background: #ffffff !important;
+    border: 1px solid #fecaca !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    height: 36px !important;
+    padding: 0 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    transition: all 0.15s ease !important;
+}
+
+#btnStopAll:hover {
+    background: #fef2f2 !important;
+    border-color: #f87171 !important;
+}
+
+#btnStartAll {
+    color: #0284c7 !important;
+    background: #ffffff !important;
+    border: 1px solid #bae6fd !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    height: 36px !important;
+    padding: 0 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    transition: all 0.15s ease !important;
+}
+
+#btnStartAll:hover {
+    background: #f0f9ff !important;
+    border-color: #7dd3fc !important;
+}
+
+#btnRefreshAccounts {
+    width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 !important;
+    border: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    color: #64748b !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.15s ease !important;
+}
+
+#btnRefreshAccounts:hover {
+    background: #f8fafc !important;
+    color: #0369a1 !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Nền #0284c7 + chữ trắng = 3.72:1 (dưới WCAG AA 4.5:1).
+   Đổi sang #1d5fa3 (6.53:1) — vẫn là xanh, nhưng đủ tương phản. */
+#btnAddAccount {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 16px !important;
+    border-radius: 8px !important;
+    background: #1d5fa3 !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    box-shadow: 0 2px 6px rgba(29, 95, 163, 0.25) !important;
+    transition: all 0.15s ease !important;
+}
+
+#btnAddAccount:hover {
+    background: #17497d !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 10px rgba(29, 95, 163, 0.3) !important;
+}
+
+#accountsStatus {
+    margin-bottom: 12px;
+    margin-top: 0;
+}
+
+/* ─── Khung bao danh sách tài khoản ───────────────────────────── */
+.accounts-shell > .card,
+.accounts-card-wrapper {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+.accounts-header-strip {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 13px 20px !important;
+    background: #fafbfc !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.accounts-strip-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+}
+
+.accounts-strip-title svg {
+    color: #0284c7 !important;
+}
+
+.accounts-strip-hint {
+    font-size: 12px !important;
+    color: #64748b !important;
+}
+
 .accounts-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 16px 20px !important;
 }
+
+/* ─── Mỗi thẻ tài khoản (account-card) ───────────────────────────── */
 .account-card {
-    display: grid;
-    grid-template-columns: 48px minmax(160px, 280px) 112px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 18px;
-    min-width: 0;
-    padding: 13px 18px;
+    display: grid !important;
+    grid-template-columns: 50px minmax(200px, 320px) 130px 1fr auto !important;
+    align-items: center !important;
+    gap: 16px !important;
+    min-width: 0 !important;
+    padding: 14px 18px !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02) !important;
+    transition: all 0.15s ease !important;
 }
+
+.account-card:hover {
+    border-color: #cbd5e1 !important;
+    background: #fbfcfe !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04) !important;
+}
+
 .account-card-avatar {
-    position: relative;
-    flex: 0 0 auto;
-    width: 48px;
-    height: 48px;
-    overflow: hidden;
-    border-radius: 12px;
-    background: linear-gradient(145deg, rgba(58, 148, 224, .35), rgba(49, 87, 142, .4));
+    position: relative !important;
+    flex: 0 0 50px !important;
+    width: 50px !important;
+    height: 50px !important;
+    overflow: hidden !important;
+    border-radius: 10px !important;
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
 }
-.account-card-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.account-card-avatar img {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}
+
 .account-avatar-default {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    align-items: center;
-    justify-content: center;
-    color: var(--accent-hover);
-    font-size: 17px;
-    font-weight: 800;
+    display: flex !important;
+    width: 100% !important;
+    height: 100% !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #0284c7 !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    background: #e0f2fe !important;
 }
-.account-card-name-cell { min-width: 0; }
-.account-card-name { overflow: hidden; font-size: 13.5px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.account-card-id { margin-top: 4px; overflow: hidden; color: var(--text-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.account-card-status-cell { min-width: 0; }
+
+.account-card-name-cell {
+    min-width: 0 !important;
+}
+
+.account-card-name {
+    overflow: hidden !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    line-height: 1.3 !important;
+}
+
+.account-card-meta {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-top: 4px !important;
+    flex-wrap: wrap !important;
+}
+
+.account-meta-badge {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: #475569 !important;
+    background: #f1f5f9 !important;
+    padding: 2px 7px !important;
+    border-radius: 5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.account-phone-badge {
+    color: #0369a1 !important;
+    background: #e0f2fe !important;
+    border-color: #bae6fd !important;
+    font-weight: 600 !important;
+}
+
+.account-card-status-cell {
+    min-width: 0 !important;
+}
+
 .account-card-status {
-    display: inline-block;
-    padding: 4px 11px;
-    border-radius: 999px;
-    font-size: 10px;
-    font-weight: 800;
-    white-space: nowrap;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 4px 11px !important;
+    border-radius: 999px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
 }
-.account-card-status.wait { color: #ffd070; background: rgba(255, 208, 112, .1); }
+
+.account-card-status.wait {
+    color: #64748b !important;
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
 .account-card-status.running,
 .account-card-status.ok,
-.account-card-status.pending { color: var(--green); background: rgba(105, 223, 164, .1); }
-.account-card-proxy-cell { overflow: hidden; color: var(--text-muted); font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
-.account-card-actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; justify-content: flex-end; gap: 6px; }
-.account-card-actions .btn { min-height: 30px; padding: 5px 9px !important; font-size: 10px !important; white-space: nowrap; }
+.account-card-status.pending {
+    color: #15803d !important;
+    background: #dcfce7 !important;
+    border: 1px solid #bbf7d0 !important;
+}
+
+.status-indicator-dot {
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+}
+
+.dot-running {
+    background: #16a34a !important;
+    box-shadow: 0 0 6px rgba(22, 163, 74, 0.6) !important;
+}
+
+.dot-wait {
+    background: #94a3b8 !important;
+}
+
+.account-card-proxy-cell {
+    min-width: 0 !important;
+}
+
+.account-proxy-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 12px !important;
+    padding: 4px 10px !important;
+    border-radius: 6px !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.account-proxy-chip.has-proxy {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    border: 1px solid #bfdbfe !important;
+    font-weight: 600 !important;
+}
+
+.account-proxy-chip.no-proxy {
+    background: #f8fafc !important;
+    color: #64748b !important;
+    border: 1px solid #e2e8f0 !important;
+    font-weight: 500 !important;
+}
+
+.account-card-actions {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+}
+
+.btn-account-action {
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    border-radius: 7px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    white-space: nowrap !important;
+    transition: all 0.15s ease !important;
+}
+
+/* Nền #0284c7 + chữ trắng = 3.72:1 (dưới WCAG AA 4.5:1).
+   Đổi sang #1d5fa3 (6.53:1) — vẫn là xanh, nhưng đủ tương phản. */
+html body .account-card .account-card-actions .btn-primary {
+    background: #1d5fa3 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 1px 3px rgba(29, 95, 163, 0.25) !important;
+}
+
+html body .account-card .account-card-actions .btn-primary:hover {
+    background: #17497d !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html body .account-card .account-card-actions .btn-danger {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 1px 3px rgba(220, 38, 38, 0.25) !important;
+}
+
+html body .account-card .account-card-actions .btn-danger:hover {
+    background: #b91c1c !important;
+}
+
+html body .account-card .account-card-actions .btn-ghost {
+    background: #ffffff !important;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+html body .account-card .account-card-actions .btn-ghost:hover {
+    background: #f1f5f9 !important;
+    color: #0284c7 !important;
+    border-color: #94a3b8 !important;
+}
+
+html body .account-card .account-card-actions .btn-danger-ghost {
+    background: #ffffff !important;
+    color: #dc2626 !important;
+    border: 1px solid #fecaca !important;
+}
+
+html body .account-card .account-card-actions .btn-danger-ghost:hover {
+    background: #fef2f2 !important;
+    border-color: #f87171 !important;
+}
 
 .accounts-empty {
-    display: grid;
-    justify-items: center;
-    gap: 8px;
-    padding: 40px 20px;
-    border: 1px dashed var(--border);
-    border-radius: 14px;
-    color: var(--text-muted);
-    text-align: center;
+    padding: 40px 20px !important;
+    border: 1px dashed #e2e8f0 !important;
+    border-radius: 10px !important;
+    color: #64748b !important;
+    text-align: center !important;
+    margin: 16px 20px !important;
 }
-.accounts-empty p { margin: 0; font-size: 12.5px; }
-.accounts-empty .hint { color: var(--text-muted); font-size: 11px; }
 
-@media (prefers-reduced-motion: reduce) {
-    .account-card { transition: none !important; }
+.accounts-empty p {
+    margin: 0 0 6px !important;
+    font-size: 13px !important;
+    color: #475569 !important;
+}
+
+.accounts-empty p:last-child {
+    margin-bottom: 0 !important;
+}
+
+.accounts-empty .hint {
+    color: #94a3b8 !important;
+    font-size: 11.5px !important;
 }
 
 @media (max-width: 900px) {
-    .acc-topbar-stats { flex-basis: 100%; }
+    .acc-topbar-stats { flex-basis: 100% !important; justify-content: flex-start !important; }
     .acc-topbar-actions {
-        flex-basis: 100%;
-        margin-left: 0;
-        padding-left: 0;
-        border-left: 0;
-        justify-content: flex-end;
+        flex-basis: 100% !important;
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+        border-left: 0 !important;
+        justify-content: flex-start !important;
     }
     .account-card {
-        grid-template-columns: 44px minmax(0, 1fr) auto;
+        grid-template-columns: 44px minmax(0, 1fr) auto !important;
         grid-template-areas:
             "avatar name actions"
             "avatar status status"
-            "avatar proxy proxy";
-        row-gap: 6px;
+            "avatar proxy proxy" !important;
+        row-gap: 8px !important;
     }
-    .account-card-avatar { grid-area: avatar; }
-    .account-card-name-cell { grid-area: name; }
-    .account-card-status-cell { grid-area: status; }
-    .account-card-proxy-cell { grid-area: proxy; }
-    .account-card-actions { grid-area: actions; }
-}
-@media (max-width: 640px) {
-    .acc-topbar { align-items: flex-start; }
-    .acc-topbar-actions { flex-wrap: wrap; justify-content: flex-start; }
-    .account-card {
-        grid-template-columns: 44px minmax(0, 1fr);
-        grid-template-areas:
-            "avatar name"
-            "avatar status"
-            "avatar proxy"
-            "avatar actions";
-    }
-    .account-card-actions { justify-content: flex-start; flex-wrap: wrap; }
+    .account-card-avatar { grid-area: avatar !important; }
+    .account-card-name-cell { grid-area: name !important; }
+    .account-card-status-cell { grid-area: status !important; }
+    .account-card-proxy-cell { grid-area: proxy !important; }
+    .account-card-actions { grid-area: actions !important; }
 }

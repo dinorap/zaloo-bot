@@ -1,0 +1,3760 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <title>Zalo CSKH — Không gian làm việc</title>
+  <link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
+  <style>
+    @font-face {
+      font-family: "SegoeuiPc";
+      src: local("Segoe UI"), local("SegoeUI"), local("Segoe UI Variable Text");
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: "SegoeuiPc";
+      src: local("Segoe UI Semibold"), local("SegoeUI-Semibold"), local("Segoe UI Bold");
+      font-weight: 600;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: "SegoeuiPc";
+      src: local("Segoe UI Bold"), local("SegoeUI-Bold");
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    :root {
+      --zblue: #0068ff;
+      --zblue-d: #0052cc;
+      --zblue-soft: #e5efff;
+      --zrail: #005ae0;
+      --zbg: #e2e9f2;
+      --card: #ffffff;
+      --line: #dde3ec;
+      --hover: #f3f5f8;
+      --txt: #051329;
+      --muted: #475569;
+      --muted-2: #5b6b7f;
+      --me: #e5efff;
+      --other: #ffffff;
+      --ok: #16a34a;
+      --rose: #d92d20;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      font-family: SegoeuiPc, "Segoe UI", "San Francisco", "Helvetica Neue", Helvetica, "Lucida Grande", Roboto, Ubuntu, Tahoma, "Microsoft Sans Serif", Arial, sans-serif;
+      background: var(--zbg);
+      color: var(--txt);
+      display: flex;
+      height: 100dvh;
+      overflow: hidden;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font-family: inherit
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, .28);
+      border-radius: 999px
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, .48)
+    }
+
+    .ico {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: none;
+      display: inline-block;
+      vertical-align: middle
+    }
+
+    .ico-sm {
+      width: 14px;
+      height: 14px
+    }
+
+    .ico-xs {
+      width: 13px;
+      height: 13px
+    }
+
+    .ico-lg {
+      width: 18px;
+      height: 18px
+    }
+
+    /* ===== 1. Thanh điều hướng trái kiểu Zalo PC ===== */
+    .zalo-nav {
+      width: 64px;
+      background: linear-gradient(180deg, #0068ff 0%, #0058db 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 0 14px;
+      gap: 6px;
+      flex: none;
+      box-shadow: inset -1px 0 0 rgba(255, 255, 255, .12);
+    }
+
+    .zme-top {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #fff;
+      color: var(--zblue);
+      font-weight: 900;
+      font-size: 17px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 2px solid rgba(255, 255, 255, .75);
+      margin-bottom: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
+      position: relative;
+    }
+
+    .zme-top::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      bottom: -1px;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #22c55e;
+      border: 2px solid #0068ff;
+    }
+
+    .zico {
+      width: 46px;
+      height: 46px;
+      border-radius: 10px;
+      border: 0;
+      background: transparent;
+      color: rgba(255, 255, 255, .82);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: background .15s ease, color .15s ease;
+      text-decoration: none;
+    }
+
+    .zico svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round
+    }
+
+    .zico:hover {
+      background: rgba(255, 255, 255, .16);
+      color: #fff
+    }
+
+    .zico.on {
+      background: rgba(255, 255, 255, .24);
+      color: #fff
+    }
+
+    .znav-badge {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      min-width: 17px;
+      height: 17px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: #e11d48;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid #0068ff;
+    }
+
+    .zalo-nav .sp {
+      flex: 1
+    }
+
+    .znet-pill {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      cursor: default;
+    }
+
+    .znet-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, .28)
+    }
+
+    /* ===== 2. Danh sách hội thoại kiểu Zalo ===== */
+    .zalo-list {
+      width: 356px;
+      background: var(--card);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      flex: none;
+      min-width: 0;
+    }
+
+    .lhead {
+      padding: 14px 14px 0;
+      background: #fff
+    }
+
+    .lhead-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px
+    }
+
+    .search-wrap {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: #eaedf0;
+      border-radius: 999px;
+      padding: 0 12px;
+      height: 36px;
+      border: 1px solid transparent;
+      transition: background .15s ease, border-color .15s ease;
+    }
+
+    .search-wrap:focus-within {
+      background: #fff;
+      border-color: var(--zblue);
+      box-shadow: 0 0 0 2px rgba(0, 104, 255, .12)
+    }
+
+    .search-wrap svg {
+      width: 15px;
+      height: 15px;
+      color: #64748b;
+      flex: none;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2
+    }
+
+    .search-wrap input {
+      flex: 1;
+      border: 0;
+      background: transparent;
+      outline: none;
+      font-size: 13.5px;
+      color: var(--txt);
+      min-width: 0;
+    }
+
+    .search-wrap input::placeholder {
+      color: #64748b
+    }
+
+    .hbtn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 0;
+      background: transparent;
+      color: #475569;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+    }
+
+    .hbtn:hover {
+      background: #eaedf0;
+      color: var(--txt)
+    }
+
+    .hbtn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round
+    }
+
+    .zexit {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid #d5e0ea;
+      background: #f4f7fb;
+      color: #0f3a75;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .zexit:hover {
+      background: #e5efff;
+      border-color: var(--zblue)
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .tabs button {
+      flex: 1;
+      border: 0;
+      background: transparent;
+      padding: 9px 2px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+    }
+
+    .tabs button:hover {
+      color: var(--txt)
+    }
+
+    .tabs button.on {
+      color: var(--zblue);
+      border-bottom-color: var(--zblue)
+    }
+
+    .subbar {
+      padding: 8px 14px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .subbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      min-width: 0;
+      flex-wrap: wrap
+    }
+
+    .subbar-net {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap
+    }
+
+    .subbar strong {
+      color: var(--txt)
+    }
+
+    .subbar .staff-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #e5efff;
+      color: #0052cc;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid #bfdbfe;
+      font-size: 11.5px;
+      white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+      transition: all .15s ease;
+    }
+
+    .subbar .staff-pill:hover {
+      background: #d4e5ff;
+      border-color: #93c5fd;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, .1)
+    }
+
+    .subbar .staff-pill.is-super {
+      background: #f3e8ff;
+      color: #6b21a8;
+      border-color: #d8b4fe
+    }
+
+    .subbar .staff-pill.is-super:hover {
+      background: #e9d5ff;
+      border-color: #c084fc
+    }
+
+    .pill-caret {
+      font-size: 10px;
+      opacity: .75;
+      margin-left: 1px
+    }
+
+    .clist {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0
+    }
+
+    .citem {
+      display: flex;
+      gap: 11px;
+      align-items: center;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background .12s ease;
+      position: relative;
+    }
+
+    .citem:hover {
+      background: var(--hover)
+    }
+
+    .citem.on {
+      background: var(--zblue-soft)
+    }
+
+    .citem .tt {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--txt);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .citem.unread-row .tt .cname {
+      font-weight: 800;
+      color: #051428
+    }
+
+    .citem .cname {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .citem .tm {
+      font-size: 11.5px;
+      color: var(--muted-2);
+      white-space: nowrap;
+      flex: none
+    }
+
+    .citem .subrow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      min-width: 0
+    }
+
+    .citem .pp {
+      flex: 1;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .citem.unread-row .pp {
+      color: #1e293b;
+      font-weight: 600
+    }
+
+    .avt {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex: none;
+      background: #dfe7f3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 17px;
+      color: #2c4059;
+      overflow: hidden;
+    }
+
+    .avt.sm {
+      width: 40px;
+      height: 40px;
+      font-size: 15px
+    }
+
+    .avt.xs {
+      width: 34px;
+      height: 34px;
+      font-size: 13px
+    }
+
+    .avt.lg {
+      width: 56px;
+      height: 56px;
+      font-size: 21px
+    }
+
+    .avt-sp {
+      width: 34px;
+      flex: none
+    }
+
+    .bdg-unread {
+      background: #d92d20;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+    }
+
+    .bdg-claim {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    /* ===== 3. Khu vực chat chính giống Zalo ===== */
+    .zalo-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: var(--zbg)
+    }
+
+    .chead {
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      padding: 0 16px;
+      height: 66px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: none;
+    }
+
+    .chead-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--txt);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .chead-sub {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap
+    }
+
+    .chead .acts {
+      margin-left: auto;
+      display: flex;
+      gap: 6px;
+      align-items: center
+    }
+
+    .iconbtn {
+      height: 36px;
+      min-width: 36px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 0;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #334155;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .iconbtn:hover {
+      background: #eaedf0;
+      color: var(--zblue)
+    }
+
+    .iconbtn.active {
+      background: var(--zblue-soft);
+      color: var(--zblue)
+    }
+
+    .chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 24px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      background: linear-gradient(180deg, #e8eef6 0%, #dde5f0 100%);
+    }
+
+    .day {
+      text-align: center;
+      font-size: 11.5px;
+      color: #fff;
+      background: rgba(15, 23, 42, .26);
+      border-radius: 999px;
+      padding: 4px 12px;
+      margin: 12px auto 6px;
+      font-weight: 600;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      max-width: min(560px, 76%);
+      margin-top: 8px
+    }
+
+    .row.cont {
+      margin-top: 1px
+    }
+
+    .row.me {
+      margin-left: auto;
+      flex-direction: row-reverse
+    }
+
+    .bub {
+      position: relative;
+      padding: 10px 14px 8px;
+      border-radius: 12px;
+      font-family: SegoeuiPc, "Segoe UI", "San Francisco", "Helvetica Neue", Helvetica, "Lucida Grande", Roboto, Ubuntu, Tahoma, "Microsoft Sans Serif", Arial, sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 22px;
+      letter-spacing: 0.15px;
+      word-break: break-word;
+      white-space: pre-wrap;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, .1);
+      color: #051329;
+    }
+
+    .bub.z {
+      background: #ffffff;
+      border: 1px solid rgba(15, 23, 42, .08)
+    }
+
+    .row:not(.cont) .bub.z {
+      border-top-left-radius: 4px
+    }
+
+    .bub.m {
+      background: #dbeafe;
+      border: 1px solid #bfdbfe;
+      color: #051329;
+      box-shadow: 0 1px 2px rgba(0, 104, 255, .09)
+    }
+
+    .row:not(.cont) .bub.m {
+      border-top-right-radius: 4px
+    }
+
+    .who {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #0052cc;
+      margin-bottom: 3px
+    }
+
+    .tt2 {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #475569;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: flex-end
+    }
+
+    .row:not(.me) .tt2 {
+      justify-content: flex-start
+    }
+
+    .bub img.bi {
+      max-width: 280px;
+      max-height: 320px;
+      border-radius: 8px;
+      margin-top: 6px;
+      display: block;
+      cursor: pointer
+    }
+
+    .file-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      margin-top: 4px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, .78);
+      border: 1px solid #cbd5e1;
+      text-decoration: none;
+      color: #051329;
+      min-width: 200px;
+      max-width: 320px;
+    }
+
+    .file-card:hover {
+      background: #ffffff;
+      border-color: var(--zblue)
+    }
+
+    .file-ico {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: #e0ecff;
+      color: #0052cc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+    }
+
+    .file-meta {
+      min-width: 0;
+      flex: 1
+    }
+
+    .file-name {
+      font-size: 13.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .file-sub {
+      font-size: 11.5px;
+      color: #475569;
+      margin-top: 2px
+    }
+
+    .bub.recalled {
+      background: #f1f5f9 !important;
+      border-color: #e2e8f0 !important;
+      color: #64748b !important;
+      font-style: italic
+    }
+
+    .msg-acts {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity .12s ease;
+      align-self: center;
+      flex: none;
+    }
+
+    .row:hover .msg-acts,
+    .row:focus-within .msg-acts {
+      opacity: 1
+    }
+
+    .msg-act-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid #cbd5e1;
+      background: rgba(255, 255, 255, .95);
+      color: #475569;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, .08);
+      white-space: nowrap;
+    }
+
+    .msg-act-btn:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #b91c1c
+    }
+
+    .claim-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 8px 16px;
+      font-size: 12.5px;
+      font-weight: 500;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+      color: #334155;
+      flex: none;
+    }
+
+    .claim-banner-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      flex: 1;
+      min-width: 200px
+    }
+
+    .claim-banner.show {
+      display: flex
+    }
+
+    .claim-banner.mine {
+      background: #eff6ff;
+      color: #1e40af;
+      border-bottom-color: #dbeafe
+    }
+
+    .claim-banner.other {
+      background: #fffbeb;
+      color: #92400e;
+      border-bottom-color: #fde68a
+    }
+
+    .claim-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #0f172a;
+      border-radius: 8px;
+      padding: 5px 11px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .claim-pill-btn:hover {
+      background: #f1f5f9
+    }
+
+    .claim-pill-btn.primary {
+      background: var(--zblue);
+      border-color: var(--zblue);
+      color: #fff
+    }
+
+    .claim-pill-btn.primary:hover {
+      background: var(--zblue-d)
+    }
+
+    .welcome {
+      margin: auto;
+      text-align: center;
+      max-width: 420px;
+      padding: 28px 22px;
+      background: rgba(255, 255, 255, .85);
+      backdrop-filter: blur(6px);
+      border-radius: 16px;
+      box-shadow: 0 6px 24px rgba(15, 23, 42, .06);
+    }
+
+    .welcome h3 {
+      margin: 10px 0 6px;
+      font-size: 18px;
+      color: var(--txt)
+    }
+
+    .welcome p {
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.55
+    }
+
+    .qr {
+      display: none;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #fff;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line)
+    }
+
+    .qr.show {
+      display: flex
+    }
+
+    .qr button {
+      border: 1px solid #d5e0ea;
+      background: #f8fafc;
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #1e3a5f;
+    }
+
+    .qr button:hover {
+      background: var(--zblue-soft);
+      border-color: var(--zblue);
+      color: var(--zblue)
+    }
+
+    .send {
+      background: #fff;
+      border-top: 1px solid var(--line)
+    }
+
+    .zalo-main:not(.has-chat) .qr,
+    .zalo-main:not(.has-chat) .send,
+    .zalo-main:not(.has-chat) .claim-banner {
+      display: none !important
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 4px;
+      padding: 6px 12px;
+      border-bottom: 1px solid #f1f3f6;
+      align-items: center;
+    }
+
+    .toolbar button {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      padding: 6px 9px;
+      border-radius: 6px;
+      color: #334155;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .toolbar button:hover {
+      background: #eaedf0;
+      color: var(--zblue)
+    }
+
+    .toolbar button.on {
+      background: var(--zblue-soft);
+      color: var(--zblue)
+    }
+
+    .sendrow {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      padding: 10px 14px 12px
+    }
+
+    .sendrow textarea {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      outline: none;
+      font-size: 14.5px;
+      font-weight: 600;
+      resize: none;
+      max-height: 120px;
+      min-height: 24px;
+      font-family: inherit;
+      padding: 4px 2px;
+      background: transparent;
+      color: var(--txt);
+      line-height: 1.45;
+    }
+
+    .sendrow textarea::placeholder {
+      color: #64748b
+    }
+
+    .sendbtn {
+      background: var(--zblue);
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 18px;
+      font-size: 13.5px;
+      font-weight: 800;
+      cursor: pointer;
+      height: 36px;
+      white-space: nowrap;
+      flex: none;
+    }
+
+    .sendbtn:hover {
+      background: var(--zblue-d)
+    }
+
+    /* ===== 4. Thanh nhân viên online gọn trên header ===== */
+    .online-strip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      margin-left: auto;
+    }
+
+    .online-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .online-chip.me {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1e40af
+    }
+
+    .odot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #16a34a;
+      flex: none
+    }
+
+    .btn {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--txt)
+    }
+
+    .btn:hover {
+      background: #f1f5f9
+    }
+
+    .btn-p {
+      background: var(--zblue);
+      color: #fff;
+      border: 0
+    }
+
+    .btn-p:hover {
+      background: var(--zblue-d)
+    }
+
+    .inp {
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      color: var(--txt);
+      width: 100%
+    }
+
+    .inp:focus {
+      border-color: var(--zblue);
+      box-shadow: 0 0 0 3px rgba(0, 104, 255, .14)
+    }
+
+    /* ===== 5. Cổng đăng nhập (#gate) ===== */
+    #gate {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 28, 54, .55);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .gcard {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      width: 420px;
+      max-width: 95vw;
+      box-shadow: 0 20px 50px rgba(8, 28, 54, .24);
+    }
+
+    .glogo {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: var(--zblue);
+      color: #fff;
+      font-weight: 900;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .gcard h2 {
+      margin: 0 0 6px;
+      font-size: 19px;
+      color: var(--txt)
+    }
+
+    .gcard p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.5
+    }
+
+    .gcard label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #2c4059;
+      margin-bottom: 5px
+    }
+
+    .gfield {
+      margin-bottom: 13px
+    }
+
+    .pw-wrap {
+      position: relative;
+      display: flex;
+      align-items: center
+    }
+
+    .pw-wrap .inp {
+      padding-right: 42px
+    }
+
+    .pw-eye {
+      position: absolute;
+      right: 8px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      padding: 5px 7px;
+      border-radius: 6px;
+      font-size: 15px;
+      color: #64748b;
+    }
+
+    .pw-eye:hover {
+      background: #f1f5f9;
+      color: var(--txt)
+    }
+
+    .gerr {
+      display: none;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .gerr.show {
+      display: block
+    }
+
+    .inp.is-err {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, .15) !important
+    }
+
+    #toasts {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    .toast {
+      background: #0f172a;
+      color: #fff;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .22)
+    }
+
+    #light {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .78);
+      z-index: 300;
+      display: none;
+      align-items: center;
+      justify-content: center
+    }
+
+    #light img {
+      max-width: 92vw;
+      max-height: 90vh;
+      border-radius: 10px
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13.5px;
+      margin: 38px 14px;
+      line-height: 1.55
+    }
+
+    .acc-filter-row {
+      margin-top: 8px;
+      display: none;
+      align-items: center;
+      gap: 6px
+    }
+
+    .acc-filter-row.show {
+      display: flex
+    }
+
+    .acc-filter-sel {
+      flex: 1;
+      height: 30px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .bdg-acc {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #0f4c81;
+      background: #e0f2fe;
+      border-radius: 6px;
+      padding: 1px 6px;
+      margin-top: 3px;
+      margin-right: 4px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid #86efac;
+      background: #f0fdf4;
+      color: #15803d;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, .06);
+      transition: all .15s ease;
+      white-space: nowrap;
+    }
+
+    .status-pill:hover {
+      background: #dcfce7;
+      border-color: #4ade80;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, .1)
+    }
+
+    .status-pill.is-away {
+      border-color: #fcd34d;
+      background: #fffbeb;
+      color: #b45309
+    }
+
+    .status-pill.is-away:hover {
+      background: #fef3c7;
+      border-color: #f59e0b
+    }
+
+    .odot.away {
+      background: #f59e0b
+    }
+
+    .sup-nav-btn {
+      position: relative
+    }
+
+    .sup-ov {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 28, 54, .62);
+      backdrop-filter: blur(5px);
+      z-index: 160;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .sup-ov.show {
+      display: flex
+    }
+
+    .sup-card {
+      width: min(1360px, 97vw);
+      max-height: 92vh;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sup-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #f8fbff;
+    }
+
+    .sup-head h2 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .sup-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+      min-height: 0
+    }
+
+    .sup-kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px
+    }
+
+    .sup-kpi {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px
+    }
+
+    .sup-kpi b {
+      display: block;
+      font-size: 20px;
+      color: #0f172a;
+      margin-top: 2px
+    }
+
+    .sup-kpi span {
+      font-size: 11.5px;
+      color: var(--muted);
+      font-weight: 600
+    }
+
+    .sup-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 12px
+    }
+
+    .sale-card {
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: .15s border-color;
+    }
+
+    .sale-card.is-away {
+      border-color: #fbbf24;
+      background: #fffdf5
+    }
+
+    .sale-card.is-online {
+      border-color: #86efac
+    }
+
+    .sale-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px
+    }
+
+    .sale-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .sale-state {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .sale-state.online {
+      background: #dcfce7;
+      color: #166534
+    }
+
+    .sale-state.away {
+      background: #fef3c7;
+      color: #92400e
+    }
+
+    .sale-state.idle {
+      background: #e2e8f0;
+      color: #475569
+    }
+
+    .sale-state.offline {
+      background: #f1f5f9;
+      color: #64748b
+    }
+
+    .sale-state.locked {
+      background: #ffedd5;
+      color: #9a3412
+    }
+
+    .sale-state.banned {
+      background: #fee2e2;
+      color: #991b1b
+    }
+
+    .sup-table-wrap {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: auto;
+      background: #fff
+    }
+
+    .sup-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      min-width: 780px
+    }
+
+    .sup-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 800;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .sup-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+      color: #1e293b
+    }
+
+    .sup-table tr:last-child td {
+      border-bottom: 0
+    }
+
+    .sup-table tr:hover td {
+      background: #f8fbff
+    }
+
+    .sup-role-tag {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      white-space: nowrap;
+    }
+
+    .sup-role-tag.is-mgr {
+      background: #faf5ff;
+      color: #7e22ce;
+      border-color: #d8b4fe
+    }
+
+    .sup-acts-cell {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      align-items: center
+    }
+
+    .sup-btn {
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: #1e293b;
+      border-radius: 7px;
+      padding: 4px 9px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .sup-btn:hover {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: #1d4ed8
+    }
+
+    .sup-btn.primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff
+    }
+
+    .sup-btn.primary:hover {
+      background: var(--blue2)
+    }
+
+    .sup-btn.warn {
+      background: #fff7ed;
+      border-color: #fed7aa;
+      color: #9a3412
+    }
+
+    .sup-btn.warn:hover {
+      background: #ffedd5
+    }
+
+    .sup-btn.danger {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #b91c1c
+    }
+
+    .sup-btn.danger:hover {
+      background: #fee2e2
+    }
+
+    .sup-btn.ok {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: #166534
+    }
+
+    .sup-btn.ok:hover {
+      background: #dcfce7
+    }
+
+    .sup-feed {
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px
+    }
+
+    .sup-feed-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .sup-feed h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a
+    }
+
+    .sup-hist-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .sup-hist-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap
+    }
+
+    .sup-htab {
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: #475569;
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .12s ease;
+    }
+
+    .sup-htab:hover {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #93c5fd
+    }
+
+    .sup-htab.on {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue)
+    }
+
+    .sup-hist-inp {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 12px;
+      min-width: 200px;
+      outline: none;
+      background: #fff;
+      color: #0f172a;
+    }
+
+    .sup-hist-inp:focus {
+      border-color: var(--blue)
+    }
+
+    .sup-hist-sel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 12px;
+      background: #fff;
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    .sup-hist-wrap {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: auto;
+      max-height: 46vh;
+      min-height: 180px;
+      background: #fff
+    }
+
+    .sup-hist-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      min-width: 820px
+    }
+
+    .sup-hist-table th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 800;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      text-align: left;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .sup-hist-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+      color: #1e293b
+    }
+
+    .sup-hist-table tr:last-child td {
+      border-bottom: 0
+    }
+
+    .sup-hist-table tr:hover td {
+      background: #f8fbff
+    }
+
+    .sup-act-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .sup-act-badge.send {
+      background: #dbeafe;
+      color: #1d4ed8
+    }
+
+    .sup-act-badge.claim {
+      background: #dcfce7;
+      color: #166534
+    }
+
+    .sup-act-badge.warn {
+      background: #fef3c7;
+      color: #92400e
+    }
+
+    .sup-act-badge.danger {
+      background: #fee2e2;
+      color: #b91c1c
+    }
+
+    .cfm-ov {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 28, 54, .55);
+      backdrop-filter: blur(4px);
+      z-index: 220;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .cfm-ov.show {
+      display: flex
+    }
+
+    .cfm-card {
+      width: min(420px, 94vw);
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, .28);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      animation: cfmIn .14s ease-out;
+    }
+
+    @keyframes cfmIn {
+      from {
+        opacity: 0;
+        transform: scale(.96) translateY(6px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .cfm-head {
+      padding: 16px 20px 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .cfm-ico {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex: none;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .cfm-ico.danger {
+      background: #fef2f2;
+      color: #dc2626
+    }
+
+    .cfm-ico.warn {
+      background: #fffbeb;
+      color: #d97706
+    }
+
+    .cfm-title {
+      margin: 0;
+      font-size: 15.5px;
+      font-weight: 800;
+      color: #0f172a
+    }
+
+    .cfm-msg {
+      padding: 4px 20px 18px 66px;
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #475569
+    }
+
+    .cfm-foot {
+      padding: 12px 20px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .cfm-btn {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #334155;
+      border-radius: 9px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .12s ease;
+    }
+
+    .cfm-btn:hover {
+      background: #f1f5f9
+    }
+
+    .cfm-btn.primary {
+      background: #0068ff;
+      border-color: #0068ff;
+      color: #fff
+    }
+
+    .cfm-btn.primary:hover {
+      background: #0052cc
+    }
+
+    .cfm-btn.danger {
+      background: #dc2626;
+      border-color: #dc2626;
+      color: #fff
+    }
+
+    .cfm-btn.danger:hover {
+      background: #b91c1c
+    }
+
+    .cfm-btn.warn {
+      background: #d97706;
+      border-color: #d97706;
+      color: #fff
+    }
+
+    .cfm-btn.warn:hover {
+      background: #b45309
+    }
+
+    .mob-back {
+      display: none;
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #0f172a;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex: none;
+      margin-right: 2px;
+    }
+
+    .mob-back:active {
+      background: #e2e8f0
+    }
+
+    @media(max-width:780px) {
+      body {
+        flex-direction: column
+      }
+
+      .zalo-nav {
+        order: 3;
+        width: 100%;
+        height: calc(54px + env(safe-area-inset-bottom));
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+        padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+        gap: 2px;
+        box-shadow: 0 -2px 10px rgba(15, 23, 42, .12);
+      }
+
+      .zalo-nav .zme-top,
+      .zalo-nav .sp,
+      .zalo-nav .znet-pill {
+        display: none
+      }
+
+      .zico {
+        width: 44px;
+        height: 42px
+      }
+
+      .zalo-list {
+        width: 100%;
+        flex: 1;
+        min-height: 0;
+        border-right: 0
+      }
+
+      .zalo-main {
+        display: none;
+        width: 100%;
+        flex: 1;
+        min-height: 0
+      }
+
+      body.mob-chat .zalo-list,
+      body.mob-chat .zalo-nav {
+        display: none
+      }
+
+      body.mob-chat .zalo-main {
+        display: flex
+      }
+
+      .mob-back {
+        display: inline-flex
+      }
+
+      .online-strip {
+        display: none
+      }
+
+      .chead {
+        padding: 10px 12px;
+        gap: 8px
+      }
+
+      .chead-title {
+        font-size: 15px
+      }
+
+      .chead-sub {
+        font-size: 11.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis
+      }
+
+      .chat {
+        padding: 12px 12px 14px
+      }
+
+      .row {
+        max-width: 88%
+      }
+
+      .bub {
+        font-size: 14.5px;
+        line-height: 20px;
+        padding: 9px 12px 7px
+      }
+
+      .bub img.bi {
+        max-width: 220px;
+        max-height: 260px
+      }
+
+      .msg-acts {
+        opacity: 1
+      }
+
+      .qr {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 7px 10px
+      }
+
+      .qr button {
+        flex: none;
+        white-space: nowrap
+      }
+
+      .toolbar {
+        padding: 5px 8px;
+        overflow-x: auto
+      }
+
+      .sendrow {
+        padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+        gap: 8px
+      }
+
+      .sendrow textarea {
+        font-size: 16px
+      }
+
+      .sendbtn {
+        padding: 0 14px;
+        height: 38px
+      }
+
+      .claim-banner {
+        flex-wrap: nowrap;
+        padding: 6px 10px;
+        gap: 8px
+      }
+
+      .claim-banner-copy {
+        min-width: 0;
+        flex: 1;
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis
+      }
+
+      .claim-pill-btn {
+        padding: 4px 10px;
+        font-size: 11.5px
+      }
+
+      .btn-lbl {
+        display: none
+      }
+
+      .send {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+      }
+
+      .toolbar {
+        order: 0;
+        border-bottom: 0;
+        padding: 0;
+        gap: 1px;
+        flex: none;
+      }
+
+      .toolbar button {
+        width: 32px;
+        height: 34px;
+        padding: 0;
+        justify-content: center;
+        border-radius: 8px;
+      }
+
+      .sendrow {
+        order: 1;
+        flex: 1;
+        min-width: 0;
+        padding: 0;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .sendrow textarea {
+        font-size: 16px;
+        background: #f1f5f9;
+        border-radius: 18px;
+        padding: 7px 12px;
+        line-height: 1.35;
+        min-height: 34px;
+      }
+
+      .sendbtn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border-radius: 50%;
+        justify-content: center;
+        gap: 0 !important;
+      }
+
+      .inp {
+        font-size: 16px
+      }
+
+      .sup-ov {
+        padding: 0
+      }
+
+      .sup-card {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0
+      }
+
+      .sup-head {
+        padding: 12px 14px
+      }
+
+      .sup-head h2 {
+        font-size: 15px
+      }
+
+      .sup-body {
+        padding: 12px
+      }
+
+      .sup-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px
+      }
+
+      .sup-hist-inp {
+        min-width: 0;
+        width: 100%
+      }
+
+      .sup-hist-wrap {
+        max-height: none;
+        flex: 1
+      }
+
+      .cfm-msg {
+        padding: 4px 18px 16px 18px
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="zalo-nav" aria-label="Điều hướng">
+    <div class="zme-top" id="meAvt" title="Đổi tên / mật khẩu" onclick="openGate()">N</div>
+    <button class="zico on" title="Tất cả tin nhắn" onclick="tab('all')">
+      <svg viewBox="0 0 24 24">
+        <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />
+      </svg>
+      <span class="znav-badge" id="navUnBadge">0</span>
+    </button>
+    <button class="zico" title="Nhóm Zalo" onclick="tab('group')">
+      <svg viewBox="0 0 24 24">
+        <circle cx="9" cy="8" r="3" />
+        <circle cx="17" cy="9" r="2.5" />
+        <path d="M3 20a6 6 0 0 1 12 0M14 15.5a5 5 0 0 1 7 4.5" />
+      </svg>
+    </button>
+    <button class="zico" title="Bạn bè" onclick="tab('sms')">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
+      </svg>
+    </button>
+    <button class="zico" title="Tôi đang xử lý" onclick="tab('mine')">
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M9 11V6a2 2 0 0 1 4 0v5M13 11V5a2 2 0 0 1 4 0v6M17 11v-1a2 2 0 0 1 4 0v4a7 7 0 0 1-7 7h-2a7 7 0 0 1-7-7v-3a2 2 0 0 1 4 0v2" />
+      </svg>
+    </button>
+    <button class="zico sup-nav-btn" id="navSupBtn" style="display:none" title="Giám sát 9 Sale &amp; Vào nhắn thay"
+      onclick="openSupervisor()">
+      <svg viewBox="0 0 24 24">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+      <span class="znav-badge" id="navAwayBadge" style="background:#f59e0b">0</span>
+    </button>
+    <div class="sp"></div>
+    <div class="znet-pill" id="netIco" title="Trạng thái kết nối realtime"><span class="znet-dot" id="netDot"></span>
+    </div>
+    <button class="zico" title="Đồng bộ danh bạ từ Zalo" onclick="forceSync()">
+      <svg viewBox="0 0 24 24">
+        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+        <path d="M16 16h5v5" />
+      </svg>
+    </button>
+    {% if is_host %}
+    <a class="zico" href="/gateway" title="Phân quyền Admin / Sale &amp; Chia sẻ link">
+      <svg viewBox="0 0 24 24">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </svg>
+    </a>
+    <button class="zico" title="Cài đặt tài khoản Zalo" onclick="openSetup()">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3" />
+        <path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+      </svg>
+    </button>
+    <a class="zico" href="/" title="Về máy chính (Nexus)">
+      <svg viewBox="0 0 24 24">
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 9.5V21h14V9.5" />
+      </svg>
+    </a>
+    {% endif %}
+  </nav>
+
+  <aside class="zalo-list">
+    <div class="lhead">
+      <div class="lhead-top">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-4-4" />
+          </svg>
+          <input id="q" placeholder="Tìm kiếm" oninput="renderList()">
+        </div>
+        <button class="hbtn" onclick="load()" title="Làm mới danh sách">
+          <svg viewBox="0 0 24 24">
+            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+            <path d="M21 3v6h-6" />
+          </svg>
+        </button>
+        {% if is_host %}
+        <a class="zexit" href="/" title="Quay về máy chính"><svg class="ico ico-xs" viewBox="0 0 24 24">
+            <path d="m15 18-6-6 6-6" />
+          </svg>Máy chính</a>
+        {% endif %}
+      </div>
+      <div class="acc-filter-row" id="accFilterRow">
+        <select class="acc-filter-sel" id="accFilterSel" onchange="changeAccountFilter()"></select>
+        <button class="sup-btn primary" type="button" id="supQuickBtn" style="display:none;white-space:nowrap"
+          onclick="openSupervisor()">Giám sát Sale</button>
+      </div>
+      <div class="tabs">
+        <button id="t-all" class="on" onclick="tab('all')">Tất cả</button>
+        <button id="t-group" onclick="tab('group')">Nhóm</button>
+        <button id="t-sms" onclick="tab('sms')">Bạn bè</button>
+        <button id="t-mine" onclick="tab('mine')">Tôi giữ</button>
+      </div>
+    </div>
+    <div class="subbar">
+      <div class="subbar-row">
+        <span class="subbar-net">
+          <span id="pNet">Đang kết nối</span> ·
+          <span id="pOnline">0 online</span> ·
+          <strong id="pUn" style="color:#d92d20">0 chưa đọc</strong>
+        </span>
+      </div>
+      <div class="subbar-row">
+        <button type="button" class="staff-pill" id="staffPill" onclick="onStaffPillClick()"
+          title="Bấm để mở Giám sát / đổi tài khoản"><svg class="ico ico-xs" viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M5 20a7 7 0 0 1 14 0" />
+          </svg><span id="helloName">Super Admin</span><span class="pill-caret">▾</span></button>
+        <button type="button" class="status-pill" id="awayToggleBtn" onclick="toggleAwayStatus()"
+          title="Bấm để chuyển trạng thái Đang làm / Tạm rời đi">🟢 Đang làm <span class="pill-caret">▾</span></button>
+      </div>
+    </div>
+    <div class="clist" id="list"></div>
+  </aside>
+
+  <main class="zalo-main">
+    <div class="chead" id="title">
+      <div style="min-width:0;flex:1">
+        <div class="chead-title">Zalo CSKH</div>
+        <div class="chead-sub">Chọn hội thoại bên trái để bắt đầu nhắn tin</div>
+      </div>
+      <div class="online-strip" id="onlineBar">
+        <span class="online-chip"><span class="odot"></span>Đang tải…</span>
+      </div>
+    </div>
+    <div class="claim-banner" id="claimBanner"></div>
+    <div class="chat" id="msgs">
+      <div class="welcome">
+        <div class="glogo" style="margin:0 auto 12px">Z</div>
+        <h3>Chào mừng đến với Zalo CSKH</h3>
+        <p>Chọn một nhóm hoặc bạn bè ở cột bên trái để xem lịch sử và nhắn tin trực tiếp như trên Zalo.</p>
+      </div>
+    </div>
+    <div class="qr" id="qr"></div>
+    <div class="send">
+      <div class="toolbar">
+        <button type="button" title="Gửi hình ảnh" onclick="document.getElementById('file').click()"><svg class="ico"
+            viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+          </svg>Gửi ảnh</button>
+        <button type="button" title="Gửi tệp / tài liệu (PDF, DOCX, XLSX, ZIP...)"
+          onclick="document.getElementById('attachFile').click()"><svg class="ico" viewBox="0 0 24 24">
+            <path
+              d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+          </svg>Gửi file</button>
+        <button type="button" id="qrToggleBtn" title="Hiện/ẩn mẫu câu trả lời nhanh" onclick="toggleQR()"><svg
+            class="ico" viewBox="0 0 24 24">
+            <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>Trả lời nhanh</button>
+        <button type="button" id="soundBtn" title="Bật/tắt âm báo tin mới" onclick="toggleSound()"><svg class="ico"
+            viewBox="0 0 24 24">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+          </svg>Âm báo</button>
+        <button type="button" title="Gửi hình ảnh" onclick="document.getElementById('file').click()"><svg class="ico"
+            viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+          </svg><span class="btn-lbl">Gửi ảnh</span></button>
+        <button type="button" title="Gửi tệp / tài liệu (PDF, DOCX, XLSX, ZIP...)"
+          onclick="document.getElementById('attachFile').click()"><svg class="ico" viewBox="0 0 24 24">
+            <path
+              d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+          </svg><span class="btn-lbl">Gửi file</span></button>
+        <button type="button" id="qrToggleBtn" title="Hiện/ẩn mẫu câu trả lời nhanh" onclick="toggleQR()"><svg
+            class="ico" viewBox="0 0 24 24">
+            <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg><span class="btn-lbl">Trả lời nhanh</span></button>
+        <button type="button" id="soundBtn" title="Bật/tắt âm báo tin mới" onclick="toggleSound()"><svg class="ico"
+            viewBox="0 0 24 24">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+          </svg><span class="btn-lbl">Âm báo</span></button>
+      </div>
+      <div class="sendrow">
+        <textarea id="txt" rows="1" placeholder="Nhập @, tin nhắn tới hội thoại..."></textarea>
+        <textarea id="txt" rows="1" placeholder="Tin nhắn..."></textarea>
+        <input type="file" id="file" accept="image/*" style="display:none" onchange="sendFile(this, true)">
+        <input type="file" id="attachFile" style="display:none" onchange="sendFile(this, false)">
+        <button class="sendbtn" style="display:inline-flex;align-items:center;gap:6px" onclick="send()"><svg
+            class="ico ico-sm" viewBox="0 0 24 24">
+            <path d="m22 2-7 20-4-9-9-4Z" />
+            <path d="M22 2 11 13" />
+          </svg>Gửi</button>
+        <button class="sendbtn" style="display:inline-flex;align-items:center;gap:6px" onclick="send()" title="Gửi"><svg
+            class="ico ico-sm" viewBox="0 0 24 24">
+            <path d="m22 2-7 20-4-9-9-4Z" />
+            <path d="M22 2 11 13" />
+          </svg><span class="btn-lbl">Gửi</span></button>
+      </div>
+    </div>
+  </main>
+
+  <div id="gate">
+    <div class="gcard">
+      <div class="glogo">Z</div>
+      <h2>Đăng nhập Zalo CSKH</h2>
+      <p>Nhập tên của bạn và mật khẩu được cấp để bắt đầu trò chuyện.</p>
+      <div class="gfield">
+        <label for="gStaff">Tên của bạn *</label>
+        <input class="inp" id="gStaff" placeholder="vd: Nam, CSKH 1">
+      </div>
+      <div class="gfield">
+        <label for="gToken">Mật khẩu truy cập</label>
+        <div class="pw-wrap">
+          <input class="inp" id="gToken" type="password" placeholder="Nhập mật khẩu (link có sẵn thì tự điền)">
+          <button type="button" class="pw-eye" id="gEyeBtn" onclick="togglePw()" title="Hiện/ẩn mật khẩu"
+            aria-label="Hiện/ẩn mật khẩu"><svg class="ico" viewBox="0 0 24 24">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg></button>
+        </div>
+      </div>
+      <div class="gerr" id="gErr" role="alert"></div>
+      <button class="btn btn-p" id="gSubmitBtn" style="width:100%;padding:12px;font-size:14.5px"
+        onclick="gateJoin()">Vào làm việc →</button>
+    </div>
+  </div>
+
+  <div id="toasts"></div>
+  <div id="setupOv"
+    style="display:none;position:fixed;inset:0;background:rgba(8,28,54,.6);backdrop-filter:blur(6px);z-index:150;align-items:center;justify-content:center;padding:16px">
+    <div class="gcard" style="width:500px">
+      <h2 style="display:flex;align-items:center;gap:8px"><svg class="ico ico-lg" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+        </svg>Cài đặt tài khoản Zalo</h2>
+      <p>Chọn tài khoản Zalo dùng chung cho phòng làm việc.</p>
+      <div class="gfield">
+        <label>Tài khoản Zalo *</label>
+        <select class="inp" id="setAcc"></select>
+      </div>
+      <label
+        style="display:flex;gap:8px;align-items:center;margin:4px 0 12px;font-size:13px;font-weight:600;cursor:pointer">
+        <input type="checkbox" id="setHide" style="width:auto"> Chỉ hiện hội thoại đã có tin nhắn
+      </label>
+      <div id="setInfo" style="font-size:12.5px;color:#475569;margin-bottom:14px"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeSetup()" style="flex:1">Đóng</button>
+        <button class="btn" onclick="pruneInbox()" style="flex:1">Dọn tin cũ</button>
+        <button class="btn btn-p" onclick="saveSetup()" style="flex:1">Lưu</button>
+      </div>
+    </div>
+  </div>
+  <div id="light" onclick="this.style.display='none'"><img id="lightImg" referrerpolicy="no-referrer"></div>
+  <div class="sup-ov" id="supOv" onclick="if(event.target===this) closeSupervisor()">
+    <div class="sup-card">
+      <div class="sup-head">
+        <h2>Giám sát đội ngũ Sale &amp; Nhắn thay</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button type="button" class="sup-btn" onclick="loadSupervisor()">Làm mới</button>
+          <button type="button" class="sup-btn" onclick="closeSupervisor()">Đóng</button>
+        </div>
+      </div>
+      <div class="sup-body" id="supBody">
+        <div class="empty">Đang tải dữ liệu đội ngũ Sale…</div>
+      </div>
+    </div>
+  </div>
+  <div class="cfm-ov" id="confirmOv" onclick="if(event.target===this) _cfmDone(false)">
+    <div class="cfm-card" role="dialog" aria-modal="true">
+      <div class="cfm-head">
+        <div class="cfm-ico" id="cfmIco">❓</div>
+        <h3 class="cfm-title" id="cfmTitle">Xác nhận thao tác</h3>
+      </div>
+      <div class="cfm-msg" id="cfmMsg"></div>
+      <div class="cfm-foot">
+        <button type="button" class="cfm-btn" id="cfmCancelBtn" onclick="_cfmDone(false)">Hủy</button>
+        <button type="button" class="cfm-btn primary" id="cfmOkBtn" onclick="_cfmDone(true)">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const IS_HOST = {{ 'true' if is_host else 'false' }};
+    const SERVER_PRESET_STAFF = {{ preset_staff | tojson }};
+    const SERVER_PRESET_STAFF_SIG = {{ (preset_staff_sig or '') | tojson }};
+    const STAFF_LINK_REQUIRED = {{ 'true' if staff_link_required else 'false' }};
+    let S = {
+      convs: [],
+      cur: null,
+      staff: localStorage.getItem('ib_staff') || '',
+      staffSig: localStorage.getItem('ib_staff_sig') || '',
+      staffLocked: false,
+      staffRole: {{ (staff_role or 'sale') | tojson }},
+    canSupervise: { { 'true' if can_supervise else 'false' } },
+    canTakeover: { { 'true' if can_supervise else 'false' } },
+    allowedAccounts: [],
+      accountFilter: 'all',
+        presenceStatus: localStorage.getItem('ib_away') === '1' ? 'away' : 'online',
+          presenceDetails: { },
+    token: localStorage.getItem('ib_token') || '',
+      tab: 'all',
+        online: [],
+          sound: true,
+            authed: false,
+              streamEs: null,
+};
+
+    const QR = [
+      'Dạ em chào anh/chị ạ 👋',
+      'Anh/chị cần em hỗ trợ gì thêm ạ?',
+      'Dạ để em kiểm tra ngay ạ',
+      'Cảm ơn anh/chị đã phản hồi ❤️'
+    ];
+    document.getElementById('qr').innerHTML = QR.map((t, i) => `<button type="button" onclick="qrIns(${i})">${esc(t)}</button>`).join('');
+    function qrIns(i) { const t = document.getElementById('txt'); t.value = (t.value ? t.value + ' ' : '') + QR[i]; t.focus(); }
+    function toggleQR() {
+      const box = document.getElementById('qr');
+      const btn = document.getElementById('qrToggleBtn');
+      const on = box.classList.toggle('show');
+      if (btn) btn.classList.toggle('on', on);
+    }
+    const SVG_PATHS = {
+      bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+      bellOff: '<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/>',
+      eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+      eyeOff: '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2 22 22"/>',
+      lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+      unlock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+      hand: '<path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+      undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
+      users: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M14 15.5a5 5 0 0 1 7 4.5"/>',
+      user: '<circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/>',
+      info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+      check: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>',
+      alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+      clip: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+      fileDoc: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/>',
+      back: '<path d="m15 18-6-6 6-6"/>',
+    };
+    function ico(name, cls) { return `<svg class="ico ${cls || ''}" viewBox="0 0 24 24">${SVG_PATHS[name] || ''}</svg>`; }
+    function fmtBytes(n) {
+      n = Number(n || 0);
+      if (!n) return 'Tệp đính kèm';
+      if (n < 1024) return n + ' B';
+      if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+      return (n / 1048576).toFixed(1) + ' MB';
+    }
+
+    function toggleSound() {
+      S.sound = !S.sound;
+      const btn = document.getElementById('soundBtn');
+      if (btn) btn.innerHTML = (S.sound ? ico('bell') : ico('bellOff')) + (S.sound ? 'Âm báo' : 'Đã tắt âm');
+      if (btn) btn.innerHTML = (S.sound ? ico('bell') : ico('bellOff')) + `<span class="btn-lbl">${S.sound ? 'Âm báo' : 'Đã tắt âm'}</span>`;
+      toast(S.sound ? 'Đã bật âm báo tin mới' : 'Đã tắt âm báo');
+    }
+    function togglePw() {
+      const inp = document.getElementById('gToken');
+      const eye = document.getElementById('gEyeBtn');
+      if (!inp) return;
+      const show = (inp.type === 'password');
+      inp.type = show ? 'text' : 'password';
+      if (eye) eye.innerHTML = ico(show ? 'eyeOff' : 'eye');
+    }
+
+    function beep() {
+      if (!S.sound) return;
+      try {
+        const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+        const c = new C(), o = c.createOscillator(), g = c.createGain();
+        o.connect(g); g.connect(c.destination); o.type = 'sine'; o.frequency.value = 880;
+        g.gain.setValueAtTime(0.12, c.currentTime); o.start(); o.stop(c.currentTime + 0.22);
+      } catch (_) { }
+    }
+    function setNet(ok) {
+      const e = document.getElementById('pNet'); if (e) e.textContent = ok ? 'Trực tuyến' : 'Đang nối lại…';
+      const d = document.getElementById('netDot'); if (d) d.style.background = ok ? '#22c55e' : '#eab308';
+    }
+    function H() { const h = { 'Content-Type': 'application/json', 'X-Staff': S.staff || 'nv1' }; if (S.staffSig) h['X-Staff-Sig'] = S.staffSig; if (S.token) h['X-Internal-Token'] = S.token; return h; }
+    function G(u) { const h = { 'X-Staff': S.staff || 'nv1' }; if (S.staffSig) h['X-Staff-Sig'] = S.staffSig; if (S.token) h['X-Internal-Token'] = S.token; return fetch(u, { headers: h }); }
+    function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function toast(m, ms) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = m; document.getElementById('toasts').appendChild(d); setTimeout(() => d.remove(), ms || 3400); }
+    function avt(url, name, cls) {
+      name = (name || 'Z').trim() || 'Z';
+      const ch = (name[0] || 'Z').toUpperCase();
+      if (url) return `<img class="avt ${cls || ''}" src="${esc(url)}" referrerpolicy="no-referrer" loading="lazy" onerror="this.outerHTML='<div class=&quot;avt ${cls || ''}&quot;>'+esc(ch)+'</div>'">`;
+      const pal = ['#dbeafe', '#dcfce7', '#fef3c7', '#fce7f3', '#e0e7ff'];
+      let h = 0; for (const c of name) h += c.charCodeAt(0);
+      return `<div class="avt ${cls || ''}" style="background:${pal[h % 5]}">${esc(ch)}</div>`;
+    }
+    function fm(ts) {
+      if (!ts) return ''; const d = new Date(Number(ts)); if (isNaN(d)) return '';
+      const n = new Date(), p = v => String(v).padStart(2, '0');
+      if (d.toDateString() === n.toDateString()) return `${p(d.getHours())}:${p(d.getMinutes())}`;
+      return `${p(d.getDate())}/${p(d.getMonth() + 1)}`;
+    }
+    function fmtTime(ts) {
+      if (!ts) return ''; const d = new Date(Number(ts)); if (isNaN(d)) return '';
+      const p = v => String(v).padStart(2, '0');
+      return `${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+    function fd(ts) {
+      if (!ts) return ''; const d = new Date(Number(ts)), p = v => String(v).padStart(2, '0');
+      return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
+    }
+
+    function showGateError(msg, focusToken) {
+      const gate = document.getElementById('gate');
+      const err = document.getElementById('gErr');
+      const tokInp = document.getElementById('gToken');
+      if (gate) gate.style.display = 'flex';
+      if (err) {
+        err.textContent = msg || 'Sai mật khẩu truy cập. Vui lòng kiểm tra lại.';
+        err.classList.add('show');
+      }
+      if (tokInp) {
+        tokInp.classList.toggle('is-err', !!focusToken);
+        if (focusToken) { tokInp.focus(); tokInp.select(); }
+      }
+    }
+
+    function clearGateError() {
+      const err = document.getElementById('gErr');
+      const tokInp = document.getElementById('gToken');
+      if (err) { err.textContent = ''; err.classList.remove('show'); }
+      if (tokInp) tokInp.classList.remove('is-err');
+    }
+
+    function openGate(errMsg) {
+      const gs = document.getElementById('gStaff');
+      const gt = document.getElementById('gToken');
+      if (gs && !S.staffLocked) gs.value = S.staff || '';
+      if (gt) gt.value = S.token || '';
+      clearGateError();
+      document.getElementById('gate').style.display = 'flex';
+      if (errMsg) showGateError(errMsg, true);
+      else if (gs && !S.staffLocked && !gs.value) gs.focus();
+      else if (gt) gt.focus();
+    }
+
+    function applyStaffLock(name, sig) {
+      const nm = (name || '').trim();
+      if (!nm) return;
+      S.staff = nm;
+      if (sig !== undefined) {
+        S.staffSig = String(sig || '').trim();
+        if (S.staffSig) localStorage.setItem('ib_staff_sig', S.staffSig);
+      }
+      S.staffLocked = true;
+      localStorage.setItem('ib_staff', nm);
+      const gs = document.getElementById('gStaff');
+      if (gs) {
+        gs.value = nm;
+        gs.readOnly = true;
+        gs.disabled = true;
+        gs.title = 'Tên được cấp cố định từ máy chủ';
+        gs.style.background = '#e2e8f0';
+        gs.style.cursor = 'not-allowed';
+      }
+      const lbl = document.querySelector('label[for="gStaff"]');
+      if (lbl) lbl.textContent = 'Tên nhân viên (cố định theo máy chủ)';
+      const gh = document.querySelector('#gate h2');
+      if (gh) gh.textContent = 'Xin chào ' + nm + ', nhập Mật khẩu để vào';
+      updateStaffUi();
+    }
+
+    function updateStaffUi() {
+      const nm = S.staff || (IS_HOST ? 'Super Admin' : 'NV');
+      document.getElementById('meAvt').textContent = (nm[0] || 'S').toUpperCase();
+      document.getElementById('helloName').textContent = nm;
+      const pill = document.getElementById('staffPill');
+      if (pill) {
+        pill.classList.toggle('is-super', IS_HOST || S.staffRole === 'super_admin' || S.staffRole === 'manager');
+        pill.title = S.canSupervise ? 'Bấm để mở Giám sát & Lịch sử đội ngũ' : 'Bấm để đổi tên hoặc mật khẩu';
+      }
+    }
+
+    function onStaffPillClick() {
+      if (S.canSupervise) { openSupervisor(); return; }
+      openGate();
+    }
+
+    async function gateJoin() {
+      clearGateError();
+      const s = S.staffLocked ? S.staff : (document.getElementById('gStaff').value || '').trim();
+      const t = (document.getElementById('gToken').value || '').trim();
+      if (!s) {
+        showGateError('Vui lòng nhập tên của bạn trước khi vào.', false);
+        document.getElementById('gStaff').focus();
+        return;
+      }
+      if (!IS_HOST && !t) {
+        showGateError('Vui lòng nhập Mật khẩu truy cập.', true);
+        return;
+      }
+      const btn = document.getElementById('gSubmitBtn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Đang kiểm tra…'; }
+      S.staff = s;
+      S.token = t;
+      try {
+        const r = await G('/api/inbox/conversations?staff=' + encodeURIComponent(S.staff));
+        const d = await r.json().catch(() => ({}));
+        if (r.status === 401 || r.status === 403 || !d.success) {
+          S.authed = false;
+          if (d.presetStaffName) applyStaffLock(d.presetStaffName);
+          const errTxt = d.error || (r.status === 401 ? 'Sai mật khẩu truy cập.' : 'Không đăng nhập được.');
+          showGateError(errTxt, true);
+          toast('❌ ' + errTxt);
+          return;
+        }
+        if (d.staffLocked && d.effectiveStaff) applyStaffLock(d.effectiveStaff, d.staffSig);
+        S.authed = true;
+        localStorage.setItem('ib_staff', S.staff);
+        localStorage.setItem('ib_token', S.token);
+        document.getElementById('gate').style.display = 'none';
+        updateStaffUi();
+        applyConversationsPayload(d);
+        try { await fetch('/api/inbox/presence', { method: 'POST', headers: H(), body: JSON.stringify({ staff: S.staff }) }); } catch (_) { }
+        startStream();
+        toast('Xin chào ' + S.staff + ' 👋');
+      } catch (e) {
+        showGateError('Không kết nối được tới máy chủ: ' + e.message, false);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Vào làm việc →'; }
+      }
+    }
+
+    function renderOnlineChips() {
+      const list = S.online || [];
+      const det = S.presenceDetails || {};
+      if (!list.length) return '<span class="online-chip"><span class="odot"></span>Chưa có ai online</span>';
+      return list.map(s => {
+        const info = det[s] || {};
+        const isAway = info.state === 'away';
+        const dotCls = isAway ? 'odot away' : 'odot';
+        const suffix = s === S.staff ? (isAway ? ' (bạn · tạm rời)' : ' (bạn)') : (isAway ? ' (tạm rời)' : '');
+        return `<span class="online-chip${s === S.staff ? ' me' : ''}"><span class="${dotCls}"></span>${esc(s)}${suffix}</span>`;
+      }).join('');
+    }
+
+    function renderAwayToggle() {
+      const btn = document.getElementById('awayToggleBtn');
+      if (!btn) return;
+      const isAway = S.presenceStatus === 'away';
+      btn.classList.toggle('is-away', isAway);
+      btn.innerHTML = (isAway ? '🟡 Tạm rời đi' : '🟢 Đang làm') + ' <span class="pill-caret">▾</span>';
+    }
+
+    async function sendPresence(action) {
+      if (!S.authed || !S.staff) return;
+      const curConv = S.cur ? (S.convs || []).find(x => x.convId === S.cur) : null;
+      try {
+        const r = await fetch('/api/inbox/presence', {
+          method: 'POST',
+          headers: H(),
+          body: JSON.stringify({
+            staff: S.staff,
+            status: S.presenceStatus,
+            convId: S.cur || '',
+            convName: curConv ? (curConv.name || '') : '',
+            action: action || ''
+          })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (d && d.presenceDetails) S.presenceDetails = d.presenceDetails;
+        if (d && Array.isArray(d.online)) S.online = d.online;
+      } catch (_) { }
+    }
+
+    async function toggleAwayStatus() {
+      S.presenceStatus = (S.presenceStatus === 'away') ? 'online' : 'away';
+      localStorage.setItem('ib_away', S.presenceStatus === 'away' ? '1' : '0');
+      renderAwayToggle();
+      await sendPresence(S.presenceStatus);
+      const ob = document.getElementById('onlineBar');
+      if (ob) ob.innerHTML = renderOnlineChips();
+      toast(S.presenceStatus === 'away'
+        ? '🟡 Đã bật trạng thái Tạm rời đi — Admin có thể vào nhắn thay bạn.'
+        : '🟢 Đã chuyển lại trạng thái Đang làm việc.');
+    }
+
+    function renderAccountFilter() {
+      const row = document.getElementById('accFilterRow');
+      const sel = document.getElementById('accFilterSel');
+      const supBtn = document.getElementById('supQuickBtn');
+      const navSup = document.getElementById('navSupBtn');
+      if (navSup) navSup.style.display = S.canSupervise ? 'inline-flex' : 'none';
+      if (supBtn) supBtn.style.display = S.canSupervise ? 'inline-flex' : 'none';
+      if (!row || !sel) return;
+      const accs = S.allowedAccounts || [];
+      const show = S.canSupervise || accs.length > 1;
+      row.classList.toggle('show', show);
+      if (!show) return;
+      const curVal = S.accountFilter || 'all';
+      sel.innerHTML = `<option value="all">Tất cả Zalo (${accs.length})</option>` +
+        accs.map(a => `<option value="${esc(a.id)}" ${String(a.id) === String(curVal) ? 'selected' : ''}>${esc(a.name || a.id)}</option>`).join('');
+      sel.value = curVal;
+    }
+
+    function changeAccountFilter() {
+      const sel = document.getElementById('accFilterSel');
+      S.accountFilter = sel ? (sel.value || 'all') : 'all';
+      load();
+    }
+
+    function applyConversationsPayload(d) {
+      const prevCur = S.cur ? (S.convs || []).find(x => x.convId === S.cur) : null;
+      const prevSig = prevCur ? `${prevCur.lastTs || 0}|${(prevCur.messages || []).length}|${prevCur.lastText || ''}` : '';
+      S.convs = d.conversations || [];
+      S.online = d.online || [];
+      if (d.presenceDetails) S.presenceDetails = d.presenceDetails;
+      if (d.staffRole) S.staffRole = d.staffRole;
+      if (typeof d.canSupervise === 'boolean') S.canSupervise = d.canSupervise;
+      if (typeof d.canTakeover === 'boolean') S.canTakeover = d.canTakeover;
+      if (Array.isArray(d.allowedAccounts)) S.allowedAccounts = d.allowedAccounts;
+      renderAwayToggle();
+      renderAccountFilter();
+      document.getElementById('pOnline').textContent = S.online.length + ' online';
+      const awayCnt = Object.values(S.presenceDetails || {}).filter(x => x && x.state === 'away').length;
+      const awayBdg = document.getElementById('navAwayBadge');
+      if (awayBdg) {
+        awayBdg.textContent = String(awayCnt);
+        awayBdg.style.display = (S.canSupervise && awayCnt > 0) ? 'inline-flex' : 'none';
+      }
+      let tot = 0;
+      try { S.convs.forEach(c => { tot += unreadOf(c); }); } catch (_) { }
+      document.getElementById('pUn').textContent = `${tot} chưa đọc`;
+      const navBdg = document.getElementById('navUnBadge');
+      if (navBdg) {
+        navBdg.textContent = tot > 99 ? '99+' : String(tot);
+        navBdg.style.display = tot > 0 ? 'inline-flex' : 'none';
+      }
+      const ob = document.getElementById('onlineBar');
+      if (ob) ob.innerHTML = renderOnlineChips();
+      const nextCur = S.cur ? S.convs.find(x => x.convId === S.cur) : null;
+      if (S.cur) renderClaimBanner(nextCur);
+      renderList();
+      if (S.cur && nextCur) {
+        const nextSig = `${nextCur.lastTs || 0}|${(nextCur.messages || []).length}|${nextCur.lastText || ''}`;
+        if (nextSig !== prevSig) openC(S.cur, true);
+      }
+    }
+
+    function closeMobileChat() {
+      document.body.classList.remove('mob-chat');
+    }
+    function tab(t) {
+      S.tab = t;
+      closeMobileChat();
+      ['all', 'group', 'sms', 'mine'].forEach(k => document.getElementById('t-' + k).classList.toggle('on', k === t));
+      document.querySelectorAll('.zalo-nav .zico').forEach((b, i) => b.classList.toggle('on', (t === 'all' && i === 0) || (t === 'group' && i === 1) || (t === 'sms' && i === 2) || (t === 'mine' && i === 3)));
+      renderList();
+    }
+
+    async function forceSync() {
+      try {
+        toast('Đang đồng bộ danh bạ từ Zalo…');
+        const r = await fetch('/api/inbox/sync', { method: 'POST', headers: H(), body: JSON.stringify({}) });
+        const d = await r.json().catch(() => ({}));
+        if (r.status === 401 || r.status === 403) { openGate(d.error || 'Sai mật khẩu truy cập.'); return; }
+        if (d.success) { toast(`Đã đồng bộ ${d.totalGroups} nhóm + ${d.totalFriends} bạn bè ✅`); load(); }
+        else toast(d.error || 'Lỗi đồng bộ');
+      } catch (e) { toast(e.message); }
+    }
+
+    async function load(silent) {
+      if (!S.staff) { openGate(); return; }
+      try {
+        let url = '/api/inbox/conversations?staff=' + encodeURIComponent(S.staff);
+        if (S.accountFilter && S.accountFilter !== 'all') url += '&accountId=' + encodeURIComponent(S.accountFilter);
+        const r = await G(url);
+        const d = await r.json().catch(() => ({}));
+        if (r.status === 401 || r.status === 403 || !d.success) {
+          if (d.presetStaffName) applyStaffLock(d.presetStaffName);
+          if (r.status === 401 || r.status === 403 || /mật khẩu|token|whitelist|401|403/i.test(d.error || '')) {
+            S.authed = false;
+            openGate(d.error || 'Sai mật khẩu truy cập.');
+          } else if (!silent) {
+            toast(d.error || 'Lỗi tải dữ liệu');
+          }
+          return;
+        }
+        if (d.staffLocked && d.effectiveStaff) applyStaffLock(d.effectiveStaff, d.staffSig);
+        S.authed = true;
+        updateStaffUi();
+        applyConversationsPayload(d);
+        if (!S.streamEs) startStream();
+      } catch (e) {
+        if (!silent) toast('Mất kết nối máy chính: ' + e.message);
+      }
+    }
+
+    function unreadOf(c) {
+      try {
+        const ms = c.messages || [];
+        if (!ms.length) return 0;
+        const rs = c.reads || {};
+        const entries = [];
+        if (c.lastRead && typeof c.lastRead === 'object') entries.push(c.lastRead);
+        Object.values(rs).forEach(v => { if (v && typeof v === 'object') entries.push(v); });
+        let bestIdx = -1;
+        let maxReadAt = 0;
+        entries.forEach(r => {
+          const rat = Number(r.at || 0);
+          if (rat > maxReadAt) maxReadAt = rat;
+          if (r.msgId) {
+            for (let idx = ms.length - 1; idx >= 0; idx--) {
+              if (String((ms[idx] || {}).msgId || '') === String(r.msgId)) {
+                if (idx > bestIdx) bestIdx = idx;
+                break;
+              }
+            }
+          }
+        });
+        if (bestIdx >= 0) return Math.max(0, ms.length - 1 - bestIdx);
+        if (maxReadAt > 0 && maxReadAt >= Number(c.lastTs || 0)) return 0;
+        const lastM = ms[ms.length - 1] || {};
+        if (lastM.from === 'staff' || lastM.from === 'me') return 0;
+        return entries.length ? ms.length : 1;
+      } catch (_) { return 0; }
+    }
+
+    function refreshUnreadCounters() {
+      let tot = 0;
+      try { (S.convs || []).forEach(c => { tot += unreadOf(c); }); } catch (_) { }
+      const pUn = document.getElementById('pUn');
+      if (pUn) pUn.textContent = `${tot} chưa đọc`;
+      const navBdg = document.getElementById('navUnBadge');
+      if (navBdg) {
+        navBdg.textContent = tot > 99 ? '99+' : String(tot);
+        navBdg.style.display = tot > 0 ? 'inline-flex' : 'none';
+      }
+    }
+
+    function renderList() {
+      const q = (document.getElementById('q').value || '').toLowerCase().trim();
+      const box = document.getElementById('list');
+      box.innerHTML = '';
+      let arr = S.convs.filter(c => {
+        if (S.tab === 'group' && c.kind !== 'group') return false;
+        if (S.tab === 'sms' && c.kind !== 'sms') return false;
+        if (S.tab === 'mine' && !(c.claim && c.claim.staff === S.staff)) return false;
+        if (q && !((c.name || '') + ' ' + (c.key || '') + ' ' + (c.lastText || '')).toLowerCase().includes(q)) return false;
+        return true;
+      });
+      arr.sort((a, b) => {
+        const ua = unreadOf(a) > 0 ? 1 : 0, ub = unreadOf(b) > 0 ? 1 : 0;
+        if (ua !== ub) return ub - ua;
+        return (b.lastTs || 0) - (a.lastTs || 0);
+      });
+      if (!arr.length) {
+        box.innerHTML = '<div class="empty">Chưa có cuộc trò chuyện nào.<br>Bấm nút đồng bộ ở thanh bên trái.</div>';
+        return;
+      }
+      const showAccBadge = S.canSupervise || (S.allowedAccounts || []).length > 1;
+      arr.forEach(c => {
+        const u = unreadOf(c);
+        const el = document.createElement('div');
+        el.className = 'citem' + (S.cur === c.convId ? ' on' : '') + (u > 0 ? ' unread-row' : '');
+        const accBdg = (showAccBadge && c.accountName) ? `<span class="bdg-acc">${esc(c.accountName)}</span>` : '';
+        const cl = c.claim && c.claim.staff ? `<span class="bdg-claim">${ico('lock', 'ico-xs')} ${esc(c.claim.staff)}</span>` : '';
+        const un = u ? `<span class="bdg-unread">${u > 99 ? '99+' : u}</span>` : '';
+        const preview = c.lastText || ((c.messages || []).length ? (c.messages || []).length + ' tin nhắn' : 'Chưa có tin nhắn');
+        el.innerHTML = `${avt(c.avatar, c.name, '')}
+      <div style="flex:1;min-width:0">
+        <div class="tt"><span class="cname">${esc(c.name || c.key)}</span><span class="tm">${fm(c.lastTs)}</span></div>
+        <div class="subrow"><span class="pp">${esc(preview)}</span>${un}</div>
+        ${accBdg}${cl}
+      </div>`;
+        el.onclick = () => openC(c.convId);
+        box.appendChild(el);
+      });
+    }
+
+    function renderClaimBanner(c) {
+      const el = document.getElementById('claimBanner');
+      if (!el) return;
+      if (!c) { el.className = 'claim-banner'; el.innerHTML = ''; return; }
+      const holder = c.claim && c.claim.staff ? c.claim.staff : '';
+      if (!holder) {
+        el.className = 'claim-banner show';
+        el.innerHTML = `<span class="claim-banner-copy">${ico('info', 'ico-sm')}<span><b>Chưa ai phụ trách</b> — bấm <b>Nhận khách</b> khi bạn đang trả lời để tránh 2 người nhắn trùng.</span></span>
+      <button type="button" class="claim-pill-btn primary" onclick="claim()">${ico('hand', 'ico-sm')} Nhận khách này (tránh trùng)</button>`;
+      } else if (holder === S.staff) {
+        el.className = 'claim-banner show mine';
+        el.innerHTML = `<span class="claim-banner-copy">${ico('check', 'ico-sm')}<span><b>Bạn đang phụ trách khách này</b> — đồng nghiệp sẽ thấy để không nhắn đè lên.</span></span>
+      <button type="button" class="claim-pill-btn" onclick="unclaim()">${ico('unlock', 'ico-sm')} Xong / Nhả khách</button>`;
+      } else if (S.canTakeover) {
+        const hInfo = (S.presenceDetails || {})[holder] || {};
+        const awayNote = hInfo.state === 'away' ? ' (đang tạm rời đi)' : (hInfo.state === 'offline' ? ' (offline)' : '');
+        el.className = 'claim-banner show other';
+        el.innerHTML = `<span class="claim-banner-copy">${ico('alert', 'ico-sm')}<span><b>${esc(holder)}${awayNote} đang giữ khách này</b> — bạn có quyền Admin để nhắn trực tiếp hoặc tiếp quản ngay.</span></span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button type="button" class="claim-pill-btn primary" onclick="takeoverClaim()">${ico('hand', 'ico-sm')} Tiếp quản · Nhắn thay</button>
+        <button type="button" class="claim-pill-btn" onclick="unclaim()">${ico('unlock', 'ico-sm')} Mở khóa</button>
+      </div>`;
+      } else {
+        el.className = 'claim-banner show other';
+        el.innerHTML = `<span class="claim-banner-copy">${ico('alert', 'ico-sm')}<span><b>${esc(holder)} đang phụ trách khách này</b> — tránh nhắn trùng nếu không cần thiết.</span></span>
+      <button type="button" class="claim-pill-btn" onclick="unclaim()">${ico('unlock', 'ico-sm')} Mở khóa</button>`;
+      }
+    }
+
+    async function openC(id, silent) {
+      const seq = (S._openSeq = (S._openSeq || 0) + 1);
+      S.cur = id;
+      document.querySelector('.zalo-main')?.classList.toggle('has-chat', !!id);
+      if (id) document.body.classList.add('mob-chat');
+      renderList();
+      const c = S.convs.find(x => x.convId === id);
+      if (!silent) sendPresence('view');
+      const txtInput = document.getElementById('txt');
+      if (txtInput && c) txtInput.placeholder = 'Nhập @, tin nhắn tới ' + (c.name || 'hội thoại') + ' (Enter để gửi)';
+      const backBtn = `<button type="button" class="mob-back" onclick="closeMobileChat()" aria-label="Quay lại danh sách" title="Quay lại">${ico('back', 'ico-lg')}</button>`;
+      document.getElementById('title').innerHTML = c
+        ? `${backBtn}${avt(c.avatar, c.name, 'sm')}
+       <div style="min-width:0;flex:1">
+         <div class="chead-title">${esc(c.name)}</div>
+         <div class="chead-sub">${c.kind === 'group' ? ico('users', 'ico-xs') + ' ' + (c.memberCount || 'Nhóm') + ' thành viên' : ico('user', 'ico-xs') + ' Bạn bè'}${c.accountName ? ' · Zalo: <b>' + esc(c.accountName) + '</b>' : ''}${c.claim && c.claim.staff ? ' · <span style="color:#92400e;font-weight:600;display:inline-flex;align-items:center;gap:3px">' + ico('lock', 'ico-xs') + ' ' + esc(c.claim.staff) + ' đang phụ trách</span>' : ''}</div>
+       </div>
+       <div class="acts">
+         <div class="online-strip" id="onlineBar">${renderOnlineChips()}</div>
+       </div>`
+        : `${backBtn}<div style="min-width:0;flex:1"><div class="chead-title">Zalo CSKH</div></div><div class="online-strip" id="onlineBar">${renderOnlineChips()}</div>`;
+      renderClaimBanner(c);
+
+      const box = document.getElementById('msgs');
+      if (!silent) box.innerHTML = '<div class="empty">Đang tải lịch sử tin nhắn…</div>';
+      try {
+        const r = await G('/api/inbox/messages?convId=' + encodeURIComponent(id) + '&limit=200');
+        const d = await r.json().catch(() => ({}));
+        if (seq !== S._openSeq || S.cur !== id) return;
+        if (r.status === 401 || r.status === 403) { openGate(d.error || 'Sai mật khẩu truy cập.'); return; }
+        const atBottom = !silent || (box.scrollHeight - box.scrollTop - box.clientHeight) < 80;
+        const ms = d.messages || [];
+        const frag = document.createDocumentFragment();
+        if (!ms.length) {
+          const emp = document.createElement('div');
+          emp.className = 'empty';
+          emp.innerHTML = 'Chưa có tin nhắn nào.<br>Tin mới từ Zalo sẽ tự hiện ở đây.';
+          frag.appendChild(emp);
+        }
+        let ld = '';
+        let prevKey = '';
+        let prevTs = 0;
+        ms.forEach(m => {
+          const dy = fd(m.ts);
+          if (dy && dy !== ld) {
+            ld = dy;
+            prevKey = '';
+            const s = document.createElement('div'); s.className = 'day'; s.textContent = dy; frag.appendChild(s);
+          }
+          const me = (m.from === 'staff' || m.from === 'me');
+          const isRecalled = !!(m.recalled || m.msgType === 'chat.undo');
+          const senderKey = (me ? 'me:' : 'in:') + String(m.senderUid || m.staff || m.senderName || '');
+          const sameGroup = (senderKey === prevKey) && Math.abs(Number(m.ts || 0) - prevTs) < 5 * 60 * 1000;
+          prevKey = senderKey;
+          prevTs = Number(m.ts || 0);
+
+          const row = document.createElement('div');
+          row.className = 'row' + (me ? ' me' : '') + (sameGroup ? ' cont' : '');
+          const av = me ? '' : (sameGroup ? '<div class="avt-sp"></div>' : avt(m.senderAvatar || '', m.senderName || 'Z', 'xs'));
+          let b = `<div class="bub ${me ? 'm' : 'z'}${isRecalled ? ' recalled' : ''}">`;
+          if (!me && !sameGroup && c && c.kind === 'group') b += `<div class="who">${esc(m.senderName || 'Thành viên')}</div>`;
+          if (isRecalled) {
+            b += `<div>Tin nhắn đã được thu hồi</div>`;
+          } else {
+            const isFileMsg = (m.msgType === 'share.file');
+            const hideAutoLabel = (m.text === '[Hình ảnh]' && (m.thumb || m.mediaToken)) || (isFileMsg && m.text && m.text.startsWith('[Tệp đính kèm]'));
+            if (m.text && !hideAutoLabel) b += `<div>${esc(m.text)}</div>`;
+            const mediaUrl = m.mediaToken ? ('/media/' + encodeURIComponent(m.mediaToken)) : '';
+            if (isFileMsg) {
+              const dlUrl = mediaUrl || m.href || '#';
+              const fname = m.fileName || (m.text ? m.text.replace(/^\[Tệp đính kèm\]\s*/i, '') : '') || 'Tệp đính kèm';
+              b += `<a class="file-card" href="${esc(dlUrl)}" target="_blank" download="${esc(fname)}">
+            <span class="file-ico">${ico('fileDoc', 'ico-lg')}</span>
+            <span class="file-meta"><div class="file-name">${esc(fname)}</div><div class="file-sub">${esc(fmtBytes(m.fileSize))} · Bấm để tải</div></span>
+          </a>`;
+            } else {
+              const imgSrc = m.thumb || mediaUrl;
+              if (imgSrc) {
+                b += `<img class="bi" src="${esc(imgSrc)}" referrerpolicy="no-referrer" loading="lazy" onclick="zoom('${esc(imgSrc)}')" onerror="this.outerHTML='<a href=&quot;${esc(imgSrc)}&quot; target=&quot;_blank&quot; style=&quot;font-size:12.5px;color:#0052cc&quot;>Xem tệp đính kèm</a>'">`;
+              }
+              if (m.href) b += `<br><a href="${esc(m.href)}" target="_blank" style="font-size:12.5px;color:#0052cc">${esc(String(m.href).slice(0, 60))}</a>`;
+            }
+          }
+          const meta = me ? `${fmtTime(m.ts)} · ${esc(m.staff || m.senderName || S.staff)}` : fmtTime(m.ts);
+          b += `<div class="tt2">${meta}</div></div>`;
+          const msgOwner = String(m.staff || '').trim().toLowerCase();
+          const myName = String(S.staff || '').trim().toLowerCase();
+          const canRecall = me && !isRecalled && m.msgId && (
+            (m.from === 'staff' && msgOwner && msgOwner === myName)
+            || (IS_HOST && m.from === 'me')
+          );
+          const acts = canRecall
+            ? `<div class="msg-acts"><button type="button" class="msg-act-btn" title="Thu hồi tin nhắn trên Zalo cho tất cả mọi người" onclick="recallMsg('${esc(m.msgId)}')">${ico('undo', 'ico-xs')} Thu hồi</button></div>`
+            : '';
+          row.innerHTML = av + b + acts;
+          frag.appendChild(row);
+        });
+        box.innerHTML = '';
+        box.appendChild(frag);
+        if (atBottom) box.scrollTop = box.scrollHeight;
+        if (!silent || (c && unreadOf(c) > 0)) {
+          const msgsArr = (c && c.messages) || [];
+          const lastMid = (msgsArr.length ? (msgsArr[msgsArr.length - 1].msgId || '') : '') || (c && c.lastMsgId) || '';
+          if (c) {
+            const rd = { msgId: lastMid, at: Date.now(), by: S.staff };
+            c.lastRead = rd;
+            c.reads = c.reads || {};
+            c.reads[S.staff] = rd;
+            refreshUnreadCounters();
+            renderList();
+          }
+          fetch('/api/inbox/read', { method: 'POST', headers: H(), body: JSON.stringify({ convId: id, staff: S.staff, msgId: lastMid }) });
+        }
+      } catch (e) {
+        if (!silent) box.innerHTML = '<div class="empty">Lỗi tải: ' + esc(e.message) + '</div>';
+      }
+    }
+
+    function zoom(s) { document.getElementById('lightImg').src = s; document.getElementById('light').style.display = 'flex'; }
+
+    let _cfmResolve = null;
+    function _cfmDone(ok) {
+      const ov = document.getElementById('confirmOv');
+      if (ov) ov.classList.remove('show');
+      if (_cfmResolve) { const fn = _cfmResolve; _cfmResolve = null; fn(!!ok); }
+    }
+    function uiConfirm(opts) {
+      const o = (typeof opts === 'string') ? { message: opts } : (opts || {});
+      return new Promise(res => {
+        if (_cfmResolve) { try { _cfmResolve(false); } catch (_) { } }
+        _cfmResolve = res;
+        const ov = document.getElementById('confirmOv');
+        const icoEl = document.getElementById('cfmIco');
+        const titleEl = document.getElementById('cfmTitle');
+        const msgEl = document.getElementById('cfmMsg');
+        const okBtn = document.getElementById('cfmOkBtn');
+        const cancelBtn = document.getElementById('cfmCancelBtn');
+        const tone = o.tone || (o.danger ? 'danger' : 'primary');
+        if (icoEl) {
+          icoEl.className = 'cfm-ico' + (tone === 'danger' ? ' danger' : (tone === 'warn' ? ' warn' : ''));
+          icoEl.textContent = o.icon || (tone === 'danger' ? '⚠️' : (tone === 'warn' ? '🔒' : '❓'));
+        }
+        if (titleEl) titleEl.textContent = o.title || 'Xác nhận thao tác';
+        if (msgEl) msgEl.textContent = o.message || '';
+        if (okBtn) {
+          okBtn.textContent = o.okText || 'Xác nhận';
+          okBtn.className = 'cfm-btn ' + (tone === 'danger' ? 'danger' : (tone === 'warn' ? 'warn' : 'primary'));
+        }
+        if (cancelBtn) cancelBtn.textContent = o.cancelText || 'Hủy';
+        if (ov) ov.classList.add('show');
+        setTimeout(() => { try { okBtn?.focus(); } catch (_) { } }, 20);
+      });
+    }
+
+    async function recallMsg(msgId) {
+      if (!S.cur || !msgId) return;
+      if (!await uiConfirm({ title: 'Thu hồi tin nhắn', message: 'Thu hồi tin nhắn này cho tất cả mọi người trên Zalo?', okText: 'Thu hồi', tone: 'danger' })) return;
+      try {
+        toast('Đang thu hồi tin nhắn…');
+        const r = await fetch('/api/inbox/recall', {
+          method: 'POST',
+          headers: H(),
+          body: JSON.stringify({ convId: S.cur, msgId, staff: S.staff })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!d.success) {
+          toast('❌ ' + (d.error || 'Không thu hồi được tin nhắn'));
+          return;
+        }
+        toast('✅ Đã thu hồi tin nhắn');
+        openC(S.cur);
+        load(true);
+      } catch (e) {
+        toast('❌ Lỗi thu hồi: ' + e.message);
+      }
+    }
+
+    async function claim() {
+      if (!S.cur) { toast('Chọn hội thoại trước'); return; }
+      const r = await fetch('/api/inbox/claim', { method: 'POST', headers: H(), body: JSON.stringify({ convId: S.cur, staff: S.staff, ttlSec: 600 }) });
+      const d = await r.json().catch(() => ({}));
+      if (!d.success) toast(d.error || 'Đang có người giữ');
+      else toast('Bạn đã nhận phụ trách hội thoại này');
+      await load(); openC(S.cur);
+    }
+
+    async function takeoverClaim() {
+      if (!S.cur) { toast('Chọn hội thoại trước'); return; }
+      const r = await fetch('/api/inbox/claim', { method: 'POST', headers: H(), body: JSON.stringify({ convId: S.cur, staff: S.staff, ttlSec: 600, force: true }) });
+      const d = await r.json().catch(() => ({}));
+      if (!d.success) toast(d.error || 'Không tiếp quản được');
+      else toast('✅ Đã tiếp quản hội thoại để nhắn thay Sale');
+      await load(); openC(S.cur);
+    }
+
+    async function unclaim() {
+      if (!S.cur) { toast('Chọn hội thoại trước'); return; }
+      const r = await fetch('/api/inbox/claim', { method: 'POST', headers: H(), body: JSON.stringify({ convId: S.cur, staff: S.staff, action: 'release' }) });
+      const d = await r.json().catch(() => ({}));
+      if (!d.success) toast(d.error || 'Không mở khóa được');
+      else toast('Đã nhả / mở khóa hội thoại');
+      await load(); openC(S.cur);
+    }
+
+    async function send() {
+      if (!S.cur) { toast('Chọn hội thoại bên trái trước'); return; }
+      const t = document.getElementById('txt'), v = (t.value || '').trim();
+      if (!v) return;
+      const c = S.convs.find(x => x.convId === S.cur);
+      if (c && c.claim && c.claim.staff && c.claim.staff !== S.staff) {
+        const hInfo = (S.presenceDetails || {})[c.claim.staff] || {};
+        const skipConfirm = S.canTakeover && (hInfo.state === 'away' || hInfo.state === 'offline');
+        if (!skipConfirm && !await uiConfirm({ title: 'Hội thoại đang có người giữ', message: `Hội thoại đang do ${c.claim.staff} xử lý. Bạn vẫn muốn ${S.canTakeover ? 'nhắn thay' : 'gửi'}?`, okText: S.canTakeover ? 'Nhắn thay' : 'Vẫn gửi', tone: 'warn' })) return;
+      }
+      t.value = ''; t.style.height = 'auto';
+      const r = await fetch('/api/inbox/send', { method: 'POST', headers: H(), body: JSON.stringify({ convId: S.cur, message: v, staff: S.staff }) });
+      const d = await r.json().catch(() => ({}));
+      if (!d.success) { toast(d.error || 'Gửi lỗi'); t.value = v; return; }
+      openC(S.cur); load(true);
+    }
+
+    async function sendFile(inp, isPhoto) {
+      if (!S.cur) { toast('Chọn hội thoại bên trái trước'); inp.value = ''; return; }
+      if (!inp.files || !inp.files[0]) return;
+      const f = inp.files[0];
+      const ext = (f.name || '').split('.').pop().toLowerCase();
+      const isImg = isPhoto && ['jpg', 'jpeg', 'png', 'webp'].includes(ext);
+      const maxBytes = (isImg ? 20 : 50) * 1024 * 1024;
+      if (f.size > maxBytes) {
+        toast('Tệp vượt quá giới hạn ' + (isImg ? '20MB' : '50MB'), 6000);
+        inp.value = '';
+        return;
+      }
+      const c = S.convs.find(x => x.convId === S.cur);
+      if (c && c.claim && c.claim.staff && c.claim.staff !== S.staff) {
+        if (!await uiConfirm({ title: 'Hội thoại đang có người giữ', message: `Hội thoại đang do ${c.claim.staff} xử lý. Bạn vẫn muốn gửi tệp?`, okText: 'Vẫn gửi', tone: 'warn' })) {
+          inp.value = '';
+          return;
+        }
+      }
+      const fd = new FormData();
+      fd.append(isImg ? 'photo' : 'file', f);
+      fd.append('convId', S.cur);
+      fd.append('staff', S.staff);
+      const txtEl = document.getElementById('txt');
+      const caption = (txtEl && txtEl.value) ? txtEl.value : '';
+      fd.append('message', caption);
+      const h = { 'X-Staff': S.staff }; if (S.staffSig) h['X-Staff-Sig'] = S.staffSig; if (S.token) h['X-Internal-Token'] = S.token;
+      toast(isImg ? 'Đang gửi ảnh…' : ('Đang gửi file ' + f.name + '…'));
+      try {
+        const r = await fetch('/api/inbox/send', { method: 'POST', headers: h, body: fd });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.success) {
+          toast(d.error || ('Gửi tệp lỗi (HTTP ' + r.status + ')'), 6500);
+        } else {
+          if (txtEl && caption) { txtEl.value = ''; txtEl.style.height = 'auto'; }
+          toast(isImg ? 'Đã gửi ảnh' : ('Đã gửi file ' + f.name));
+        }
+      } catch (e) {
+        toast('Gửi tệp lỗi: ' + (e && e.message ? e.message : 'không kết nối được máy chủ'), 6500);
+      } finally {
+        inp.value = '';
+        openC(S.cur);
+        load(true);
+      }
+    }
+
+    async function openSetup() {
+      document.getElementById('setupOv').style.display = 'flex';
+      const sel = document.getElementById('setAcc'); sel.innerHTML = '<option>Đang tải…</option>';
+      try {
+        const r = await G('/api/inbox/config'); const d = await r.json();
+        const accs = d.accounts || [], cfg = d.config || {};
+        sel.innerHTML = accs.length
+          ? accs.map(a => `<option value="${esc(a.accountId)}">${esc(a.name || a.accountId)}</option>`).join('')
+          : '<option value="">(chưa có tài khoản — sang trang Tài khoản đăng nhập trước)</option>';
+        if (cfg.accountId) sel.value = cfg.accountId;
+        document.getElementById('setHide').checked = !!cfg.hideEmpty;
+        document.getElementById('setInfo').textContent = cfg.accountId ? ('Đang dùng tài khoản: ' + (accs.find(a => a.accountId === cfg.accountId)?.name || cfg.accountId.slice(0, 8))) : 'Inbox sẽ tự chọn tài khoản sẵn sàng đầu tiên.';
+      } catch (e) { sel.innerHTML = '<option>Lỗi tải: ' + esc(e.message) + '</option>'; }
+    }
+    function closeSetup() { document.getElementById('setupOv').style.display = 'none'; }
+    async function saveSetup() {
+      const acc = document.getElementById('setAcc').value || '';
+      const hide = document.getElementById('setHide').checked;
+      if (!acc) { toast('Chọn tài khoản Zalo trước'); return; }
+      const r = await fetch('/api/inbox/config', { method: 'POST', headers: H(), body: JSON.stringify({ accountId: acc, hideEmpty: hide }) });
+      const d = await r.json().catch(() => ({}));
+      if (!d.success) { toast(d.error || 'Lưu lỗi'); return; }
+      toast(`Đã chuyển sang tài khoản mới ✅`);
+      closeSetup(); S.cur = null;
+      document.querySelector('.zalo-main')?.classList.remove('has-chat');
+      load();
+    }
+    async function pruneInbox() {
+      const r = await fetch('/api/inbox/prune', { method: 'POST', headers: H(), body: JSON.stringify({}) });
+      const d = await r.json().catch(() => ({}));
+      if (!d.success) { toast(d.error || 'Lỗi'); return; }
+      toast(`Đã dọn ${d.removed || 0} hội thoại cũ ✅`); load();
+    }
+
+    function startStream() {
+      if (S.streamEs) { try { S.streamEs.close(); } catch (_) { } S.streamEs = null; }
+      try {
+        const sp = new URLSearchParams();
+        if (S.token) sp.set('token', S.token);
+        if (S.staff) sp.set('name', S.staff);
+        if (S.staffSig) sp.set('nsig', S.staffSig);
+        const qs = sp.toString();
+        const u = '/api/inbox/stream' + (qs ? '?' + qs : '');
+        const es = new EventSource(u);
+        S.streamEs = es;
+        setNet(true);
+        es.onmessage = e => {
+          try {
+            const p = JSON.parse(e.data);
+            if (p.kind === 'heartbeat' || p.kind === 'hello') { setNet(true); return; }
+            const o = JSON.parse(p.inbox || '{}');
+            const evKind = o.kind || p.kind;
+            if (['new_message', 'sent', 'recalled', 'claim', 'read', 'directory'].includes(evKind)) {
+              if (evKind === 'read' && o.convId) {
+                const targetC = (S.convs || []).find(x => x.convId === o.convId);
+                if (targetC) {
+                  const ms = targetC.messages || [];
+                  const fallbackMid = ms.length ? (ms[ms.length - 1].msgId || '') : '';
+                  const rd = { msgId: o.msgId || targetC.lastMsgId || fallbackMid, at: o.at || Date.now(), by: o.staff || '' };
+                  targetC.lastRead = rd;
+                  targetC.reads = targetC.reads || {};
+                  if (o.staff) targetC.reads[o.staff] = rd;
+                  refreshUnreadCounters();
+                  renderList();
+                }
+              }
+              load(true);
+              if (S.cur && o.convId === S.cur && evKind !== 'read') openC(S.cur, true);
+              if (evKind === 'new_message' && o.message) {
+                beep();
+                toast('💬 ' + (o.message.senderName || 'Tin mới') + ': ' + (o.message.text || '').slice(0, 60));
+              }
+            }
+          } catch (_) { }
+        };
+        es.onerror = () => {
+          setNet(false);
+          es.close();
+          S.streamEs = null;
+          if (S.authed) setTimeout(startStream, 4000);
+        };
+      } catch (_) { }
+    }
+
+    document.getElementById('txt').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+    document.getElementById('txt').addEventListener('input', e => {
+      e.target.style.height = 'auto';
+      e.target.style.height = Math.min(120, e.target.scrollHeight) + 'px';
+    });
+    document.getElementById('gStaff')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); gateJoin(); }
+    });
+    document.getElementById('gToken')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); gateJoin(); }
+    });
+
+    let _supTimer = null;
+    function openSupervisor() {
+      if (!S.canSupervise) { toast('Chỉ Admin mới xem được mục này.'); return; }
+      document.getElementById('supOv')?.classList.add('show');
+      loadSupervisor();
+      if (_supTimer) clearInterval(_supTimer);
+      _supTimer = setInterval(loadSupervisor, 5000);
+    }
+    function closeSupervisor() {
+      document.getElementById('supOv')?.classList.remove('show');
+      if (_supTimer) { clearInterval(_supTimer); _supTimer = null; }
+    }
+    function supStateLabel(st) {
+      if (st === 'banned') return '⛔ Đã cấm';
+      if (st === 'locked') return '🔒 Tạm khóa';
+      if (st === 'online') return '🟢 Đang làm';
+      if (st === 'away') return '🟡 Tạm rời đi';
+      if (st === 'idle') return '⚪ Ít tương tác';
+      return '⚫ Offline';
+    }
+    function supActionLabel(act) {
+      if (act === 'takeover_send') return 'Nhắn thay';
+      if (act === 'takeover_claim') return 'Tiếp quản';
+      if (act === 'lock_staff') return 'Tạm khóa';
+      if (act === 'unlock_staff') return 'Mở khóa';
+      if (act === 'ban_staff') return 'Cấm truy cập';
+      if (act === 'unban_staff') return 'Bỏ cấm';
+      if (act === 'release_all_claims') return 'Thu hồi giữ khách';
+      if (act === 'remove_staff') return 'Hủy & Xóa quyền';
+      if (act === 'send') return 'Gửi tin';
+      if (act === 'claim') return 'Nhận khách';
+      if (act === 'release') return 'Nhả khách';
+      return act || 'Hoạt động';
+    }
+    async function supModerate(target, action) {
+      const cfg = {
+        lock: { title: 'Tạm khóa nhân sự', message: `Tạm khóa nhân sự "${target}"? Người này sẽ không vào được Inbox cho tới khi mở khóa.`, okText: 'Khóa ngay', tone: 'warn', icon: '🔒' },
+        unlock: { title: 'Mở khóa nhân sự', message: `Mở khóa truy cập Inbox cho "${target}"?`, okText: 'Mở khóa', tone: 'primary', icon: '🔓' },
+        ban: { title: 'Cấm truy cập', message: `Cấm truy cập "${target}" và thu hồi toàn bộ khách đang giữ?`, okText: 'Cấm ngay', tone: 'danger', icon: '⛔' },
+        unban: { title: 'Bỏ cấm nhân sự', message: `Bỏ cấm và cho phép "${target}" truy cập lại?`, okText: 'Bỏ cấm', tone: 'primary', icon: '✅' },
+        release_claims: { title: 'Nhả toàn bộ khách', message: `Thu hồi toàn bộ khách đang giữ của "${target}"?`, okText: 'Nhả khách', tone: 'warn', icon: '🤝' },
+        remove: { title: 'Hủy quyền & xóa nhân sự', message: `Hủy quyền & xóa "${target}" khỏi danh sách? Link cũ sẽ mất hiệu lực ngay.`, okText: 'Hủy & Xóa', tone: 'danger', icon: '🗑️' }
+      };
+      if (cfg[action] && !await uiConfirm(cfg[action])) return;
+      try {
+        const r = await fetch('/api/inbox/supervisor/action', {
+          method: 'POST',
+          headers: H(),
+          body: JSON.stringify({ target, action })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!d.success) { toast('❌ ' + (d.error || 'Thao tác thất bại')); return; }
+        toast('✅ Đã thực hiện: ' + (supActionLabel(action + '_staff') || action));
+        await loadSupervisor();
+        load(true);
+      } catch (e) {
+        toast('❌ Lỗi: ' + e.message);
+      }
+    }
+    let _supData = null;
+    let _supHistStaff = 'ALL';
+    let _supHistQuery = '';
+    let _supHistType = 'all';
+
+    function supActBadgeClass(act) {
+      if (act === 'send') return 'send';
+      if (act === 'claim') return 'claim';
+      if (act === 'lock' || act === 'away' || act === 'release' || act === 'release_claims') return 'warn';
+      if (act === 'ban' || act === 'remove' || act === 'recall') return 'danger';
+      return '';
+    }
+
+    function supFmtDateTime(ts) {
+      if (!ts) return '—';
+      const d = new Date(Number(ts));
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        + ' ' + d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    }
+
+    function supSelectHistoryStaff(nm) {
+      _supHistStaff = nm || 'ALL';
+      renderSupHistory();
+      const el = document.getElementById('supHistSection');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function renderSupHistory() {
+      const d = _supData;
+      const wrap = document.getElementById('supHistSection');
+      if (!d || !wrap) return;
+      const list = d.staffList || [];
+      const allEvents = d.allActivity || d.recentActivity || [];
+
+      // Collect unique staff names for tabs (roster first, then any extra actors in allEvents)
+      const tabNames = [];
+      const seen = new Set();
+      list.forEach(s => {
+        const nm = String(s.name || '').trim();
+        if (nm && !seen.has(nm.toLowerCase())) { seen.add(nm.toLowerCase()); tabNames.push(nm); }
+      });
+      allEvents.forEach(ev => {
+        const nm = String(ev.staff || '').trim();
+        if (nm && !seen.has(nm.toLowerCase())) { seen.add(nm.toLowerCase()); tabNames.push(nm); }
+      });
+
+      const q = (_supHistQuery || '').toLowerCase().trim();
+      const tp = _supHistType || 'all';
+      const selLow = (_supHistStaff || 'ALL').toLowerCase();
+
+      let filtered = allEvents.filter(ev => {
+        if (_supHistStaff !== 'ALL' && String(ev.staff || '').toLowerCase() !== selLow) return false;
+        if (tp === 'send' && ev.action !== 'send') return false;
+        if (tp === 'system' && ev.action === 'send') return false;
+        if (q) {
+          const hay = `${ev.staff || ''} ${ev.convName || ''} ${ev.accountName || ''} ${ev.detail || ''} ${supActionLabel(ev.action)}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      const tabsHtml = `<button type="button" class="sup-htab ${_supHistStaff === 'ALL' ? 'on' : ''}" onclick="supSelectHistoryStaff('ALL')">Tất cả (${allEvents.length})</button>`
+        + tabNames.map(nm => {
+          const cnt = allEvents.filter(ev => String(ev.staff || '').toLowerCase() === nm.toLowerCase()).length;
+          const active = _supHistStaff.toLowerCase() === nm.toLowerCase();
+          return `<button type="button" class="sup-htab ${active ? 'on' : ''}" onclick="supSelectHistoryStaff('${esc(nm)}')">${esc(nm)} (${cnt})</button>`;
+        }).join('');
+
+      const rowsHtml = filtered.slice(0, 150).map(ev => {
+        const cid = ev.convId || '';
+        const accTxt = ev.accountName ? `<div style="font-size:11px;color:#64748b">Zalo: ${esc(ev.accountName)}</div>` : '';
+        return `<tr>
+      <td style="white-space:nowrap;color:#64748b">${esc(supFmtDateTime(ev.ts))}</td>
+      <td><b>${esc(ev.staff || '—')}</b></td>
+      <td><span class="sup-act-badge ${supActBadgeClass(ev.action)}">${esc(supActionLabel(ev.action))}</span></td>
+      <td>
+        <div>${ev.convName ? '<b>' + esc(ev.convName) + '</b>' : '<span style="color:#94a3b8">—</span>'}</div>
+        ${accTxt}
+      </td>
+      <td style="max-width:420px;word-break:break-word">${esc(ev.detail || '—')}</td>
+      <td>${cid ? `<button type="button" class="sup-btn" onclick="supJumpConv('${esc(cid)}', false)">Mở</button>` : ''}</td>
+    </tr>`;
+      }).join('');
+
+      wrap.innerHTML = `
+    <div class="sup-feed-head">
+      <h3>Lịch sử nhắn tin &amp; hoạt động${_supHistStaff !== 'ALL' ? ' — ' + esc(_supHistStaff) : ''}</h3>
+      <div class="sup-hist-controls">
+        <input type="text" class="sup-hist-inp" placeholder="Tìm khách, nội dung, Zalo…" value="${esc(_supHistQuery)}" oninput="_supHistQuery=this.value;renderSupHistory()">
+        <select class="sup-hist-sel" onchange="_supHistType=this.value;renderSupHistory()">
+          <option value="all" ${tp === 'all' ? 'selected' : ''}>Tất cả hoạt động</option>
+          <option value="send" ${tp === 'send' ? 'selected' : ''}>Chỉ tin đã nhắn</option>
+          <option value="system" ${tp === 'system' ? 'selected' : ''}>Nhận / nhả khách &amp; quyền</option>
+        </select>
+      </div>
+    </div>
+    <div class="sup-hist-tabs">${tabsHtml}</div>
+    <div class="sup-hist-wrap">
+      <table class="sup-hist-table">
+        <thead><tr>
+          <th>Thời gian</th><th>Nhân sự</th><th>Hoạt động</th><th>Khách hàng / Nhóm</th><th>Nội dung đã nhắn / Chi tiết</th><th>Xem</th>
+        </tr></thead>
+        <tbody>${rowsHtml || '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:24px">Chưa có lịch sử phù hợp.</td></tr>'}</tbody>
+      </table>
+    </div>`;
+    }
+
+    async function loadSupervisor() {
+      const body = document.getElementById('supBody');
+      if (!body) return;
+      try {
+        const r = await G('/api/inbox/supervisor');
+        const d = await r.json().catch(() => ({}));
+        if (!d.success) { body.innerHTML = `<div class="empty">${esc(d.error || 'Không tải được dữ liệu')}</div>`; return; }
+        _supData = d;
+        const sm = d.summary || {};
+        const list = d.staffList || [];
+        const viewerIsSuper = !!d.isHost || d.viewerRole === 'super_admin' || IS_HOST;
+        const kpis = `
+      <div class="sup-kpis">
+        <div class="sup-kpi"><span>Sale Online</span><b>${sm.onlineCount || 0} / ${sm.totalSales || 0}</b></div>
+        <div class="sup-kpi"><span>Tạm rời đi</span><b style="color:#b45309">${sm.awayCount || 0}</b></div>
+        <div class="sup-kpi"><span>Offline</span><b style="color:#64748b">${sm.offlineCount || 0}</b></div>
+        <div class="sup-kpi"><span>Đang khóa / Cấm</span><b style="color:#b91c1c">${(sm.lockedCount || 0) + (sm.bannedCount || 0)}</b></div>
+        <div class="sup-kpi"><span>Tin gửi hôm nay</span><b style="color:#0369a1">${sm.totalSentToday || 0}</b></div>
+        <div class="sup-kpi"><span>Khách đang giữ</span><b>${sm.totalClaims || 0}</b></div>
+      </div>`;
+
+        const rowsHtml = list.map(s => {
+          const isMgr = s.role === 'manager' || s.role === 'admin' || s.role === 'super_admin';
+          const roleTxt = s.role === 'super_admin' ? 'Super Admin' : (isMgr ? 'Admin' : 'Sale');
+          const accNames = (s.accounts || []).map(a => a.name).join(', ') || (isMgr ? 'Tất cả Zalo' : 'Zalo chung');
+          const jumpCid = s.convId || ((s.claims && s.claims[0]) ? s.claims[0].convId : '');
+          const jumpLabel = s.convName || ((s.claims && s.claims[0]) ? s.claims[0].name : '');
+          const accId0 = (s.accountIds && s.accountIds[0]) || '';
+          const canMod = (s.role !== 'super_admin') && (viewerIsSuper || !isMgr) && (s.name.toLowerCase() !== (S.staff || '').toLowerCase());
+          const claimsTxt = (s.claims && s.claims.length)
+            ? `<div style="font-size:11px;color:#92400e;margin-top:2px">Giữ ${s.claims.length}: ${s.claims.slice(0, 2).map(x => esc(x.name)).join(', ')}</div>`
+            : '';
+          return `<tr>
+        <td><b>${esc(s.name)}</b></td>
+        <td><span class="sup-role-tag ${isMgr ? 'is-mgr' : ''}">${roleTxt}</span></td>
+        <td><span class="sale-state ${esc(s.state)}">${supStateLabel(s.state)}</span></td>
+        <td>${esc(accNames)}</td>
+        <td>
+          <div>${s.convName ? '<b>' + esc(s.convName) + '</b>' : '<span style="color:#94a3b8">—</span>'}</div>
+          ${claimsTxt}
+        </td>
+        <td><b>${s.sentToday || 0}</b> hôm nay <span style="color:#64748b">(${s.sentTotal || 0} tổng)</span></td>
+        <td>
+          <div class="sup-acts-cell">
+            <button type="button" class="sup-btn" onclick="supSelectHistoryStaff('${esc(s.name)}')" title="Xem bảng lịch sử nhắn tin &amp; hoạt động của ${esc(s.name)}">Lịch sử</button>
+            ${jumpCid ? `<button type="button" class="sup-btn primary" onclick="supJumpConv('${esc(jumpCid)}', ${s.state === 'away' || s.state === 'offline'})" title="Mở hội thoại${jumpLabel ? ': ' + esc(jumpLabel) : ''}">Nhắn thay</button>` : ''}
+            ${accId0 ? `<button type="button" class="sup-btn" onclick="supFilterAccount('${esc(accId0)}')">Lọc Zalo</button>` : ''}
+            ${(s.claimCount || 0) > 0 ? `<button type="button" class="sup-btn" onclick="supModerate('${esc(s.name)}', 'release_claims')">Nhả khách</button>` : ''}
+            ${canMod ? (
+              s.banned
+                ? `<button type="button" class="sup-btn ok" onclick="supModerate('${esc(s.name)}', 'unban')">Bỏ cấm</button>`
+                : (s.locked
+                  ? `<button type="button" class="sup-btn ok" onclick="supModerate('${esc(s.name)}', 'unlock')">Mở khóa</button>`
+                  : `<button type="button" class="sup-btn warn" onclick="supModerate('${esc(s.name)}', 'lock')">Khóa</button>`)
+            ) : ''}
+            ${canMod && !s.banned ? `<button type="button" class="sup-btn danger" onclick="supModerate('${esc(s.name)}', 'ban')">Cấm</button>` : ''}
+            ${canMod ? `<button type="button" class="sup-btn danger" onclick="supModerate('${esc(s.name)}', 'remove')">Hủy</button>` : ''}
+          </div>
+        </td>
+      </tr>`;
+        }).join('');
+
+        const tableHtml = list.length
+          ? `<div class="sup-table-wrap"><table class="sup-table">
+          <thead><tr>
+            <th>Nhân sự</th><th>Vai trò</th><th>Trạng thái</th><th>Zalo phụ trách</th><th>Đang xem / Giữ khách</th><th>Tin đã gửi</th><th>Thao tác</th>
+          </tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table></div>`
+          : '<div class="empty">Chưa có danh sách nhân sự. Hãy thêm Admin / Sale trong trang Chia sẻ (Gateway).</div>';
+
+        body.innerHTML = kpis + tableHtml + `<div class="sup-feed" id="supHistSection"></div>`;
+        renderSupHistory();
+      } catch (e) {
+        body.innerHTML = `<div class="empty">Lỗi tải giám sát: ${esc(e.message)}</div>`;
+      }
+    }
+    function supFilterAccount(accId) {
+      S.accountFilter = accId || 'all';
+      const sel = document.getElementById('accFilterSel');
+      if (sel) sel.value = S.accountFilter;
+      closeSupervisor();
+      load();
+    }
+    async function supJumpConv(convId, autoTakeover) {
+      closeSupervisor();
+      S.accountFilter = 'all';
+      const sel = document.getElementById('accFilterSel');
+      if (sel) sel.value = 'all';
+      await load();
+      await openC(convId);
+      if (autoTakeover) {
+        await fetch('/api/inbox/claim', { method: 'POST', headers: H(), body: JSON.stringify({ convId, staff: S.staff, ttlSec: 600, force: true }) }).catch(() => { });
+        await load(true);
+        openC(convId, true);
+      }
+    }
+
+    setInterval(() => {
+      sendPresence();
+    }, 15000);
+    setInterval(() => {
+      if (S.authed && S.staff && document.visibilityState !== 'hidden') load(true);
+    }, 5000);
+    window.addEventListener('focus', () => { if (S.authed && S.staff) load(true); });
+    document.addEventListener('visibilitychange', () => { if (S.authed && S.staff && document.visibilityState === 'visible') load(true); });
+
+    (function initFromLink() {
+      try {
+        try { sessionStorage.removeItem('ib_staff_locked'); } catch (_) { }
+        const u = new URL(window.location.href);
+        const t = (u.searchParams.get('token') || '').trim();
+        const presetName = (u.searchParams.get('name') || u.searchParams.get('staff') || '').trim();
+        const presetSig = (u.searchParams.get('nsig') || '').trim();
+        let changedUrl = false;
+        if (t) {
+          S.token = t;
+          localStorage.setItem('ib_token', t);
+          const gi = document.getElementById('gToken'); if (gi) gi.value = t;
+          u.searchParams.delete('token');
+          changedUrl = true;
+        }
+        if (SERVER_PRESET_STAFF) {
+          applyStaffLock(SERVER_PRESET_STAFF, SERVER_PRESET_STAFF_SIG);
+        } else if (presetName && presetSig) {
+          applyStaffLock(presetName, presetSig);
+        } else if (presetName && IS_HOST) {
+          applyStaffLock(presetName, '');
+        } else if (IS_HOST) {
+          S.staff = 'Super Admin';
+          localStorage.setItem('ib_staff', 'Super Admin');
+        }
+        if (u.searchParams.has('name') || u.searchParams.has('staff') || u.searchParams.has('nsig')) {
+          u.searchParams.delete('name');
+          u.searchParams.delete('staff');
+          u.searchParams.delete('nsig');
+          changedUrl = true;
+        }
+        if (changedUrl) {
+          window.history.replaceState(null, '', u.pathname + (u.search ? '?' + u.searchParams.toString() : ''));
+        }
+      } catch (_) { }
+    })();
+
+    if (STAFF_LINK_REQUIRED) {
+      openGate('Vui lòng mở đúng link riêng được cấp cho bạn (thiếu tên nhân viên hợp lệ).');
+    } else if (S.staff && (IS_HOST || S.token)) {
+      updateStaffUi();
+      load();
+    } else {
+      openGate();
+    }
+  </script>
+</body>
+
+</html>

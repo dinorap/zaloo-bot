@@ -2882,8 +2882,9 @@ body.members-page .btn-icon-danger {
 body.members-page .members-clear-btn:hover,
 body.members-page .btn-icon-danger:hover {
     border-color: rgba(239, 68, 68, .55) !important;
-    color: #fff !important;
-    background: rgba(239, 68, 68, .22) !important;
+    color: #7f1d1d !important;
+    -webkit-text-fill-color: #7f1d1d !important;
+    background: rgba(239, 68, 68, .16) !important;
     transform: translateY(-1px);
 }
 
@@ -6173,8 +6174,8 @@ button { border-radius: 10px !important; }
 html,
 html[data-theme="dark"],
 html[data-theme="light"] {
-    --nexus-sidebar: 226px;
-    --ux-sidebar-width: 226px;
+    --nexus-sidebar: 240px;
+    --ux-sidebar-width: 240px;
     --bg: #eef3f8;
     --bg-primary: #eef3f8;
     --bg-secondary: #f5f8fb;
@@ -6303,10 +6304,11 @@ body::after { display: none !important; }
 
 /* Main surfaces */
 .page {
-    margin-left: var(--nexus-sidebar) !important;
-    width: calc(100% - var(--nexus-sidebar)) !important;
+    margin-left: var(--nexus-sidebar, 240px) !important;
+    width: calc(100vw - var(--nexus-sidebar, 240px)) !important;
     max-width: none !important;
-    padding: 18px 20px !important;
+    padding: 20px 28px 24px 28px !important;
+    box-sizing: border-box !important;
     color: #172033 !important;
     background: transparent !important;
 }

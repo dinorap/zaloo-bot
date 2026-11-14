@@ -1,4 +1,5 @@
 import sys
+from core.zalo import http as zalo_http
 
 def _safe_reconfigure():
     try:
@@ -11,13 +12,12 @@ _safe_reconfigure()
 
 import json
 import time
-import requests
 from core.zalo.enc import zalo_encode
 from core.zalo.dec import zalo_decode
 from core.zalo.zalo_config import get_zpw_ver
 from core.zalo.zalo_headers import zalo_mobile_headers
 def send_sms(cookies: str, zpw_enk: str, to_uid: str, imei: str, message: str = "a",
-             zpw_ver: str = None) -> tuple:
+             zpw_ver: str = None, client_id: int = None) -> tuple:
     """
     Gửi SMS (tin nhắn Zalo) tới user ID qua API Zalo Web.
 
@@ -31,7 +31,7 @@ def send_sms(cookies: str, zpw_enk: str, to_uid: str, imei: str, message: str = 
     Returns:
         Tuple (response_json, decoded_data)
     """
-    client_id = int(time.time() * 1000)
+    client_id = int(client_id or int(time.time() * 1000))
 
     payload = {
         "message": message,
@@ -65,7 +65,7 @@ def send_sms(cookies: str, zpw_enk: str, to_uid: str, imei: str, message: str = 
     print("[send_sms] has_zpw_enk=", bool(zpw_enk))
     print("[send_sms] cookie_keys=", list(cookie_dict.keys()))
 
-    response = requests.post(
+    response = zalo_http.post(
         url,
         params=query_params,
         data={"params": params},
@@ -88,6 +88,9 @@ def send_sms(cookies: str, zpw_enk: str, to_uid: str, imei: str, message: str = 
         decoded_data = zalo_decode(data_field, zpw_enk)
     else:
         decoded_data = data_field
+
+    if isinstance(decoded_data, dict):
+        decoded_data.setdefault("_clientId", client_id)
 
     return response_json, decoded_data
 

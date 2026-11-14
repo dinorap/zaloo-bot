@@ -186,7 +186,10 @@
         if (!root) return;
         var items = activityItems();
         if (!items.length) {
-            root.innerHTML = '<div class="dashboard-empty"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><b>Chưa có hoạt động gần đây</b><p>Tạo chiến dịch đầu tiên để theo dõi tiến độ tại đây.</p><a class="btn btn-primary" href="/marketing/group">Tạo chiến dịch</a></div>';
+            var emptyBtnHref = (window.LICENSE_TIER === 3) ? '/marketing/group-copy' : '/marketing/group';
+            var emptyBtnText = (window.LICENSE_TIER === 3) ? 'Tạo sao chép nhóm' : 'Tạo chiến dịch';
+            var emptyDesc = (window.LICENSE_TIER === 3) ? 'Tạo tác vụ sao chép nhóm đầu tiên để theo dõi tiến độ tại đây.' : 'Tạo chiến dịch đầu tiên để theo dõi tiến độ tại đây.';
+            root.innerHTML = '<div class="dashboard-empty"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><b>Chưa có hoạt động gần đây</b><p>' + emptyDesc + '</p><a class="btn btn-primary" href="' + emptyBtnHref + '">' + emptyBtnText + '</a></div>';
             return;
         }
         root.innerHTML = items.map(function (item) {

@@ -8,8 +8,8 @@ Response: {"error_code":0,"data":"<AES>"} -> zalo_decode -> {"data":[...bạn b�
 """
 import json
 
-import requests
 
+from core.zalo import http as zalo_http
 from core.zalo.enc import zalo_encode
 from core.zalo.dec import zalo_decode
 from core.zalo.zalo_config import get_zpw_ver
@@ -71,7 +71,7 @@ def get_friend_list(
     plaintext = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     params = zalo_encode(plaintext, zpw_enk, url_encode=False)
 
-    response = requests.get(
+    response = zalo_http.get(
         FRIENDS_URL,
         params={
             "zpw_ver": get_zpw_ver(zpw_ver),
@@ -119,3 +119,32 @@ def get_friend_list(
     # Sắp xếp theo tên cho dễ nhìn
     friends.sort(key=lambda f: (f.get("zaloName") or f.get("displayName") or "").lower())
     return friends
+
+
+def get_friend_uid_set(
+    zpw_enk,
+    cookies,
+    imei="",
+    zpw_ver=None,
+    timeout: int = 30,
+) -> set:
+    """Trả về set userId của toàn bộ bạn bè của tài khoản.
+
+    Dùng để phân biệt "bạn bè thật" với "người lạ" một cách đáng tin cậy.
+    Cờ ``isFr`` trong response ``getmg`` không đáng tin vì nó gắn theo quan hệ
+    của người khởi tạo nhóm, khiến thành viên chung của nhóm khác bị coi là
+    bạn bè. Zalo chỉ cho thêm trực tiếp vào nhóm những người đã là bạn bè,
+    nên nhầm ở đây sẽ gây lỗi 314 (MAX_QUOTA_INVITE_STRANGER_PHONEID).
+    """
+    friends = get_friend_list(
+        zpw_enk,
+        cookies,
+        imei=imei,
+        zpw_ver=zpw_ver,
+        timeout=timeout,
+    )
+    return {
+        str(item.get("userId") or "").strip()
+        for item in (friends or [])
+        if isinstance(item, dict) and str(item.get("userId") or "").strip()
+    }

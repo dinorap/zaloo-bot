@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chia sẻ Inbox - Jimmy BOT CHAT</title>
+<link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=gateway-v4">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=gateway-v4">
+<style>
+@font-face{
+  font-family:"SegoeuiPc";
+  src:local("Segoe UI"),local("SegoeUI"),local("Segoe UI Variable Text");
+  font-weight:400;font-style:normal;
+}
+@font-face{
+  font-family:"SegoeuiPc";
+  src:local("Segoe UI Semibold"),local("SegoeUI-Semibold"),local("Segoe UI Bold");
+  font-weight:600;font-style:normal;
+}
+@font-face{
+  font-family:"SegoeuiPc";
+  src:local("Segoe UI Bold"),local("SegoeUI-Bold");
+  font-weight:700;font-style:normal;
+}
+.page.gateway-page{
+  overflow-y:auto!important;height:100dvh!important;display:block!important;
+  padding:24px 32px 60px;box-sizing:border-box!important;
+  font-family:SegoeuiPc,"Segoe UI","San Francisco","Helvetica Neue",Helvetica,"Lucida Grande",Roboto,Ubuntu,Tahoma,"Microsoft Sans Serif",Arial,sans-serif!important;
+}
+@media (min-width: 901px) {
+  .page.gateway-page {
+    margin-left: 240px !important;
+    width: calc(100vw - 240px) !important;
+    max-width: calc(100vw - 240px) !important;
+  }
+}
+.gateway-page button,.gateway-page input,.gateway-page select{font-family:inherit}
+.gw-ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none;display:inline-block;vertical-align:middle}
+.gw-ico-lg{width:19px;height:19px}
+.gw-ico-sm{width:14px;height:14px}
+.gw-inline{display:inline-flex;align-items:center;gap:7px}
+.gateway-page .btn{display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.gw-hero{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  background:#fff;border:1px solid #d5e0ea;border-radius:16px;padding:20px 22px;margin-bottom:16px;
+}
+.gw-hero h2{margin:0 0 6px;font-size:20px;font-weight:800;color:#0b1220}
+.gw-hero p{margin:0;font-size:13.5px;color:#475569;line-height:1.5}
+.gw-badges{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.gw-pill{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;
+  font-size:12.5px;font-weight:700;border:1px solid #cbd5e1;background:#f8fafc;color:#1e293b;
+}
+.gw-pill.ok{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+.gw-pill.warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
+
+.gw-card{
+  background:#fff;border:1px solid #d5e0ea;border-radius:16px;padding:20px 22px;margin-bottom:16px;
+}
+.gw-step-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.gw-step-num{
+  width:28px;height:28px;border-radius:999px;background:#246fa2;color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:none;
+}
+.gw-step-head h3{margin:0;font-size:16px;font-weight:800;color:#0b1220}
+
+.gw-mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+html body.gateway-shell-page .gateway-page .gw-mode-btn{
+  display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:4px!important;text-align:left!important;
+  padding:14px 16px!important;border-radius:12px!important;border:1.5px solid #cbd5e1!important;
+  background:#ffffff!important;background-color:#ffffff!important;color:#0f172a!important;cursor:pointer!important;
+  box-shadow:none!important;transition:border-color .15s ease,background-color .15s ease!important;
+}
+html body.gateway-shell-page .gateway-page .gw-mode-btn strong{font-size:14.5px!important;font-weight:800!important;color:#0f172a!important}
+html body.gateway-shell-page .gateway-page .gw-mode-btn small{font-size:12.5px!important;color:#475569!important;font-weight:500!important}
+html body.gateway-shell-page .gateway-page .gw-mode-btn:hover{
+  border-color:#60a5fa!important;background:#f0f7ff!important;background-color:#f0f7ff!important;color:#0f172a!important;
+}
+html body.gateway-shell-page .gateway-page .gw-mode-btn:hover strong{color:#0f172a!important}
+html body.gateway-shell-page .gateway-page .gw-mode-btn:hover small{color:#334155!important}
+html body.gateway-shell-page .gateway-page .gw-mode-btn.is-selected,
+html body.gateway-shell-page .gateway-page .gw-mode-btn.is-selected:hover{
+  border:2px solid #1d5fa3!important;background:#e8f3ff!important;background-color:#e8f3ff!important;
+  color:#0f2942!important;box-shadow:0 0 0 3px rgba(29,95,163,.12)!important;
+}
+html body.gateway-shell-page .gateway-page .gw-mode-btn.is-selected strong,
+html body.gateway-shell-page .gateway-page .gw-mode-btn.is-selected:hover strong{color:#0b2545!important}
+html body.gateway-shell-page .gateway-page .gw-mode-btn.is-selected small,
+html body.gateway-shell-page .gateway-page .gw-mode-btn.is-selected:hover small{color:#1e4066!important}
+
+html body.gateway-shell-page .gateway-page .btn-primary:not(:disabled){
+  background:#1d5fa3!important;background-color:#1d5fa3!important;border-color:#1d5fa3!important;color:#ffffff!important;
+}
+html body.gateway-shell-page .gateway-page .btn-primary:not(:disabled):hover{
+  background:#164b82!important;background-color:#164b82!important;border-color:#164b82!important;color:#ffffff!important;
+}
+html body.gateway-shell-page .gateway-page .btn-ghost:not(:disabled){
+  background:#ffffff!important;background-color:#ffffff!important;border-color:#cbd5e1!important;color:#0f172a!important;
+}
+html body.gateway-shell-page .gateway-page .btn-ghost:not(:disabled):hover{
+  background:#e2e8f0!important;background-color:#e2e8f0!important;border-color:#94a3b8!important;color:#0f172a!important;
+}
+html body.gateway-shell-page .gateway-page .btn-danger:not(:disabled){
+  background:#dc2626!important;background-color:#dc2626!important;border-color:#dc2626!important;color:#ffffff!important;
+}
+html body.gateway-shell-page .gateway-page .btn-danger:not(:disabled):hover{
+  background:#b91c1c!important;background-color:#b91c1c!important;border-color:#b91c1c!important;color:#ffffff!important;
+}
+
+.gw-panel{
+  background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:15px 16px;
+}
+.gw-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.gw-inp{
+  flex:1;min-width:170px;height:40px;padding:0 12px;border:1px solid #cbd5e1;
+  border-radius:10px;font-size:13.5px;background:#fff;color:#0b1220;box-sizing:border-box;
+}
+.gw-inp:disabled{background:#e2e8f0;color:#64748b;cursor:not-allowed}
+.gw-mono{font-family:Consolas,ui-monospace,monospace}
+.gw-help{margin:8px 0 0;font-size:12.5px;color:#475569;line-height:1.5}
+
+.gw-tunnel-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  background:#fff;border:1px solid #dbeafe;border-radius:12px;padding:12px 14px;
+}
+.gw-tunnel-info{display:flex;flex-direction:column;gap:3px;min-width:220px;flex:1}
+.gw-tunnel-info strong{font-size:14px;color:#0f172a}
+.gw-tunnel-info span{font-size:12.5px;color:#475569}
+
+.gw-manual-url{margin-top:10px;font-size:12.5px;color:#475569}
+.gw-manual-url summary{cursor:pointer;font-weight:600;color:#246fa2;user-select:none}
+.gw-manual-url .gw-row{margin-top:8px}
+
+.gw-two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.gw-box{
+  background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.gw-box-title{font-size:14px;font-weight:800;color:#0b1220;margin:0}
+
+.gw-toggle-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;
+  padding:9px 11px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;
+}
+.gw-toggle-row span{font-size:13px;font-weight:700;color:#0f172a}
+.gw-switch{position:relative;display:inline-block;width:42px;height:24px;flex:none}
+.gw-switch input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.gw-slider{
+  position:absolute;inset:0;background:#cbd5e1;border-radius:999px;transition:background .18s ease;
+}
+.gw-slider::before{
+  content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.22);transition:transform .18s ease;
+}
+.gw-switch input:checked + .gw-slider{background:#246fa2}
+.gw-switch input:checked + .gw-slider::before{transform:translateX(18px)}
+
+.gw-share-card{border:2px solid #246fa2;background:linear-gradient(180deg,#f5faff,#ffffff)}
+.gw-link-box{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:#fff;border:1.5px solid #bfdbfe;border-radius:12px;padding:10px 12px;
+}
+.gw-link-text{
+  flex:1;min-width:200px;font-family:Consolas,ui-monospace,monospace;font-size:13.5px;
+  font-weight:700;color:#0f172a;word-break:break-all;background:transparent;border:0;outline:none;
+}
+.gw-staff-links{display:flex;flex-direction:column;gap:8px}
+.gw-staff-link-row{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  background:#fff;border:1.5px solid #bfdbfe;border-radius:12px;padding:8px 12px;
+}
+.gw-staff-badge{
+  display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;
+  background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;font-size:12.5px;font-weight:700;white-space:nowrap;
+}
+.gw-staff-badge.is-mgr{background:#f3e8ff;border-color:#d8b4fe;color:#6b21a8}
+.gw-role-chip{
+  font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;white-space:nowrap;
+  background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;
+}
+.gw-role-chip.is-mgr{background:#faf5ff;color:#7e22ce;border-color:#d8b4fe}
+.gw-staff-rows{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;padding-right:2px}
+.gw-staff-head,
+.gw-staff-row{
+  display:grid !important;
+  grid-template-columns:minmax(100px,1.3fr) 108px minmax(105px,1fr) 28px;
+  gap:6px;
+  align-items:center;
+  width:100%;
+}
+.gw-staff-box [data-pw-col]{display:none !important}
+.gw-staff-box.is-per-pw .gw-staff-head,
+.gw-staff-box.is-per-pw .gw-staff-row{
+  grid-template-columns:minmax(82px,1.1fr) 92px minmax(90px,1fr) minmax(88px,.9fr) 28px;
+}
+.gw-staff-box.is-per-pw [data-pw-col]{display:block !important}
+.gw-pw-mode{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;
+  background:#f1f5f9;border-radius:10px;border:1px solid #e2e8f0;
+}
+.gw-pw-mode-btn{
+  border:0;background:transparent;border-radius:7px;padding:7px 10px;
+  font-size:12.5px;font-weight:700;color:#475569;cursor:pointer;transition:all .12s ease;
+}
+.gw-pw-mode-btn.on{
+  background:#fff;color:#0f172a;box-shadow:0 1px 3px rgba(15,23,42,.1);
+}
+.gw-per-pw-note{
+  display:none;padding:10px 12px;border-radius:10px;background:#f8fafc;
+  border:1px dashed #cbd5e1;font-size:12.5px;color:#334155;line-height:1.45;
+}
+.gw-staff-head{
+  padding:0 2px 2px;
+  font-size:11.5px;
+  font-weight:700;
+  color:#64748b;
+  letter-spacing:.01em;
+}
+.gw-staff-row .gw-inp,
+.gw-staff-row .gw-staff-role,
+.gw-staff-row .gw-staff-acc{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  margin:0 !important;
+  height:34px !important;
+  min-height:34px !important;
+}
+.gw-staff-role{
+  padding:0 8px !important;border:1px solid #cbd5e1;border-radius:10px;background:#fff;
+  font-size:12.5px;font-weight:700;color:#1e293b;cursor:pointer;
+}
+.gw-staff-acc{
+  padding:0 8px !important;border:1px solid #cbd5e1;border-radius:10px;background:#fff;
+  font-size:12px;font-weight:600;color:#334155;cursor:pointer;
+  text-overflow:ellipsis;
+}
+.gw-staff-del{
+  width:28px !important;min-width:28px !important;max-width:28px !important;
+  height:32px !important;min-height:32px !important;padding:0 !important;margin:0 !important;
+  display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid #cbd5e1;background:#fff;color:#64748b;border-radius:8px;cursor:pointer;font-size:15px;font-weight:700;
+}
+.gw-staff-role:disabled,.gw-staff-acc:disabled{background:#f1f5f9;color:#94a3b8;cursor:not-allowed}
+.gw-staff-actions{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+}
+.gw-staff-actions .btn,
+.gw-staff-actions .gw-team-num{
+  height:34px !important;min-height:34px !important;
+  box-sizing:border-box !important;margin:0 !important;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.gw-team-lbl{
+  font-size:12px;font-weight:700;color:#475569;margin:0 0 0 4px !important;white-space:nowrap;
+}
+.gw-team-num{
+  width:44px !important;min-width:44px !important;max-width:44px !important;
+  padding:0 6px !important;text-align:center !important;
+  border:1px solid #cbd5e1 !important;border-radius:9px !important;
+  font-size:13px !important;line-height:32px !important;font-weight:700;
+  color:#0f172a !important;background:#fff !important;box-shadow:none !important;
+  -moz-appearance:textfield;appearance:textfield;
+}
+.gw-team-num::-webkit-outer-spin-button,
+.gw-team-num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.gw-staff-del{
+  width:34px;height:36px;flex:none;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid #cbd5e1;background:#fff;color:#64748b;border-radius:10px;cursor:pointer;font-size:16px;font-weight:700;
+}
+.gw-staff-del:hover:not(:disabled){background:#fee2e2;border-color:#fca5a5;color:#b91c1c}
+.gw-staff-del:disabled{opacity:.45;cursor:not-allowed}
+.gw-add-staff-btn{align-self:flex-start}
+.gw-fw-alert{
+  margin-top:12px;padding:12px 14px;border-radius:12px;background:#fffbeb;border:1px solid #fde68a;
+  display:none;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;width:100%;
+}
+.gw-fw-alert.show{display:flex}
+
+details.gw-adv{
+  background:#fff;border:1px solid #d5e0ea;border-radius:14px;padding:14px 18px;
+}
+details.gw-adv summary{cursor:pointer;font-weight:700;font-size:13.5px;color:#334155;user-select:none}
+.gw-adv-body{margin-top:14px;display:flex;flex-direction:column;gap:12px}
+.gw-acc-list{display:flex;gap:8px;flex-wrap:wrap}
+.gw-acc-chip{
+  display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:10px;
+  border:1px solid #cbd5e1;background:#f8fafc;cursor:pointer;font-size:13px;font-weight:600;
+}
+.gw-acc-chip:has(input:checked){border-color:#246fa2;background:#eff6ff;color:#1e3a8a}
+.gw-toast{
+  position:fixed;right:20px;bottom:20px;z-index:9999;background:#0f172a;color:#fff;
+  padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;
+  box-shadow:0 10px 26px rgba(0,0,0,.22);display:none;
+}
+.gw-toast.show{display:block}
+@media(max-width:760px){
+  .gw-mode-tabs,.gw-two-col{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body class="gateway-shell-page">
+{% set active_page = 'gateway' %}
+{% include '_nav.html' %}
+
+<div class="page gateway-page">
+  <header class="gw-hero">
+    <div>
+      <h2 class="gw-inline"><svg class="gw-ico gw-ico-lg" style="color:#1d5fa3" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Chia sẻ Inbox cho khách &amp; nhân viên</h2>
+      <p>Chỉ cần chọn cách gửi (cùng WiFi hay ở xa), rồi bấm <b>Copy link gửi khách</b> — máy bên kia mở là dùng luôn, không lộ tài khoản chính.</p>
+    </div>
+    <div class="gw-badges">
+      <span class="gw-pill" id="gwFwPill">Đang kiểm tra mạng…</span>
+      <span class="gw-pill" id="gwAccPill">Đang tải tài khoản…</span>
+    </div>
+    <div class="gw-fw-alert" id="gwFwAlert">
+      <div class="gw-inline" style="font-size:13px;color:#78350f">
+        <svg class="gw-ico" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <span><b>Firewall đang chặn cổng 5000</b> — máy khác cùng WiFi chưa vào được. Bấm nút bên phải để mở tự động.</span>
+      </div>
+      <div class="gw-row">
+        <button class="btn btn-primary btn-sm" type="button" onclick="gwOpenFirewall()"><svg class="gw-ico gw-ico-sm" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>Mở cổng LAN ngay</button>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="gwCopyFixCmd()"><svg class="gw-ico gw-ico-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy lệnh</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="gw-card">
+    <div class="gw-step-head">
+      <span class="gw-step-num">1</span>
+      <h3>Chọn phạm vi chia sẻ</h3>
+    </div>
+
+    <div class="gw-mode-tabs">
+      <button type="button" class="gw-mode-btn is-selected" id="gwModeLanBtn" onclick="gwSetMode('lan')">
+        <strong class="gw-inline"><svg class="gw-ico" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>Cùng WiFi / Mạng LAN</strong>
+        <small>Dùng trong văn phòng, không cần Internet ngoài</small>
+      </button>
+      <button type="button" class="gw-mode-btn" id="gwModePublicBtn" onclick="gwSetMode('public')">
+        <strong class="gw-inline"><svg class="gw-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>Khách ở xa / Internet (Public)</strong>
+        <small>Khách ở nơi khác, tạo link HTTPS công khai bằng 1 chạm</small>
+      </button>
+    </div>
+
+    <div class="gw-panel" id="gwPanelLan">
+      <div class="gw-row">
+        <input class="gw-inp gw-mono" id="gwShareUrl" readonly value="Đang lấy IP LAN...">
+        <select class="gw-inp" id="gwShareIpSelect" style="flex:0 0 auto;width:auto;min-width:165px;display:none" title="Chọn card mạng LAN" onchange="gwShareIpChange()"></select>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="gwCopyValue('gwShareUrl', 'Đã copy địa chỉ LAN!')"><svg class="gw-ico gw-ico-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy địa chỉ</button>
+      </div>
+      <p class="gw-help">Máy khách chỉ cần bắt cùng WiFi / mạng LAN với máy này là vào được ngay.</p>
+    </div>
+
+    <div class="gw-panel" id="gwPanelPublic" style="display:none">
+      <div class="gw-tunnel-bar">
+        <div class="gw-tunnel-info">
+          <strong id="gwTunnelTitle">Link Public tự động (HTTPS miễn phí)</strong>
+          <span id="gwTunnelDesc">Bấm nút "Tạo link Public" bên cạnh để tạo đường dẫn ngẫu nhiên cho khách ở xa.</span>
+        </div>
+        <div class="gw-row">
+          <button class="btn btn-primary btn-sm" type="button" id="gwTunnelStartBtn" onclick="gwStartTunnel(false)"><svg class="gw-ico gw-ico-sm" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09Z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2Z"/></svg>Tạo link Public</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="gwTunnelRefreshBtn" style="display:none" onclick="gwStartTunnel(true)" title="Tạo đường dẫn ngẫu nhiên khác"><svg class="gw-ico gw-ico-sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Đổi link mới</button>
+          <button class="btn btn-danger btn-sm" type="button" id="gwTunnelStopBtn" style="display:none" onclick="gwStopTunnel()"><svg class="gw-ico gw-ico-sm" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Tắt Public</button>
+        </div>
+      </div>
+
+      <label class="gw-toggle-row" style="margin-top:10px">
+        <span>Cho phép khách ở xa (IP lạ) vào khi có đúng Mật khẩu</span>
+        <span class="gw-switch">
+          <input type="checkbox" id="gwAllowWan" checked onchange="gwSaveAllowWan()">
+          <span class="gw-slider"></span>
+        </span>
+      </label>
+    </div>
+  </section>
+
+  <section class="gw-card">
+    <div class="gw-step-head">
+      <span class="gw-step-num">2</span>
+      <h3>Mật khẩu &amp; Tên hiển thị</h3>
+    </div>
+
+    <div class="gw-two-col">
+      <div class="gw-box">
+        <p class="gw-box-title gw-inline"><svg class="gw-ico" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Mật khẩu truy cập</p>
+        <div class="gw-pw-mode">
+          <button type="button" class="gw-pw-mode-btn on" id="gwPwModeSharedBtn" onclick="gwSetPwMode(false)">1 mật khẩu chung</button>
+          <button type="button" class="gw-pw-mode-btn" id="gwPwModePerBtn" onclick="gwSetPwMode(true)">Mỗi người 1 mật khẩu</button>
+        </div>
+        <label class="gw-toggle-row">
+          <span>Bấm link là vào thẳng (kèm sẵn mật khẩu)</span>
+          <span class="gw-switch">
+            <input type="checkbox" id="gwShareIncludeToken" checked onchange="gwSaveShareOpts()">
+            <span class="gw-slider"></span>
+          </span>
+        </label>
+        <div id="gwSharedPwWrap">
+          <div class="gw-row">
+            <input class="gw-inp gw-mono" id="gwShareToken" placeholder="Nhập mật khẩu tùy chọn...">
+            <button class="btn btn-primary btn-sm" type="button" onclick="gwSaveShareToken()">Lưu</button>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="gwRotateToken()" title="Tạo mật khẩu ngẫu nhiên mới (link cũ sẽ hết hiệu lực)">Đổi mới</button>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="gwCopyValue('gwShareToken', 'Đã copy mật khẩu!')">Copy</button>
+          </div>
+        </div>
+        <div class="gw-per-pw-note" id="gwPerPwNote">
+          Đang bật chế độ <b>mỗi người 1 mật khẩu riêng</b>. Hãy nhập hoặc sửa mật khẩu của từng nhân sự ở cột <b>Mật khẩu</b> bên phải.
+          <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" type="button" onclick="gwRegenAllStaffPw()">Tạo ngẫu nhiên lại cho tất cả</button></div>
+        </div>
+        <p class="gw-help" id="gwTokenModeHint" style="margin-top:0">Bật: mở link là vào luôn. Tắt: link không kèm mật khẩu, khách tự gõ mật khẩu để vào.</p>
+      </div>
+
+      <div class="gw-box gw-staff-box" id="gwStaffBox">
+        <p class="gw-box-title gw-inline"><svg class="gw-ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Nhân sự, Phân quyền &amp; Zalo phụ trách</p>
+        <label class="gw-toggle-row">
+          <span>Cấp link riêng cố định tên &amp; quyền từng người</span>
+          <span class="gw-switch">
+            <input type="checkbox" id="gwSharePresetNameOn" onchange="gwSaveShareOpts()">
+            <span class="gw-slider"></span>
+          </span>
+        </label>
+        <div class="gw-staff-head">
+          <span>Tên</span>
+          <span>Quyền</span>
+          <span>Zalo</span>
+          <span data-pw-col>Mật khẩu</span>
+          <span></span>
+        </div>
+        <div class="gw-staff-rows" id="gwStaffRows"></div>
+        <div class="gw-staff-actions">
+          <button class="btn btn-ghost btn-sm gw-add-staff-btn" type="button" id="gwAddStaffBtn" onclick="gwAddStaffRow('')"><svg class="gw-ico gw-ico-sm" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Thêm người</button>
+          <span class="gw-team-lbl">Admin</span>
+          <input type="number" class="gw-team-num" id="gwGenAdminCount" min="0" max="20" value="0">
+          <span class="gw-team-lbl">Sale</span>
+          <input type="number" class="gw-team-num" id="gwGenSaleCount" min="0" max="100" value="0">
+          <button class="btn btn-ghost btn-sm" type="button" id="gwPresetTeamBtn" onclick="gwApplyTeamPreset()">Tạo nhanh</button>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="gwClearStaffRows()">Xóa hết</button>
+        </div>
+        <p class="gw-help" id="gwNameModeHint" style="margin-top:0">Chọn vai trò <b>Admin</b> để quan sát toàn bộ đội Sale đang làm gì và vào nhắn thay khi Sale rời vị trí. Chọn <b>Zalo phụ trách</b> để mỗi Sale chỉ thấy đúng Zalo của mình.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="gw-card gw-share-card">
+    <div class="gw-step-head">
+      <span class="gw-step-num">3</span>
+      <h3>Link gửi cho khách</h3>
+    </div>
+
+    <div class="gw-link-box" id="gwShareSingleWrap">
+      <input class="gw-link-text" id="gwShareLink" readonly value="...">
+      <button class="btn btn-primary" type="button" id="gwCopyLinkBtn" onclick="gwCopyShareLink()"><svg class="gw-ico" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy link gửi khách</button>
+      <button class="btn btn-ghost" type="button" onclick="gwPreviewLink()"><svg class="gw-ico" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Mở thử</button>
+    </div>
+    <div class="gw-staff-links" id="gwStaffLinksWrap" style="display:none"></div>
+    <p class="gw-help" id="gwShareLinkHint">Đang tạo link...</p>
+  </section>
+
+  <details class="gw-adv">
+    <summary class="gw-inline"><svg class="gw-ico" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Cài đặt thêm (chọn tài khoản Zalo, link riêng &amp; giới hạn IP LAN)</summary>
+    <div class="gw-adv-body">
+      <div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#0f172a">Tài khoản Zalo được share (bấm để chọn — tự lưu ngay)</div>
+        <div class="gw-acc-list" id="gwShareAccList">Đang tải...</div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#0f172a">Link Public riêng (tùy chọn — nếu tự chạy ngrok hoặc tên miền riêng)</div>
+        <div class="gw-row">
+          <input class="gw-inp gw-mono" id="gwPublicUrl" placeholder="Để trống = dùng link Public tự động bên trên" oninput="gwUpdateLinkPreview()">
+          <button class="btn btn-ghost btn-sm" type="button" onclick="gwSavePublicUrl()">Lưu URL</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#0f172a">Whitelist IP LAN (chỉ dùng khi tắt mật khẩu trong link hoặc chặn truy cập Internet)</div>
+        <div class="gw-row">
+          <input class="gw-inp gw-mono" id="gwLan" placeholder="127.0.0.1, ::1, 192.168., 10.">
+          <button class="btn btn-ghost btn-sm" type="button" onclick="gwSaveAdvanced()">Lưu IP</button>
+        </div>
+      </div>
+    </div>
+  </details>
+</div>
+
+<div class="gw-toast" id="gwToast"></div>
+
+<script>
+let _gwShare = null;
+let _gwMode = 'lan';
+let _gwFixCmd = 'netsh advfirewall firewall add rule name="Jimmy BOT CHAT 5000 LAN" dir=in action=allow protocol=TCP localport=5000';
+let _gwSaveTimer = null;
+let _gwTunnelPoll = null;
+let _gwLoadAllInitialized = false;
+
+function gwToast(msg){
+  const el = document.getElementById('gwToast');
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.classList.remove('show'), 2800);
+}
+
+function gwEsc(s){
+  return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function gwSetMode(mode){
+  _gwMode = (mode === 'public') ? 'public' : 'lan';
+  document.getElementById('gwModeLanBtn').classList.toggle('is-selected', _gwMode === 'lan');
+  document.getElementById('gwModePublicBtn').classList.toggle('is-selected', _gwMode === 'public');
+  document.getElementById('gwPanelLan').style.display = (_gwMode === 'lan') ? 'block' : 'none';
+  document.getElementById('gwPanelPublic').style.display = (_gwMode === 'public') ? 'block' : 'none';
+  gwUpdateLinkPreview();
+}
+
+function gwActiveBaseUrl(){
+  const d = _gwShare || {};
+  if(_gwMode === 'public'){
+    return (document.getElementById('gwPublicUrl')?.value || d.publicUrl || '').trim().replace(/\/+$/,'');
+  }
+  return (document.getElementById('gwShareUrl')?.value || d.lanUrl || '').trim().replace(/\/+$/,'');
+}
+
+function gwParsePresetNames(raw){
+  const parts = String(raw || '').split(/[,;\r\n]+/).map(s => s.trim()).filter(Boolean);
+  const out = [];
+  const seen = new Set();
+  for(const p of parts){
+    const low = p.toLowerCase();
+    if(seen.has(low)) continue;
+    seen.add(low);
+    out.push(p);
+  }
+  return out;
+}
+
+let _gwPerPw = false;
+
+function gwRandPw(len){
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  let out = '';
+  for(let i = 0; i < (len || 6); i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+function gwSyncPwModeUi(){
+  const bShared = document.getElementById('gwPwModeSharedBtn');
+  const bPer = document.getElementById('gwPwModePerBtn');
+  const sWrap = document.getElementById('gwSharedPwWrap');
+  const pNote = document.getElementById('gwPerPwNote');
+  const stBox = document.getElementById('gwStaffBox');
+  if(bShared) bShared.classList.toggle('on', !_gwPerPw);
+  if(bPer) bPer.classList.toggle('on', _gwPerPw);
+  if(sWrap) sWrap.style.display = _gwPerPw ? 'none' : '';
+  if(pNote) pNote.style.display = _gwPerPw ? 'block' : 'none';
+  if(stBox) stBox.classList.toggle('is-per-pw', _gwPerPw);
+}
+
+function gwSetPwMode(perPw){
+  _gwPerPw = !!perPw;
+  if(_gwPerPw){
+    const preEl = document.getElementById('gwSharePresetNameOn');
+    if(preEl && !preEl.checked) preEl.checked = true;
+    document.querySelectorAll('#gwStaffRows input[data-staff-pw]').forEach(inp => {
+      if(!inp.value.trim()) inp.value = gwRandPw(6);
+    });
+  }
+  gwSyncPwModeUi();
+  gwSaveShareOpts();
+}
+
+function gwRegenAllStaffPw(){
+  document.querySelectorAll('#gwStaffRows input[data-staff-pw]').forEach(inp => {
+    inp.value = gwRandPw(6);
+  });
+  gwSaveShareOpts();
+  gwToast('🔑 Đã tạo mật khẩu riêng mới cho tất cả nhân sự!');
+}
+
+function gwBuildShareLink(staffName){
+  const d = _gwShare || {};
+  const base = gwActiveBaseUrl();
+  if(!base || base.indexOf('http') !== 0) return '';
+  let tok = (d.tokenFull || document.getElementById('gwShareToken')?.value || '').trim();
+  if(_gwPerPw && staffName){
+    const prof = gwGetStaffProfiles().find(p => p.name.toLowerCase() === String(staffName).toLowerCase());
+    if(prof && prof.password) tok = prof.password;
+  }
+  const incTok = document.getElementById('gwShareIncludeToken')?.checked !== false;
+  const preOn = !!document.getElementById('gwSharePresetNameOn')?.checked;
+  const params = new URLSearchParams();
+  if(incTok && d.isLoopback !== false && tok && !tok.includes('***')) params.set('token', tok);
+  if(preOn && staffName){
+    const sig = (d.staffSignatures || {})[staffName] || '';
+    if(!sig) return '';
+    params.set('name', staffName);
+    params.set('nsig', sig);
+  }
+  const qs = params.toString();
+  return base + '/inbox' + (qs ? '?' + qs : '');
+}
+
+function gwGetAllAccountsList(){
+  return (_gwShare && Array.isArray(_gwShare.allAccounts)) ? _gwShare.allAccounts : [];
+}
+
+function gwAccountLabel(aid){
+  if(!aid) return '';
+  const hit = gwGetAllAccountsList().find(a => String(a.accountId || '') === String(aid));
+  return hit ? (hit.name || aid.slice(0, 8)) : String(aid).slice(0, 8);
+}
+
+function gwGetStaffProfiles(){
+  const rows = Array.from(document.querySelectorAll('#gwStaffRows .gw-staff-row'));
+  const out = [];
+  const seen = new Set();
+  for(const row of rows){
+    const rawName = (row.querySelector('input[data-staff-row]')?.value || '').trim();
+    const role = (row.querySelector('select[data-staff-role]')?.value || 'sale') === 'manager' ? 'manager' : 'sale';
+    const accId = (row.querySelector('select[data-staff-acc]')?.value || '').trim();
+    const password = (row.querySelector('input[data-staff-pw]')?.value || '').trim();
+    for(const part of gwParsePresetNames(rawName)){
+      const low = part.toLowerCase();
+      if(seen.has(low)) continue;
+      seen.add(low);
+      out.push({name: part, role, accountIds: accId ? [accId] : [], password});
+    }
+  }
+  return out;
+}
+
+function gwGetStaffNames(){
+  return gwGetStaffProfiles().map(p => p.name);
+}
+
+function gwReadRawRowItems(){
+  return Array.from(document.querySelectorAll('#gwStaffRows .gw-staff-row')).map(row => ({
+    name: row.querySelector('input[data-staff-row]')?.value || '',
+    role: row.querySelector('select[data-staff-role]')?.value || 'sale',
+    password: row.querySelector('input[data-staff-pw]')?.value || '',
+    accountIds: (() => {
+      const v = (row.querySelector('select[data-staff-acc]')?.value || '').trim();
+      return v ? [v] : [];
+    })()
+  }));
+}
+
+function gwRenderStaffRows(items){
+  const box = document.getElementById('gwStaffRows');
+  if(!box) return;
+  const rawList = (Array.isArray(items) && items.length) ? items : [{name:'', role:'sale', accountIds:[], password:''}];
+  const list = rawList.map(it => (typeof it === 'string')
+    ? {name: it, role: 'sale', accountIds: [], password: ''}
+    : {name: it.name || '', role: (it.role === 'manager' ? 'manager' : 'sale'), accountIds: Array.isArray(it.accountIds) ? it.accountIds : [], password: it.password || ''});
+  const preOn = !!document.getElementById('gwSharePresetNameOn')?.checked;
+  const accs = gwGetAllAccountsList();
+  box.innerHTML = list.map((p, i) => {
+    const isMgr = p.role === 'manager';
+    const selAcc = (p.accountIds && p.accountIds[0]) || (accs.length === 1 ? accs[0].accountId : '');
+    const accOpts = `<option value="">${isMgr ? 'Tất cả Zalo (Giám sát)' : 'Theo Zalo share chung'}</option>` +
+      accs.map(a => `<option value="${gwEsc(a.accountId)}" ${String(a.accountId)===String(selAcc)?'selected':''}>${gwEsc(a.name || a.accountId)}</option>`).join('');
+    return `
+      <div class="gw-staff-row">
+        <input class="gw-inp" data-staff-row value="${gwEsc(p.name)}" placeholder="Tên nhân sự ${i + 1}, vd: ${i === 0 ? 'Admin 1' : 'Sale ' + i}" ${preOn ? '' : 'disabled'} oninput="gwPresetTyping()" onkeydown="gwStaffRowKey(event, ${i})">
+        <select class="gw-staff-role" data-staff-role ${preOn ? '' : 'disabled'} onchange="gwStaffMetaChanged(this)">
+          <option value="sale" ${!isMgr ? 'selected' : ''}>Sale</option>
+          <option value="manager" ${isMgr ? 'selected' : ''}>Admin</option>
+        </select>
+        <select class="gw-staff-acc" data-staff-acc ${preOn ? '' : 'disabled'} onchange="gwSaveShareOpts()" title="Tài khoản Zalo phụ trách">
+          ${accOpts}
+        </select>
+        <input class="gw-inp gw-mono" data-staff-pw data-pw-col value="${gwEsc(p.password || '')}" placeholder="MK riêng" ${preOn ? '' : 'disabled'} oninput="gwPresetTyping()">
+        <button class="gw-staff-del" type="button" title="Xóa dòng này" ${preOn ? '' : 'disabled'} onclick="gwRemoveStaffRow(${i})">×</button>
+      </div>
+    `;
+  }).join('');
+  const addBtn = document.getElementById('gwAddStaffBtn');
+  if(addBtn) addBtn.disabled = !preOn;
+}
+
+function gwStaffMetaChanged(sel){
+  const row = sel?.closest('.gw-staff-row');
+  const accSel = row?.querySelector('select[data-staff-acc]');
+  if(accSel){
+    const isMgr = sel.value === 'manager';
+    const preOn = !!document.getElementById('gwSharePresetNameOn')?.checked;
+    accSel.disabled = !preOn;
+    if(accSel.options[0]) accSel.options[0].textContent = isMgr ? 'Tất cả Zalo (Giám sát)' : 'Theo Zalo share chung';
+  }
+  gwSaveShareOpts();
+}
+
+function gwSyncStaffRowsDisabled(){
+  const preOn = !!document.getElementById('gwSharePresetNameOn')?.checked;
+  document.querySelectorAll('#gwStaffRows .gw-staff-row').forEach(row => {
+    const inp = row.querySelector('input[data-staff-row]');
+    const roleSel = row.querySelector('select[data-staff-role]');
+    const accSel = row.querySelector('select[data-staff-acc]');
+    const pwInp = row.querySelector('input[data-staff-pw]');
+    const delBtn = row.querySelector('.gw-staff-del');
+    if(inp) inp.disabled = !preOn;
+    if(roleSel) roleSel.disabled = !preOn;
+    if(accSel) accSel.disabled = !preOn;
+    if(pwInp) pwInp.disabled = !preOn;
+    if(delBtn) delBtn.disabled = !preOn;
+  });
+  const addBtn = document.getElementById('gwAddStaffBtn');
+  if(addBtn) addBtn.disabled = !preOn;
+}
+
+function gwAddStaffRow(val){
+  const preOnEl = document.getElementById('gwSharePresetNameOn');
+  if(preOnEl && !preOnEl.checked){
+    preOnEl.checked = true;
+  }
+  const cur = gwReadRawRowItems();
+  cur.push({name: val || '', role: 'sale', accountIds: []});
+  gwRenderStaffRows(cur);
+  const inputs = document.querySelectorAll('#gwStaffRows input[data-staff-row]');
+  const last = inputs[inputs.length - 1];
+  if(last) last.focus();
+  gwUpdateLinkPreview();
+}
+
+function gwClearStaffRows(){
+  gwRenderStaffRows([{name: '', role: 'sale', accountIds: []}]);
+  const a = document.getElementById('gwGenAdminCount');
+  const s = document.getElementById('gwGenSaleCount');
+  if(a) a.value = '0';
+  if(s) s.value = '0';
+  gwSaveShareOpts();
+  gwToast('Đã xóa danh sách nhân sự.');
+}
+
+function gwApplyTeamPreset(){
+  const preOnEl = document.getElementById('gwSharePresetNameOn');
+  if(preOnEl) preOnEl.checked = true;
+  const nAdmin = Math.max(0, Math.min(20, parseInt(document.getElementById('gwGenAdminCount')?.value || '0', 10) || 0));
+  const nSale = Math.max(0, Math.min(100, parseInt(document.getElementById('gwGenSaleCount')?.value || '0', 10) || 0));
+  if(nAdmin + nSale <= 0){
+    gwToast('Hãy nhập số Admin hoặc Sale lớn hơn 0.');
+    return;
+  }
+  const accs = gwGetAllAccountsList();
+  const team = [];
+  for(let a = 1; a <= nAdmin; a++){
+    team.push({name: nAdmin === 1 ? 'Admin' : ('Admin ' + a), role: 'manager', accountIds: [], password: _gwPerPw ? gwRandPw(6) : ''});
+  }
+  for(let i = 1; i <= nSale; i++){
+    const acc = accs[i - 1];
+    team.push({
+      name: 'Sale ' + i,
+      role: 'sale',
+      accountIds: acc ? [acc.accountId] : [],
+      password: _gwPerPw ? gwRandPw(6) : ''
+    });
+  }
+  gwRenderStaffRows(team);
+  gwSaveShareOpts();
+  gwToast(`✅ Đã tạo ${nAdmin} Admin + ${nSale} Sale — bấm Copy link gửi từng người!`);
+}
+
+function gwRemoveStaffRow(idx){
+  const cur = gwReadRawRowItems();
+  cur.splice(idx, 1);
+  if(!cur.length) cur.push({name: '', role: 'sale', accountIds: []});
+  gwRenderStaffRows(cur);
+  gwSaveShareOpts();
+}
+
+function gwStaffRowKey(e, idx){
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    gwAddStaffRow('');
+  }
+}
+
+function gwCopyStaffLink(idx, btn){
+  const names = gwGetStaffNames();
+  const nm = names[idx] || '';
+  const link = gwBuildShareLink(nm);
+  if(!link){ gwToast('Đang tạo chữ ký link cho ' + nm + ', thử lại sau 1 giây.'); return; }
+  gwCopyText(link, 'Đã copy link riêng cho ' + nm + '!');
+  if(btn){
+    const old = btn.textContent;
+    btn.textContent = '✅ Đã copy';
+    clearTimeout(btn._t);
+    btn._t = setTimeout(()=>{ btn.textContent = old; }, 1600);
+  }
+}
+
+function gwPreviewStaffLink(idx){
+  const names = gwGetStaffNames();
+  const nm = names[idx] || '';
+  const link = gwBuildShareLink(nm);
+  if(!link){ gwToast('Đang tạo link cho ' + nm + '...'); return; }
+  window.open(link, '_blank', 'noopener');
+}
+
+function gwUpdateLinkPreview(){
+  const singleWrap = document.getElementById('gwShareSingleWrap');
+  const staffWrap = document.getElementById('gwStaffLinksWrap');
+  const linkEl = document.getElementById('gwShareLink');
+  const hint = document.getElementById('gwShareLinkHint');
+  const incTok = document.getElementById('gwShareIncludeToken')?.checked !== false;
+  const preOn = !!document.getElementById('gwSharePresetNameOn')?.checked;
+  gwSyncStaffRowsDisabled();
+  const names = gwGetStaffNames();
+
+  const base = gwActiveBaseUrl();
+  if(!base || base.indexOf('http') !== 0){
+    if(singleWrap) singleWrap.style.display = 'flex';
+    if(staffWrap){ staffWrap.style.display = 'none'; staffWrap.innerHTML = ''; }
+    if(linkEl) linkEl.value = _gwMode === 'public' ? '(Chưa có link Public — bấm "Tạo link Public" ở Bước 1)' : '(Chưa tìm thấy IP LAN)';
+    if(hint) hint.textContent = _gwMode === 'public'
+      ? 'Bấm nút "Tạo link Public" ở Bước 1 để tạo đường dẫn cho khách ở xa.'
+      : 'Kiểm tra lại kết nối WiFi / mạng LAN trên máy chủ.';
+    return;
+  }
+
+  const scope = (_gwMode === 'public') ? 'Khách ở xa' : 'Máy cùng WiFi';
+  const profiles = gwGetStaffProfiles();
+  if(preOn && profiles.length > 0){
+    if(singleWrap) singleWrap.style.display = 'none';
+    if(staffWrap){
+      staffWrap.style.display = 'flex';
+      staffWrap.innerHTML = profiles.map((p, i) => {
+        const nm = p.name;
+        const isMgr = p.role === 'manager';
+        const accLbl = (!isMgr && p.accountIds && p.accountIds[0]) ? gwAccountLabel(p.accountIds[0]) : '';
+        const roleTxt = isMgr ? 'Admin' : ('Sale' + (accLbl ? (' · ' + accLbl) : ''));
+        const pwChip = (_gwPerPw && p.password) ? `<span class="gw-role-chip" style="background:#fefce8;border-color:#fde047;color:#854d0e">MK: ${gwEsc(p.password)}</span>` : '';
+        const link = gwBuildShareLink(nm);
+        return `<div class="gw-staff-link-row">
+          <span class="gw-staff-badge ${isMgr ? 'is-mgr' : ''}">${gwEsc(nm)}</span>
+          <span class="gw-role-chip ${isMgr ? 'is-mgr' : ''}">${gwEsc(roleTxt)}</span>
+          ${pwChip}
+          <input class="gw-link-text" readonly value="${gwEsc(link || 'Đang tạo link cho ' + nm + '…')}">
+          <button class="btn btn-primary btn-sm" type="button" onclick="gwCopyStaffLink(${i}, this)">Copy link</button>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="gwPreviewStaffLink(${i})">Mở thử</button>
+        </div>`;
+      }).join('');
+    }
+    if(hint){
+      hint.textContent = incTok
+        ? `${scope}: mỗi người mở đúng link riêng của mình để vào thẳng Inbox dưới tên cố định đó (không đè tên nhau).`
+        : `${scope}: mỗi người mở đúng link riêng của mình rồi nhập Mật khẩu để vào dưới tên cố định đó.`;
+    }
+    return;
+  }
+
+  if(singleWrap) singleWrap.style.display = 'flex';
+  if(staffWrap){ staffWrap.style.display = 'none'; staffWrap.innerHTML = ''; }
+  const link = gwBuildShareLink('');
+  if(linkEl) linkEl.value = link;
+  if(hint){
+    if(preOn && !names.length){
+      hint.textContent = 'Nhập tên nhân viên ở Bước 2 (vd: Nam, Tùng) để tạo link riêng cho từng người.';
+    }else if(incTok){
+      hint.textContent = `${scope} bấm link rồi tự nhập tên nhân viên là chat ngay.`;
+    }else{
+      hint.textContent = `Link sạch không kèm mật khẩu — ${scope.toLowerCase()} tự nhập tên và Mật khẩu.`;
+    }
+  }
+}
+
+async function gwCopyText(text, okMsg){
+  if(!text) return;
+  try{
+    await navigator.clipboard.writeText(text);
+    gwToast(okMsg || 'Đã copy!');
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); gwToast(okMsg || 'Đã copy!'); }
+    catch(_){ gwToast('Copy thủ công: ' + text); }
+    document.body.removeChild(ta);
+  }
+}
+
+function gwCopyValue(id, okMsg){
+  const el = document.getElementById(id);
+  const val = el ? (el.value || el.textContent || '').trim() : '';
+  if(!val) return;
+  gwCopyText(val, okMsg);
+}
+
+function gwCopyShareLink(){
+  const link = gwBuildShareLink();
+  if(!link){
+    gwToast(_gwMode === 'public' ? 'Hãy bấm "Tạo link Public (1 click)" ở Bước 1 trước.' : 'Chưa có địa chỉ IP LAN.');
+    return;
+  }
+  gwCopyText(link, 'Đã copy link gửi khách!');
+  const btn = document.getElementById('gwCopyLinkBtn');
+  if(btn){
+    const old = btn.textContent;
+    btn.textContent = '✅ Đã copy link!';
+    clearTimeout(btn._t);
+    btn._t = setTimeout(()=>{ btn.textContent = old; }, 1800);
+  }
+}
+
+function gwPreviewLink(){
+  const link = gwBuildShareLink();
+  if(!link){ gwToast('Chưa có link để mở thử.'); return; }
+  window.open(link, '_blank', 'noopener');
+}
+
+async function gwPostConfig(payload, okMsg){
+  const r = await fetch('/api/gateway/config', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  });
+  const d = await r.json();
+  if(!d.success){
+    gwToast('❌ ' + (d.error || 'Lưu thất bại'));
+    return null;
+  }
+  if(okMsg) gwToast(okMsg);
+  return d;
+}
+
+async function gwSaveShareToken(){
+  const tok = (document.getElementById('gwShareToken')?.value || '').trim();
+  if(!tok){ gwToast('Mật khẩu không được để trống.'); return; }
+  const d = await gwPostConfig({internalToken: tok}, '✅ Đã lưu mật khẩu mới!');
+  if(d) await gwLoadAll();
+}
+
+async function gwRotateToken(){
+  if(!confirm('Tạo mật khẩu mới? Các link cũ có kèm mật khẩu trước đó sẽ không dùng được nữa.')) return;
+  const d = await gwPostConfig({rotateToken: true}, '🔑 Đã đổi mật khẩu mới!');
+  if(d) await gwLoadAll();
+}
+
+async function gwSaveShareOpts(){
+  gwUpdateLinkPreview();
+  const incTok = document.getElementById('gwShareIncludeToken')?.checked !== false;
+  const preOn = !!document.getElementById('gwSharePresetNameOn')?.checked;
+  const profiles = gwGetStaffProfiles();
+  const names = profiles.map(p => p.name);
+  const d = await gwPostConfig({
+    includeTokenInLink: incTok,
+    perStaffPassword: _gwPerPw,
+    presetStaffEnabled: preOn,
+    staffProfiles: profiles,
+    presetStaffNames: names,
+    presetStaffName: names.join(', ')
+  });
+  if(d && _gwShare){
+    if(d.staffSignatures) _gwShare.staffSignatures = d.staffSignatures;
+    if(Array.isArray(d.presetStaffNames)) _gwShare.presetStaffNames = d.presetStaffNames;
+    if(Array.isArray(d.staffProfiles)) _gwShare.staffProfiles = d.staffProfiles;
+    gwUpdateLinkPreview();
+  }
+}
+
+function gwPresetTyping(){
+  gwUpdateLinkPreview();
+  clearTimeout(_gwSaveTimer);
+  _gwSaveTimer = setTimeout(gwSaveShareOpts, 320);
+}
+
+async function gwSavePublicUrl(){
+  const pub = (document.getElementById('gwPublicUrl')?.value || '').trim().replace(/\/+$/,'');
+  const d = await gwPostConfig({publicUrl: pub}, pub ? '✅ Đã lưu Public URL!' : '✅ Đã xóa Public URL');
+  if(d) await gwLoadAll();
+}
+
+async function gwSaveAllowWan(){
+  const allowWan = !!document.getElementById('gwAllowWan')?.checked;
+  await gwPostConfig({allowWan}, allowWan ? '✅ Đã bật truy cập từ xa' : 'Đã tắt truy cập từ xa (chỉ LAN)');
+}
+
+async function gwShareIpChange(){
+  const ip = document.getElementById('gwShareIpSelect')?.value || '';
+  if(!ip) return;
+  const d = await gwPostConfig({preferredLanIp: ip}, '✅ Đã đổi IP LAN sang ' + ip);
+  if(d) await gwLoadAll();
+}
+
+async function gwSaveAdvanced(){
+  const sharedIds = Array.from(document.querySelectorAll('[data-share-acc]:checked')).map(x=>x.getAttribute('data-share-acc'));
+  const allowLan = document.getElementById('gwLan')?.value || '';
+  const d = await gwPostConfig({sharedAccountIds: sharedIds, allowLan}, '✅ Đã lưu cài đặt');
+  if(d) await gwLoadAll();
+}
+
+function gwRenderTunnel(t){
+  const titleEl = document.getElementById('gwTunnelTitle');
+  const descEl = document.getElementById('gwTunnelDesc');
+  const startBtn = document.getElementById('gwTunnelStartBtn');
+  const refreshBtn = document.getElementById('gwTunnelRefreshBtn');
+  const stopBtn = document.getElementById('gwTunnelStopBtn');
+  if(!titleEl || !descEl || !startBtn || !stopBtn) return;
+
+  const st = (t && t.status) || 'stopped';
+  if(st === 'running' && t.url){
+    titleEl.textContent = 'Link Public đang hoạt động';
+    descEl.innerHTML = 'Link ngẫu nhiên: <code class="gw-mono">' + gwEsc(t.url) + '</code>';
+    startBtn.style.display = 'none';
+    if(refreshBtn) refreshBtn.style.display = 'inline-flex';
+    stopBtn.style.display = 'inline-flex';
+    const pubInp = document.getElementById('gwPublicUrl');
+    if(pubInp && pubInp.value !== t.url){
+      pubInp.value = t.url;
+      if(_gwShare) _gwShare.publicUrl = t.url;
+      gwUpdateLinkPreview();
+    }
+    gwStopTunnelPoll();
+  }else if(st === 'downloading'){
+    const pct = Number(t.progressPct || 0);
+    titleEl.textContent = 'Đang tải công cụ Public (chỉ 1 lần đầu)…';
+    descEl.textContent = pct > 0 ? ('Tiến độ: ' + pct + '% — vui lòng đợi vài giây.') : 'Đang kết nối tải Cloudflare Tunnel…';
+    startBtn.disabled = true;
+    startBtn.textContent = 'Đang tải…';
+    startBtn.style.display = 'inline-flex';
+    if(refreshBtn) refreshBtn.style.display = 'none';
+    stopBtn.style.display = 'inline-flex';
+    gwStartTunnelPoll();
+  }else if(st === 'starting'){
+    titleEl.textContent = 'Đang tạo link Public ngẫu nhiên…';
+    descEl.textContent = t.error || 'Đang kết nối để lấy đường dẫn HTTPS…';
+    startBtn.disabled = true;
+    startBtn.textContent = 'Đang tạo link…';
+    startBtn.style.display = 'inline-flex';
+    if(refreshBtn) refreshBtn.style.display = 'none';
+    stopBtn.style.display = 'inline-flex';
+    gwStartTunnelPoll();
+  }else if(st === 'error'){
+    titleEl.textContent = 'Chưa bật được link Public';
+    descEl.textContent = t.error || 'Thử bấm lại để tạo link mới.';
+    startBtn.disabled = false;
+    startBtn.textContent = 'Thử bật lại';
+    startBtn.style.display = 'inline-flex';
+    if(refreshBtn) refreshBtn.style.display = 'none';
+    stopBtn.style.display = 'none';
+    gwStopTunnelPoll();
+  }else{
+    titleEl.textContent = 'Link Public tự động (HTTPS miễn phí)';
+    descEl.textContent = 'Bấm nút "Tạo link Public" bên cạnh để tạo đường dẫn ngẫu nhiên cho khách ở xa.';
+    startBtn.disabled = false;
+    startBtn.textContent = 'Tạo link Public';
+    startBtn.style.display = 'inline-flex';
+    if(refreshBtn) refreshBtn.style.display = 'none';
+    stopBtn.style.display = 'none';
+    gwStopTunnelPoll();
+  }
+}
+
+function gwStartTunnelPoll(){
+  if(_gwTunnelPoll) return;
+  _gwTunnelPoll = setInterval(async ()=>{
+    try{
+      const r = await fetch('/api/gateway/tunnel/status');
+      const d = await r.json();
+      if(d.success){
+        if(_gwShare) _gwShare.tunnel = d;
+        const wasRunning = d.status === 'running' && d.url;
+        gwRenderTunnel(d);
+        if(wasRunning) gwLoadAll();
+      }
+    }catch(_){}
+  }, 1000);
+}
+
+function gwStopTunnelPoll(){
+  if(_gwTunnelPoll){
+    clearInterval(_gwTunnelPoll);
+    _gwTunnelPoll = null;
+  }
+}
+
+async function gwStartTunnel(force){
+  try{
+    const r = await fetch('/api/gateway/tunnel/start', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({force: !!force})
+    });
+    const d = await r.json();
+    if(!d.success){ gwToast('❌ ' + (d.error || 'Không bật được Public')); return; }
+    if(_gwShare) _gwShare.tunnel = d;
+    gwRenderTunnel(d);
+    gwStartTunnelPoll();
+  }catch(e){
+    gwToast('❌ Lỗi: ' + e.message);
+  }
+}
+
+async function gwStopTunnel(){
+  try{
+    const r = await fetch('/api/gateway/tunnel/stop', {method: 'POST'});
+    const d = await r.json();
+    gwStopTunnelPoll();
+    gwRenderTunnel(d);
+    const pubInp = document.getElementById('gwPublicUrl');
+    if(pubInp && pubInp.value.includes('trycloudflare.com')) pubInp.value = '';
+    gwToast('Đã tắt link Public');
+    await gwLoadAll();
+  }catch(e){
+    gwToast('❌ Lỗi: ' + e.message);
+  }
+}
+
+async function gwLoadDoctor(){
+  const pill = document.getElementById('gwFwPill');
+  const alertBox = document.getElementById('gwFwAlert');
+  try{
+    const r = await fetch('/api/gateway/doctor');
+    const d = await r.json();
+    if(d.fixCommand) _gwFixCmd = d.fixCommand;
+    if(d.firewallOpen === true){
+      pill.className = 'gw-pill ok';
+      pill.textContent = 'Cổng LAN 5000 đã mở';
+      alertBox.classList.remove('show');
+    }else if(d.firewallOpen === false){
+      pill.className = 'gw-pill warn';
+      pill.textContent = 'Cổng LAN 5000 đang bị chặn';
+      alertBox.classList.add('show');
+    }else{
+      pill.className = 'gw-pill';
+      pill.textContent = 'Kiểm tra thủ công cổng 5000';
+      alertBox.classList.remove('show');
+    }
+  }catch(e){
+    pill.className = 'gw-pill';
+    pill.textContent = 'Không kiểm tra được mạng';
+  }
+}
+
+async function gwOpenFirewall(){
+  const pill = document.getElementById('gwFwPill');
+  pill.textContent = '⏳ Đang mở cổng LAN…';
+  try{
+    const r = await fetch('/api/gateway/firewall/open', {method: 'POST'});
+    const d = await r.json();
+    if(d.success){
+      gwToast('✅ Đã mở cổng LAN 5000!');
+      await gwLoadDoctor();
+    }else{
+      gwToast(d.error || 'Chưa mở được — hãy copy lệnh PowerShell');
+      await gwLoadDoctor();
+    }
+  }catch(e){
+    gwToast('Lỗi: ' + e.message);
+  }
+}
+
+function gwCopyFixCmd(){
+  gwCopyText(_gwFixCmd, 'Đã copy lệnh! Mở PowerShell (Run as administrator) → dán → Enter.');
+}
+
+async function gwLoadAll(){
+  try{
+    const [shareR, accR] = await Promise.all([
+      fetch('/api/gateway/share-info'),
+      fetch('/api/accounts')
+    ]);
+    const d = await shareR.json();
+    const accData = await accR.json().catch(()=>({accounts:[]}));
+    if(!d.success){ gwToast('Lỗi tải cấu hình'); return; }
+    _gwShare = d;
+
+    const lanUrl = d.lanUrl || (d.mainIp ? ('http://' + d.mainIp + ':5000') : '');
+    document.getElementById('gwShareUrl').value = lanUrl || '';
+    const ipSel = document.getElementById('gwShareIpSelect');
+    if(ipSel){
+      const ips = d.lanIps || [];
+      if(ips.length > 1){
+        ipSel.innerHTML = ips.map(ip => `<option value="${gwEsc(ip)}">${gwEsc(ip)}</option>`).join('');
+        ipSel.value = d.mainIp || ips[0];
+        ipSel.style.display = 'inline-block';
+      }else{
+        ipSel.style.display = 'none';
+      }
+    }
+
+    document.getElementById('gwPublicUrl').value = d.publicUrl || '';
+    document.getElementById('gwAllowWan').checked = d.allowWan !== false;
+    document.getElementById('gwShareToken').value = d.tokenFull || d.internalToken || '';
+    document.getElementById('gwShareIncludeToken').checked = d.includeTokenInLink !== false;
+    _gwPerPw = !!d.perStaffPassword;
+    gwSyncPwModeUi();
+    document.getElementById('gwSharePresetNameOn').checked = !!d.presetStaffEnabled;
+    const initProfiles = (Array.isArray(d.staffProfiles) && d.staffProfiles.length)
+      ? d.staffProfiles
+      : (Array.isArray(d.presetStaffNames) && d.presetStaffNames.length
+          ? d.presetStaffNames
+          : gwParsePresetNames(d.presetStaffName || ''));
+    gwRenderStaffRows(initProfiles);
+
+    if(d.tunnel) gwRenderTunnel(d.tunnel);
+
+    if(!_gwLoadAllInitialized){
+      _gwLoadAllInitialized = true;
+      gwSetMode((d.publicUrl || (d.tunnel && d.tunnel.running)) ? 'public' : 'lan');
+    }else{
+      gwUpdateLinkPreview();
+    }
+
+    const accPill = document.getElementById('gwAccPill');
+    const readyAccs = (d.sharedAccounts || []).filter(a => a.ready);
+    if(readyAccs.length){
+      accPill.className = 'gw-pill ok';
+      accPill.textContent = 'Đang share: ' + readyAccs.map(a=>a.name).join(', ');
+    }else{
+      accPill.className = 'gw-pill warn';
+      accPill.textContent = 'Chưa có tài khoản sẵn sàng';
+    }
+
+    const box = document.getElementById('gwShareAccList');
+    const sharedSet = new Set(d.sharedAccountIds || []);
+    const allAccs = accData.accounts || [];
+    if(!allAccs.length){
+      box.textContent = 'Chưa có tài khoản nào — hãy thêm ở trang Tài khoản.';
+    }else{
+      box.innerHTML = allAccs.map(a => {
+        const aid = a.accountId || '';
+        const nm = a.name || aid.slice(0,8);
+        const ok = (a.cookies || '').includes('zpw_sek');
+        const ck = (sharedSet.has(aid) || (allAccs.length === 1 && sharedSet.size === 0)) ? 'checked' : '';
+        return `<label class="gw-acc-chip"><input type="checkbox" data-share-acc="${gwEsc(aid)}" ${ck} onchange="gwSaveAdvanced()" style="width:auto"><span>${ok?'🟢':'🟡'} ${gwEsc(nm)}</span></label>`;
+      }).join('');
+    }
+
+    const cfgR = await fetch('/api/gateway/config').then(r=>r.json()).catch(()=>({}));
+    if(cfgR.allowLan) document.getElementById('gwLan').value = (cfgR.allowLan || []).join(', ');
+  }catch(e){
+    gwToast('Lỗi tải dữ liệu: ' + e.message);
+  }
+}
+
+document.getElementById('gwShareToken')?.addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); gwSaveShareToken(); }
+});
+document.getElementById('gwPublicUrl')?.addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); gwSavePublicUrl(); }
+});
+
+gwRenderStaffRows(['']);
+gwLoadAll();
+gwLoadDoctor();
+</script>
+</body>
+</html>

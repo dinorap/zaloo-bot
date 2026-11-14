@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý nhóm - Nexus</title>
+    <title>Quản lý nhóm - Jimmy BOT CHAT</title>
     <link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=nexus-light-v3-20260728">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/overlay.css') }}?v=groups-profile-sync-1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=nexus-light-v3-20260728">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=groups-gap32">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/overlay.css') }}?v=groups-gap32">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=groups-gap32">
 </head>
 <body>
 
@@ -83,6 +83,10 @@
                                 <span class="group-detail-link-wrap">
                                     <span class="group-detail-link-label">Link nhóm:</span>
                                     <button id="groupsDetailId" class="group-detail-link" type="button" title="Bấm để sao chép link nhóm" onclick="groupsCopyCurrentGroupLink()">Đang lấy link nhóm...</button>
+                                </span>
+                                <span class="group-detail-link-wrap">
+                                    <span class="group-detail-link-label">Group ID:</span>
+                                    <button id="groupsDetailGid" class="group-detail-link" type="button" title="Bấm để sao chép Group ID (dùng cho TARGET_GROUP_IDS)" onclick="groupsCopyCurrentGroupId()">...</button>
                                 </span>
                             </div>
                         </div>

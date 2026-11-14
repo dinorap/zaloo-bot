@@ -19,6 +19,7 @@ from core.zalo.enc import zalo_encode
 from core.zalo.dec import zalo_decode
 from core.zalo.zalo_headers import zalo_mobile_headers
 from features.messaging.board_pin import _normalize_thumb
+from core.zalo import http as zalo_http
 
 GET_LAST_MSGS_URL = "https://tt-convers-wpa.chat.zalo.me/api/preloadconvers/get-last-msgs"
 
@@ -176,7 +177,7 @@ def fetch_last_messages(thread_map: dict, cookies: str, zpw_enk: str, imei: str,
     encoded = zalo_encode(plaintext, zpw_enk, url_encode=False)
 
     try:
-        response = requests.get(
+        response = zalo_http.get(
             GET_LAST_MSGS_URL,
             params={"zpw_ver": zpw_ver, "zpw_type": "30", "params": encoded},
             headers=zalo_mobile_headers(),

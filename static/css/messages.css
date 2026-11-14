@@ -9,10 +9,10 @@
     vertical-align: middle;
     margin-left: 8px;
     padding: 3px 10px;
-    border: 1px solid rgba(255, 208, 112, .35);
+    border: 1px solid #d9a53c;
     border-radius: 999px;
-    background: rgba(255, 208, 112, .12);
-    color: #ffd070;
+    background: #ffe4ad;
+    color: #7a4a00;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: .04em;
@@ -124,7 +124,7 @@
 .tracking-switch input:checked ~ .switch-track { background: #16a34a; }
 .tracking-switch input:checked ~ .switch-track::after { transform: translateX(14px); }
 .tracking-switch input:disabled ~ .switch-track { opacity: .55; }
-.switch-text { font-size: 12.5px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+.switch-text { font-size: 12.5px; font-weight: 700; color: #33475c; white-space: nowrap; }
 .tracking-switch input:checked ~ .switch-text { color: #16a34a; }
 
 /* ── Banner giải thích chế độ theo dõi ── */
@@ -316,6 +316,10 @@
     font-size: 11px;
     font-weight: 800;
     flex-shrink: 0;
+    /* Số 3-4 chữ số (100, 999, 1000) phải hiện đầy đủ, không bị bóp/overflow */
+    white-space: nowrap;
+    max-width: none;
+    box-sizing: border-box;
 }
 
 /* ── Cột 2: danh sách tin nhắn (cuộn riêng) ── */

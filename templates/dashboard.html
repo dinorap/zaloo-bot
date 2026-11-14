@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tổng quan - Nexus</title>
+    <title>Tổng quan - Jimmy BOT CHAT</title>
     <link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
     <script src="{{ url_for('static', filename='js/theme.js') }}?v=dashboard-scroll-fix-v17"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=dashboard-scroll-fix-v17">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v=dashboard-scroll-fix-v17">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=dashboard-gap32">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v=dashboard-gap32">
 </head>
 <body class="dashboard-page">
 {% set active_page = 'dashboard' %}
 {% include '_nav.html' %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v=dashboard-scroll-fix-v17">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v=dashboard-gap32">
 
 <main class="page dash-shell">
     <section class="dash-hero card">
@@ -21,10 +21,17 @@
             <h1>Góc nhìn nhanh cho toàn bộ dữ liệu vận hành</h1>
             <p>Theo dõi tài khoản, chiến dịch, lịch chạy và mục cần xử lý trong một màn hình gọn, sáng và dễ đọc.</p>
             <div class="dash-hero-actions">
+                {% if 'marketing_campaign' in allowed_features %}
                 <a class="btn btn-primary" href="{{ url_for('marketing_group_page') }}">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                     Tạo chiến dịch mới
                 </a>
+                {% elif 'group_copy' in allowed_features %}
+                <a class="btn btn-primary" href="{{ url_for('marketing_group_copy_page') }}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+                    Tạo sao chép nhóm
+                </a>
+                {% endif %}
                 <button class="btn btn-secondary" type="button" id="dashboardRefreshBtn" onclick="NexusDashboard.reload()" title="Làm mới" aria-label="Làm mới">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6.2 6.2L4 8M5.5 15A7 7 0 0 0 17.8 17.8L20 16"/></svg>
                     Làm mới
@@ -94,22 +101,36 @@
                     </div>
                 </div>
                 <div class="dash-quick-grid">
+                    {% if 'accounts' in allowed_features %}
                     <a class="dash-quick-item" href="{{ url_for('accounts_page') }}">
                         <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M19 5v6M16 8h6"/></svg>
                         <div><strong>Thêm tài khoản</strong><span>Kết nối và mở tài khoản Zalo</span></div>
                     </a>
+                    {% endif %}
+                    {% if 'groups' in allowed_features %}
                     <a class="dash-quick-item" href="{{ url_for('groups_page') }}">
                         <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
                         <div><strong>Đồng bộ nhóm</strong><span>Kiểm tra và lấy danh sách nhóm</span></div>
                     </a>
+                    {% endif %}
+                    {% if 'members' in allowed_features %}
                     <a class="dash-quick-item" href="{{ url_for('members_page') }}">
                         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/><path d="M11 8v6M8 11h6"/></svg>
                         <div><strong>Lấy thành viên</strong><span>Thu thập và xem dữ liệu thành viên</span></div>
                     </a>
-                    <a class="dash-quick-item" href="{{ url_for('messages_page') }}">
+                    {% endif %}
+                    {% if 'inbox' in allowed_features %}
+                    <a class="dash-quick-item" href="{{ url_for('inbox_page') }}">
                         <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></svg>
                         <div><strong>Mở hộp thư</strong><span>Theo dõi hội thoại và phản hồi</span></div>
                     </a>
+                    {% endif %}
+                    {% if 'group_copy' in allowed_features %}
+                    <a class="dash-quick-item" href="{{ url_for('marketing_group_copy_page') }}">
+                        <svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+                        <div><strong>Sao chép nhóm</strong><span>Sao chép thành viên sang nhóm mới</span></div>
+                    </a>
+                    {% endif %}
                 </div>
             </section>
         </aside>
@@ -118,7 +139,11 @@
     <div id="dashboardStatus" class="dash-status" aria-live="polite"></div>
 </main>
 
+<script>
+window.LICENSE_TIER = {{ license_tier }};
+window.ALLOWED_FEATURES = {{ allowed_features | list | tojson }};
+</script>
 <script src="{{ url_for('static', filename='js/app.js') }}?v=dashboard-scroll-fix-v17"></script>
-<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=dashboard-scroll-fix-v17"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=dashboard-license-v1"></script>
 </body>
 </html>

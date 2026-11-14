@@ -10,12 +10,12 @@ from __future__ import annotations
 import json
 from typing import Any
 
-import requests
 
 from core.zalo.dec import zalo_decode
 from core.zalo.enc import zalo_encode
 from core.zalo.zalo_config import get_zpw_ver
 from core.zalo.zalo_headers import zalo_mobile_headers
+from core.zalo import http as zalo_http
 
 FRIEND_REMOVE_URL = "https://tt-friend-wpa.chat.zalo.me/api/friend/remove"
 
@@ -70,7 +70,7 @@ def remove_friend(
     plaintext = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     encoded_params = zalo_encode(plaintext, zpw_enk, url_encode=True)
 
-    response = requests.post(
+    response = zalo_http.post(
         FRIEND_REMOVE_URL,
         params={"zpw_ver": get_zpw_ver(zpw_ver), "zpw_type": "30"},
         data=f"params={encoded_params}",

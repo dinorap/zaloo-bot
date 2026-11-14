@@ -9,7 +9,7 @@ import threading
 import time
 from urllib.parse import parse_qs, urlparse
 
-import requests
+from core.zalo import http as zalo_http
 
 try:
     import websocket
@@ -134,7 +134,7 @@ def _lookup_timezone_for_host(host: str):
 
     tz = None
     try:
-        resp = requests.get(
+        resp = zalo_http.get(
             f"http://ip-api.com/json/{host}",
             params={"fields": "status,timezone"},
             timeout=5,
@@ -403,12 +403,20 @@ def _extract_cookie_from_meta(meta: dict) -> str:
     return _header_get(meta.get("headers") or {}, "cookie")
 
 
+_COOKIE_CACHE: dict[str, str] = {}
+
+
 def _save_cookies(account_id: str, cookie_str: str, source: str = ""):
     """Lưu cookie theo kiểu hợp nhất, không để request cookie rút gọn ghi đè
-    làm mất zpw_sek đã bắt được trước đó."""
+    làm mất zpw_sek đã bắt được trước đó. Chỉ ghi đĩa & log khi cookie thực sự thay đổi."""
     incoming = str(cookie_str or "").strip()
     if not _valid_zalo_cookie(incoming):
         return False
+
+    cached = _COOKIE_CACHE.get(account_id)
+    if cached is not None:
+        if incoming == cached or _merge_cookie_strings(cached, incoming) == cached:
+            return True
 
     account = get_account(account_id) or {}
     current = str(account.get("cookies") or "").strip()
@@ -416,11 +424,14 @@ def _save_cookies(account_id: str, cookie_str: str, source: str = ""):
     if not _valid_zalo_cookie(merged):
         return False
 
-    if merged != current:
-        fields = {"cookies": merged}
-        if _has_session_cookie(merged):
-            fields["sessionCapturedAt"] = int(time.time() * 1000)
-        update_account(account_id, **fields)
+    _COOKIE_CACHE[account_id] = merged
+    if merged == current:
+        return True
+
+    fields = {"cookies": merged}
+    if _has_session_cookie(merged):
+        fields["sessionCapturedAt"] = int(time.time() * 1000)
+    update_account(account_id, **fields)
 
     auth_state = "zpw_sek=OK" if _has_session_cookie(merged) else "zpw_sek=MISSING"
     _log(
@@ -433,7 +444,7 @@ def _save_cookies(account_id: str, cookie_str: str, source: str = ""):
 def _get_zalo_ws_url(debug_port: int, deadline: float):
     while time.time() < deadline:
         try:
-            resp = requests.get(
+            resp = zalo_http.get(
                 f"http://127.0.0.1:{debug_port}/json",
                 timeout=3,
             )
@@ -460,7 +471,7 @@ def _get_browser_ws_url(debug_port: int) -> str:
     Chrome không trả đủ zpw_sek nếu chỉ gọi từ page target.
     """
     try:
-        response = requests.get(
+        response = zalo_http.get(
             f"http://127.0.0.1:{int(debug_port)}/json/version",
             timeout=3,
         )
@@ -975,6 +986,7 @@ def refresh_account_cookies(account_id: str, debug_port: int, timeout: float = 8
 
 
 def _monitor_worker(account_id: str, debug_port: int, stop_event: threading.Event):
+    _COOKIE_CACHE.pop(account_id, None)
     deadline = time.time() + MONITOR_TIMEOUT_SEC
     # Bắt cookie từ browser context trước, không xóa session đang lưu.
     _refresh_browser_storage_cookies(account_id, debug_port, timeout=3.5)
@@ -984,13 +996,14 @@ def _monitor_worker(account_id: str, debug_port: int, stop_event: threading.Even
     cookie_merge = {}
     reload_done = [False]
     last_cookie_poll = [0.0]
+    last_complete_check = [0.0]
 
     def next_id():
         msg_id[0] += 1
         return msg_id[0]
 
     while time.time() < deadline and not stop_event.is_set():
-        if account_capture_complete(account_id):
+        if account_capture_complete(account_id, verbose=True):
             _log(f"Đủ dữ liệu, dừng monitor account={account_id}")
             break
 
@@ -1021,15 +1034,26 @@ def _monitor_worker(account_id: str, debug_port: int, stop_event: threading.Even
                 _request_meta[account_id] = {}
 
             while time.time() < deadline and not stop_event.is_set():
-                if account_capture_complete(account_id):
-                    break
-
                 now = time.time()
+                if now - last_complete_check[0] >= 2.0:
+                    last_complete_check[0] = now
+                    if account_capture_complete(account_id, verbose=True):
+                        break
+
                 if now - last_cookie_poll[0] >= COOKIE_POLL_INTERVAL_SEC:
-                    _request_network_cookies(
-                        ws, account_id, next_id, pending_cookie_cmds, cookie_merge
-                    )
+                    cached_ck = _COOKIE_CACHE.get(account_id, "")
+                    if not _has_session_cookie(cached_ck):
+                        _request_network_cookies(
+                            ws, account_id, next_id, pending_cookie_cmds, cookie_merge
+                        )
                     last_cookie_poll[0] = now
+
+                meta_map = _request_meta.get(account_id)
+                if meta_map and len(meta_map) > 500:
+                    # Giữ tối đa 200 request gần nhất để tránh phình bộ nhớ
+                    keys = list(meta_map.keys())[:-200]
+                    for k in keys:
+                        meta_map.pop(k, None)
 
                 try:
                     raw = ws.recv()
@@ -1169,6 +1193,7 @@ def _monitor_worker(account_id: str, debug_port: int, stop_event: threading.Even
                                 _log(f"🔄 Reload page account={account_id}")
                         elif url.startswith(USERINFO_URL_PREFIX):
                             _process_userinfo(account_id, headers, body)
+                            last_complete_check[0] = 0.0
                         elif url.startswith(SERVER_INFO_URL_PREFIX):
                             _process_server_info(account_id, url, headers, body)
                             _request_network_cookies(
@@ -1176,12 +1201,14 @@ def _monitor_worker(account_id: str, debug_port: int, stop_event: threading.Even
                             )
                             last_cookie_poll[0] = time.time()
                             _try_process_pending_group_list(account_id)
+                            last_complete_check[0] = 0.0
                         elif url.startswith(GROUP_LIST_API_PREFIX):
                             # Get current zpwEnk to decrypt group list
                             acc = get_account(account_id)
                             if acc:
                                 zpw_enk = acc.get("zpwEnk", "")
                                 _process_group_list(account_id, headers, body, zpw_enk)
+                            last_complete_check[0] = 0.0
 
         except Exception as e:
             _log(f"Monitor lỗi account={account_id}: {e}")
@@ -1197,6 +1224,7 @@ def _monitor_worker(account_id: str, debug_port: int, stop_event: threading.Even
 
     _monitors.pop(account_id, None)
     _request_meta.pop(account_id, None)
+    _COOKIE_CACHE.pop(account_id, None)
     
     # Không auto tạo/lấy imei từ hệ thống.
     # IMEI phải được bắt từ request:

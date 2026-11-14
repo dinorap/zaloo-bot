@@ -227,7 +227,7 @@ def resolve_group_input_to_group_id(raw: str, zpw_enk: str, cookies: str,
 
 def fetch_group_member_uids(group_id: str, zpw_enk: str, cookies: str,
                             callback: LogFunc = None, zpw_ver: str = None,
-                            imei: str = "") -> Tuple[dict, List[str]]:
+                            imei: str = "") -> Tuple[dict, List[str], Dict[str, dict]]:
     group_id = str(group_id or "").strip()
     if not group_id:
         raise ValueError("Thiếu groupId")
@@ -249,6 +249,9 @@ def fetch_group_member_uids(group_id: str, zpw_enk: str, cookies: str,
     if not uids:
         err = "Không lấy được danh sách thành viên từ groupId này. Nhóm có thể không tồn tại hoặc account không có quyền truy cập."
         raise ValueError(err)
+    member_map = result.get("member_map") or {}
+    if not isinstance(member_map, dict):
+        member_map = {}
     raw_group_info = result.get("raw_group_info", {}) or {}
     total_member = int(raw_group_info.get("totalMember", 0))
     log_message(callback, f"Lấy được {len(uids)}/{total_member or '?'} UID từ groupId.", "success")
@@ -266,7 +269,7 @@ def fetch_group_member_uids(group_id: str, zpw_enk: str, cookies: str,
         "grid_setting": raw_group_info.get("setting", {}),
         "grid_hasMoreMember": raw_group_info.get("hasMoreMember", 0),
     }
-    return group_info, uids
+    return group_info, uids, member_map
 
 
 def fetch_group_members_by_input(raw: str, zpw_enk: str, cookies: str,
@@ -285,9 +288,13 @@ def fetch_group_members_by_input(raw: str, zpw_enk: str, cookies: str,
     leave_result = None
 
     try:
-        members_group_info, uid_list = fetch_group_member_uids(
+        members_group_info, uid_list, members_member_map = fetch_group_member_uids(
             group_id, zpw_enk, cookies, callback=callback, zpw_ver=zpw_ver, imei=imei
         )
+        if isinstance(members_member_map, dict):
+            for _uid, _info in members_member_map.items():
+                if _uid and isinstance(_info, dict) and _uid not in member_map:
+                    member_map[_uid] = _info
     except ValueError as exc:
         err = str(exc)
         if not auto_join_when_not_member or not is_not_member_error(err):
@@ -312,9 +319,13 @@ def fetch_group_members_by_input(raw: str, zpw_enk: str, cookies: str,
 
         fetch_failed = False
         try:
-            members_group_info, uid_list = fetch_group_member_uids(
+            members_group_info, uid_list, members_member_map = fetch_group_member_uids(
                 group_id, zpw_enk, cookies, callback=callback, zpw_ver=zpw_ver, imei=imei
             )
+            if isinstance(members_member_map, dict):
+                for _uid, _info in members_member_map.items():
+                    if _uid and isinstance(_info, dict) and _uid not in member_map:
+                        member_map[_uid] = _info
         except Exception:
             fetch_failed = True
             raise

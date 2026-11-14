@@ -297,12 +297,16 @@ async function loadMemberAccounts() {
                         setStoredMemberAccountId(accountId);
                         clearMemberScanDataForAccountChange();
                         bindDropdown(acc);
+                        loadMemberFetchGroups(accountId);
                     }
                 });
             });
         }
 
         bindDropdown(selectedAcc);
+        if (selectedAcc) {
+            loadMemberFetchGroups(getAccountId(selectedAcc));
+        }
 
         if (!container._memberDropdownOutsideClickBound) {
             document.addEventListener("click", function(e) {
@@ -458,12 +462,215 @@ function setMemberOverlayOpen(backdrop, open) {
     document.body.classList.toggle('nexus-modal-open', !!open);
 }
 
+// ─── Lấy thành viên: Quản lý nhóm có sẵn & chuyển đổi chế độ ───────────────
+window._mfGroups = [];
+window._mfSelectedGroup = null;
+window._mfMode = 'existing';
+
+function setMemberFetchMode(mode) {
+    window._mfMode = mode;
+    var existBtn = document.getElementById('mfModeExistingBtn');
+    var linkBtn = document.getElementById('mfModeLinkBtn');
+    var existWrap = document.getElementById('mfExistingWrap');
+    var linkWrap = document.getElementById('mfLinkWrap');
+    var linkInput = document.getElementById('groupLinkInput');
+
+    if (existBtn) existBtn.classList.toggle('active', mode === 'existing');
+    if (linkBtn) linkBtn.classList.toggle('active', mode === 'link');
+    if (existWrap) existWrap.style.display = mode === 'existing' ? 'block' : 'none';
+    if (linkWrap) linkWrap.style.display = mode === 'link' ? 'block' : 'none';
+
+    if (mode === 'link') {
+        if (linkInput) {
+            linkInput.focus();
+            if (window._mfSelectedGroup) {
+                var g = window._mfSelectedGroup;
+                linkInput.value = g.groupLink || g.group_link || g.inviteLink || g.groupId || g.id || '';
+            }
+        }
+    } else {
+        if (window._mfSelectedGroup) {
+            var g = window._mfSelectedGroup;
+            if (linkInput) linkInput.value = g.groupLink || g.group_link || g.inviteLink || g.groupId || g.id || '';
+        }
+    }
+}
+
+function onMfGroupLinkInput() {
+    var linkInput = document.getElementById('groupLinkInput');
+    var notice = document.getElementById('mfSelectedGroupNotice');
+    var nameEl = document.getElementById('mfSelectedGroupName');
+    var idEl = document.getElementById('mfSelectedGroupId');
+    var val = (linkInput ? linkInput.value : '').trim();
+    if (val) {
+        if (notice) notice.style.display = 'flex';
+        if (nameEl) nameEl.textContent = val.indexOf('zalo.me') !== -1 ? 'Link nhóm Zalo' : ('ID nhóm: ' + val);
+        if (idEl) idEl.textContent = val;
+    } else {
+        if (notice) notice.style.display = 'none';
+    }
+}
+
+async function loadMemberFetchGroups(accountId, forceRefresh) {
+    var list = document.getElementById('mfGroupList');
+    var countEl = document.getElementById('mfGroupCount');
+    if (!list) return;
+
+    accountId = accountId || (document.getElementById('memberAccountId') ? document.getElementById('memberAccountId').value : '');
+    if (!accountId) {
+        list.innerHTML = '<div class="mf-empty">Vui lòng chọn tài khoản thực hiện ở trên.</div>';
+        if (countEl) countEl.textContent = '0';
+        return;
+    }
+
+    list.innerHTML = '<div class="mf-loading"><span class="spinner" style="width:14px;height:14px;border-width:2px;"></span> Đang tải danh sách nhóm của tài khoản...</div>';
+
+    try {
+        var url = '/api/groups/personal?accountId=' + encodeURIComponent(accountId);
+        if (forceRefresh) url += '&refresh=1';
+        var r = await fetch(url);
+        var result = await r.json();
+
+        if (!result.success) {
+            list.innerHTML = '<div class="mf-empty mf-error">' + escapeHtmlMembers(result.error || 'Không tải được danh sách nhóm.') + '</div>';
+            if (countEl) countEl.textContent = '0';
+            return;
+        }
+
+        window._mfGroups = result.groups || [];
+        if (countEl) countEl.textContent = window._mfGroups.length;
+
+        var currentVal = (document.getElementById('groupLinkInput') ? document.getElementById('groupLinkInput').value : '').trim();
+        if (currentVal && !window._mfSelectedGroup) {
+            window._mfSelectedGroup = window._mfGroups.find(function(g) {
+                var gid = String(g.groupId || g.id || '').trim();
+                var glink = String(g.groupLink || g.group_link || g.inviteLink || '').trim();
+                return (gid && currentVal.indexOf(gid) !== -1) || (glink && currentVal === glink);
+            }) || null;
+        }
+
+        renderMemberFetchGroups();
+    } catch (e) {
+        list.innerHTML = '<div class="mf-empty mf-error">Lỗi kết nối: ' + escapeHtmlMembers(e.message || String(e)) + '</div>';
+        if (countEl) countEl.textContent = '0';
+    }
+}
+
+function filterMemberFetchGroups() {
+    renderMemberFetchGroups();
+}
+
+function renderMemberFetchGroups() {
+    var list = document.getElementById('mfGroupList');
+    if (!list) return;
+
+    var searchInput = document.getElementById('mfGroupSearch');
+    var query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+
+    var filtered = (window._mfGroups || []).filter(function(g) {
+        if (!query) return true;
+        var name = (g.name || g.groupName || '').toLowerCase();
+        var gid = String(g.groupId || g.id || '').toLowerCase();
+        var link = String(g.groupLink || g.group_link || g.inviteLink || '').toLowerCase();
+        return name.indexOf(query) !== -1 || gid.indexOf(query) !== -1 || link.indexOf(query) !== -1;
+    });
+
+    if (!filtered.length) {
+        list.innerHTML = window._mfGroups.length
+            ? '<div class="mf-empty">Không tìm thấy nhóm phù hợp với từ khóa tìm kiếm.</div>'
+            : '<div class="mf-empty">Tài khoản này chưa tham gia nhóm nào.</div>';
+        return;
+    }
+
+    var selectedGid = window._mfSelectedGroup ? String(window._mfSelectedGroup.groupId || window._mfSelectedGroup.id || '').trim() : '';
+    var linkVal = (document.getElementById('groupLinkInput') ? document.getElementById('groupLinkInput').value : '').trim();
+
+    list.innerHTML = filtered.map(function(g) {
+        var gid = String(g.groupId || g.id || '').trim();
+        var name = g.name || g.groupName || 'Nhóm không tên';
+        var avatar = normalizeAvatarUrlMembers(g.avatar || g.groupAvatar || '');
+        var memberCount = Number(g.memberCount || g.totalMember || 0);
+        var link = String(g.groupLink || g.group_link || g.inviteLink || '').trim();
+
+        var isSelected = (selectedGid && gid === selectedGid) || (linkVal && (linkVal === link || linkVal === gid));
+        var initials = (name || 'G').split(' ').map(function(w){return w[0];}).slice(0, 2).join('').toUpperCase();
+
+        var avtHtml = avatar
+            ? '<img src="' + escapeHtmlMembers(avatar) + '" class="mf-gp-avt" onerror="this.outerHTML=\'<span class=\\\'mf-gp-initials\\\'>' + escapeHtmlMembers(initials) + '</span>\'">'
+            : '<span class="mf-gp-initials">' + escapeHtmlMembers(initials) + '</span>';
+
+        var tagHtml = link
+            ? '<span class="mf-gp-link-tag has-link">Có link</span>'
+            : '<span class="mf-gp-link-tag no-link">ID: ' + escapeHtmlMembers(gid.slice(-6)) + '</span>';
+
+        return '<div class="mf-gp-item' + (isSelected ? ' selected' : '') + '" onclick="selectMemberFetchGroup(\'' + escapeHtmlMembers(gid) + '\')">' +
+            avtHtml +
+            '<div class="mf-gp-info">' +
+                '<strong class="mf-gp-name" title="' + escapeHtmlMembers(name) + '">' + escapeHtmlMembers(name) + '</strong>' +
+                '<div class="mf-gp-meta">' +
+                    '<span class="mf-gp-members">' + (memberCount ? memberCount + ' thành viên' : 'Nhóm Zalo') + '</span>' +
+                    tagHtml +
+                '</div>' +
+            '</div>' +
+            '<div class="mf-gp-action">' +
+                (isSelected ? '<span class="mf-gp-check">✓ Đã chọn</span>' : '<span class="mf-gp-btn">Chọn nhóm</span>') +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function selectMemberFetchGroup(groupId) {
+    var group = (window._mfGroups || []).find(function(g) {
+        return String(g.groupId || g.id || '').trim() === String(groupId).trim();
+    });
+    if (!group) return;
+
+    window._mfSelectedGroup = group;
+    var groupLink = group.groupLink || group.group_link || group.inviteLink || group.groupId || group.id || '';
+    var input = document.getElementById('groupLinkInput');
+    if (input) input.value = groupLink;
+
+    var notice = document.getElementById('mfSelectedGroupNotice');
+    var nameEl = document.getElementById('mfSelectedGroupName');
+    var idEl = document.getElementById('mfSelectedGroupId');
+    if (notice) notice.style.display = 'flex';
+    if (nameEl) nameEl.textContent = group.name || group.groupName || 'Nhóm đã chọn';
+    if (idEl) idEl.textContent = 'ID: ' + (group.groupId || group.id || '') + (group.groupLink ? ' · ' + group.groupLink : '');
+
+    renderMemberFetchGroups();
+}
+
+async function refreshMemberFetchGroups() {
+    var btn = document.getElementById('mfRefreshGroupsBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:2px;"></span> Đang tải...';
+    }
+    var accountId = document.getElementById('memberAccountId') ? document.getElementById('memberAccountId').value : '';
+    try {
+        await loadMemberFetchGroups(accountId, true);
+        showMemberToast('Đã làm mới danh sách nhóm!', 'success');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg><span>Làm mới</span>';
+        }
+    }
+}
+
 function openMemberFetchOverlay() {
     var backdrop = document.getElementById('memberFetchBackdrop');
     setMemberOverlayOpen(backdrop, true);
+    var accountId = document.getElementById('memberAccountId') ? document.getElementById('memberAccountId').value : '';
+    loadMemberFetchGroups(accountId);
     window.setTimeout(function() {
-        var input = document.getElementById('groupLinkInput');
-        if (input) input.focus();
+        if (window._mfMode === 'link') {
+            var input = document.getElementById('groupLinkInput');
+            if (input) input.focus();
+        } else {
+            var search = document.getElementById('mfGroupSearch');
+            if (search) search.focus();
+        }
     }, 40);
 }
 
@@ -493,9 +700,11 @@ async function runFetch() {
     }
 
     if (!groupLink) {
-        setStatus('Vui lòng nhập Link nhóm Zalo!', 'error');
+        setStatus('Vui lòng chọn nhóm có sẵn hoặc nhập link nhóm!', 'error');
         return;
     }
+
+    closeMemberFetchOverlay();
 
     var btn = document.getElementById('runBtn');
     btn.disabled = true;
@@ -889,14 +1098,38 @@ function renderResults(members) {
         var phoneNumber = member.phoneNumber || member.phone || member.mobile || '-';
         var statusText = member.status || member.accountStatus || '-';
 
-        var friendStatus = isFr === 1 ? 'Đã kết bạn' : 'Chưa';
-        var friendColor = isFr === 1 ? 'var(--green)' : 'var(--orange)';
-        var friendBgColor = isFr === 1 ? 'rgba(34, 197, 94, 0.1)' : 'rgba(251, 146, 60, 0.1)';
+        var isSelf = (member.isSelf === true);
+        if (!isSelf) {
+            var memberAccInput = document.getElementById('memberAccountId');
+            var currAccId = memberAccInput ? memberAccInput.value.trim() : '';
+            var currAcc = (window.accounts || []).find(function(a) { return (a.accountId || a.id) === currAccId; });
+            var ownUid = String((currAcc && (currAcc.userId || currAcc.uid)) || '').trim();
+            if (ownUid && String(userId).trim() === ownUid) isSelf = true;
+        }
+
+        // 8. huy hiệu trạng thái kết bạn hiện đại, rõ ràng, không bị méo/chữ đè
+        var friendHtml = '';
+        if (isSelf) {
+            friendHtml = '<span class="mf-friend-badge is-self" title="Tài khoản Zalo của bạn">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+                'Bạn (Tôi)</span>';
+        } else if (isFr === 1 || isFr === true || member.isFriend === true) {
+            friendHtml = '<span class="mf-friend-badge is-friend" title="Đã là bạn bè trên Zalo">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' +
+                'Đã kết bạn</span>';
+        } else {
+            friendHtml = '<span class="mf-friend-badge not-friend" title="Chưa kết bạn với tài khoản này">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+                'Chưa kết bạn</span>';
+        }
 
         html += '<tr data-member-id="' + escapeHtmlMembers(userId) + '" style="cursor:pointer">';
 
         // 1. checkbox
-        html += '<td class="member-select-col" style="text-align:center"><input type="checkbox" class="member-checkbox" data-user-id="' + escapeHtmlMembers(userId) + '" style="cursor:pointer"></td>';
+        var checkboxHtml = isSelf
+            ? '<span title="Tài khoản của bạn" style="font-size:12px;color:var(--text-secondary);display:inline-block;width:14px;text-align:center;">-</span>'
+            : '<input type="checkbox" class="member-checkbox" data-user-id="' + escapeHtmlMembers(userId) + '" style="cursor:pointer">';
+        html += '<td class="member-select-col" style="text-align:center">' + checkboxHtml + '</td>';
 
         // 2. avatar
         html += '<td class="member-avatar-col">';
@@ -908,7 +1141,10 @@ function renderResults(members) {
         html += '</td>';
 
         // 3. tên - ẩn ID kỹ thuật khỏi bảng chính, vẫn giữ trong popup chi tiết.
-        html += '<td class="member-name-col"><div class="member-name-cell" title="Bấm Xem để mở chi tiết"><span class="member-name-text">' + escapeHtmlMembers(name) + '</span></div></td>';
+        var displayNameText = isSelf
+            ? escapeHtmlMembers(name) + ' <span class="muted" style="font-size:11px;font-weight:normal;">(Bạn)</span>'
+            : escapeHtmlMembers(name);
+        html += '<td class="member-name-col"><div class="member-name-cell" title="Bấm Xem để mở chi tiết"><span class="member-name-text">' + displayNameText + '</span></div></td>';
 
         // 4. vai trò: Trưởng nhóm (creatorId) / Phó nhóm (adminIds) / Thành viên.
         html += '<td class="member-role-col">' + buildMemberRoleCell(member) + '</td>';
@@ -930,7 +1166,7 @@ function renderResults(members) {
         html += '</td>';
 
         // 8. kết bạn
-        html += '<td class="member-friend-col"><span class="status-badge" style="color:' + friendColor + ';background-color:' + friendBgColor + ';font-weight:500">' + escapeHtmlMembers(friendStatus) + '</span></td>';
+        html += '<td class="member-friend-col">' + friendHtml + '</td>';
 
         // 9. xem
         html += '<td class="member-view-col"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); showMemberProfile(\'' + escapeHtmlMembers(userId) + '\')" style="cursor:pointer">Xem</button></td>';
@@ -1170,8 +1406,9 @@ function populateProfileModal(profile) {
         var fieldsHtml = '';
         
         // Xác định trạng thái kết bạn từ isFr
-        var isFriendStatus = 'Chưa kết bạn';
-        if (profile.isFr === 1 || profile.isFr === true) {
+        var isSelf = (profile.isSelf === true);
+        var isFriendStatus = isSelf ? 'Chính mình (Tài khoản hiện tại)' : 'Chưa kết bạn';
+        if (!isSelf && (profile.isFr === 1 || profile.isFr === true || profile.isFriend === true)) {
             isFriendStatus = 'Đã kết bạn';
         }
         

@@ -1,11 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html data-theme="light" lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chính sách sử dụng - Nexus</title>
+    <title>Chính sách sử dụng - Jimmy BOT CHAT</title>
     <link id="favico" rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ico/app.ico') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-masterise.css') }}?v=nexus-masterise-v10-20260728">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jimmy-bot-chat.css') }}?v=jimmy-orange-v5">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/jimmy-contrast-fix.css') }}?v=jimmy-contrast-fix-20261113">
     <style>
         *, *::before, *::after { box-sizing: border-box; }
         html, body { width: 100%; height: 100%; overflow: hidden; }
@@ -154,13 +156,13 @@
             .policy-document{min-height:620px !important;}
         }
     </style>
-    <link id="nexusThemeV14" rel="stylesheet" href="{{ url_for('static', filename='css/nexus-theme-v14-blacktext.css') }}?v=nexus-theme-v14-blacktext-20260728">
+    <link id="nexusThemeV14" rel="stylesheet" href="{{ url_for('static', filename='css/nexus-theme-v14-blacktext.css') }}?v=nexus-theme-v14-blacktext-20261111d">
 </head>
 <body class="policy-masterise">
-<div id="nexusSplash" class="nexus-splash" aria-label="Đang mở Nexus">
+<div id="nexusSplash" class="nexus-splash" aria-label="Đang mở Jimmy BOT CHAT">
     <div class="splash-brand">
         <img class="splash-logo" src="{{ url_for('static', filename='img/app-logo.svg') }}" alt="">
-        <div class="splash-word">Nexus</div>
+        <div class="splash-word">Jimmy BOT CHAT</div>
         <div class="splash-line"></div>
         <div class="splash-caption">Trung tâm vận hành thông minh</div>
     </div>
@@ -170,8 +172,8 @@
     <main class="policy-shell">
         <aside class="policy-story">
             <div class="policy-brand">
-                <img src="{{ url_for('static', filename='img/app-logo.svg') }}" alt="Nexus">
-                <div><strong>Nexus</strong><span>Quản lý nhóm &amp; chiến dịch marketing</span></div>
+                <img src="{{ url_for('static', filename='img/app-logo.svg') }}" alt="Jimmy BOT CHAT">
+                <div><strong>Jimmy BOT CHAT</strong><span>Quản lý nhóm &amp; chiến dịch marketing</span></div>
             </div>
             <div class="policy-story-copy">
                 <span class="policy-eyebrow">Nguyên tắc sử dụng</span>
@@ -207,7 +209,7 @@
             <footer class="policy-actions">
                 <label class="policy-confirm">
                     <input id="policyAgree" type="checkbox" {% if accepted %}checked{% endif %}>
-                    <span>Tôi đã đọc, hiểu và đồng ý với chính sách; tôi xác nhận chỉ sử dụng Nexus cho hoạt động hợp pháp, đúng quyền được phép.</span>
+                    <span>Tôi đã đọc, hiểu và đồng ý với chính sách; tôi xác nhận chỉ sử dụng Jimmy BOT CHAT cho hoạt động hợp pháp, đúng quyền được phép.</span>
                 </label>
                 <div class="policy-action-row">
                     <div id="policyStatus" class="policy-status">{% if accepted %}Đã xác nhận chính sách trong phiên này.{% else %}Tích ô xác nhận để tiếp tục.{% endif %}</div>
@@ -243,7 +245,7 @@
             var response = await fetch('/api/policy/accept', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({confirmed:true}) });
             var data = await response.json();
             if (!response.ok || !data.success) throw new Error(data.error || 'Không lưu được xác nhận chính sách.');
-            status.className = 'policy-status success'; status.textContent = 'Đã xác nhận. Đang mở phần giới thiệu Nexus...';
+            status.className = 'policy-status success'; status.textContent = 'Đã xác nhận. Đang mở phần giới thiệu Jimmy BOT CHAT...';
             window.setTimeout(function () { window.location.href = data.nextUrl || '/guide?welcome=1'; }, 450);
         } catch (error) {
             status.className = 'policy-status error'; status.textContent = error.message || String(error);

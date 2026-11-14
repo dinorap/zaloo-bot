@@ -1,0 +1,1921 @@
+/* ==========================================================================
+   Jimmy BOT CHAT — Hệ màu cam-vàng
+   Load sau mọi theme cũ (nexus-*.css) nên ghi đè được toàn bộ màu xanh.
+   Bảng màu:
+     cam chủ đạo   #ff7542   (accent, hành động chính)
+     cam đậm       #e8451f   (hover, active)
+     vàng kim       #f5b301   (badge, nhấn nháy, tiêu đề phụ)
+     nền kem       #fff8f1   (nền trang)
+     nền ấm       #fef1e3   (nền vùng nhấn)
+     chữ nâu đen   #2b1a10   (nền sáng → chữ tối, tương phản cao)
+
+   Lưu ý kỹ thuật: các theme cũ (nexus-masterise, nexus-ux, nexus-theme-v15)
+   dùng `!important` với selector rất khác nhau. Ở đây mọi rule đều dùng
+   `html body ...` + tên class gốc để specificity luôn cao hơn, đồng thời phần
+   lớn màu được đổi trực tiếp qua biến CSS ở khối 0.
+   ========================================================================== */
+
+/* ==========================================================================
+   0. GHI ĐÈ BIẾN CỦA CÁC THEME CŨ
+   nexus-masterise / nexus-ux / nexus-data-light / nexus-theme-v15 đặt màu
+   qua biến, nên đổi biến là đổi được mọi nơi — nhanh và ổn định hơn rule.
+   ========================================================================== */
+:root,
+html,
+html[data-theme="light"],
+html[data-theme="dark"] {
+    /* --- nexus-theme-v15: bộ biến v13 --- */
+    --nx13-page: #fff8f1;
+    --nx13-page-2: #fef1e3;
+    --nx13-sidebar: #fffdfa;
+    --nx13-panel: #fffdfa;
+    --nx13-panel-soft: #fff4e9;
+    --nx13-item: #fff2e6;
+    --nx13-item-hover: #ffe4d1;
+    --nx13-selected: #ffdfc8;
+    --nx13-selected-2: #ffd3b5;
+    --nx13-border: #f0d9c4;
+    --nx13-border-strong: #dfb894;
+    --nx13-text: #2b1a10;
+    --nx13-text-2: #5b4133;
+    --nx13-muted: #7a6455;
+    --nx13-blue: #ff7542;
+    --nx13-blue-hover: #e8451f;
+    --nx13-blue-text: #c93a18;
+    --nx13-blue-soft: #ffe6d6;
+    --nx13-green-soft: #e2f5e8;
+    --nx13-green-text: #1f6b45;
+    --nx13-red-soft: #fde7e2;
+    --nx13-red-text: #a83220;
+    --nx13-yellow-soft: #fdf1d5;
+    --nx13-yellow-text: #8a6200;
+    --nx13-shadow: 0 10px 28px rgba(120, 62, 20, .10);
+
+    /* --- nexus-theme-v15: bộ biến v14 --- */
+    --nx14-black: #2b1a10;
+    --nx14-text: #2b1a10;
+    --nx14-text-2: #5b4133;
+    --nx14-muted: #7a6455;
+    --nx14-white: #ffffff;
+    --nx14-page: #fff8f1;
+    --nx14-soft: #fff4e9;
+    --nx14-soft-2: #fef1e3;
+    --nx14-border: #f0d9c4;
+    --nx14-blue: #ff7542;
+    --nx14-blue-hover: #e8451f;
+    --nx14-blue-active: #c93a18;
+
+    /* --- nexus-theme-v15: biến v15 --- */
+    --nx15-hover-blue: #e8451f;
+    --nx15-hover-blue-strong: #c93a18;
+    --nx15-loader-surface: rgba(255, 244, 233, .86);
+
+    /* --- nexus-masterise: bộ biến nx --- */
+    --nx-bg: #fff8f1;
+    --nx-bg-deep: #fef1e3;
+    --nx-surface: #fffdfa;
+    --nx-surface-2: #fff4e9;
+    --nx-surface-3: #fff2e6;
+    --nx-line: #f0d9c4;
+    --nx-line-strong: #dfb894;
+    --nx-ink: #2b1a10;
+    --nx-ink-2: #5b4133;
+    --nx-muted: #7a6455;
+    --nx-brand: #ff7542;
+    --nx-brand-2: #e8451f;
+    --nx-accent: #f5b301;
+    --nx-success: #2f9e63;
+    --nx-danger: #c2413c;
+    --nx-warning: #b47c07;
+    --nx-shadow: 0 10px 28px rgba(120, 62, 20, .10);
+
+    /* --- nexus-ux: bộ biến ux --- */
+    --ux-sidebar-width: 240px;
+    --ux-bg: #fff8f1;
+    --ux-bg-soft: #fff4e9;
+    --ux-surface: rgba(255, 253, 250, .98);
+    --ux-surface-solid: #fffdfa;
+    --ux-surface-soft: #fffaf5;
+    --ux-surface-hover: #ffe4d1;
+    --ux-border: #f0d9c4;
+    --ux-border-strong: #dfb894;
+    --ux-text: #2b1a10;
+    --ux-text-secondary: #5b4133;
+    --ux-muted: #7a6455;
+    --ux-primary: #ff7542;
+    --ux-primary-hover: #e8451f;
+    --ux-primary-soft: #ffe6d6;
+    --ux-primary-border: #f6c9a8;
+    --ux-success: #1f6b45;
+    --ux-success-soft: #e2f5e8;
+    --ux-warning: #8a6200;
+    --ux-warning-soft: #fdf1d5;
+    --ux-danger: #a83220;
+    --ux-danger-soft: #fde7e2;
+    --ux-focus: 0 0 0 3px rgba(255, 117, 66, .18);
+
+    /* --- biến tổng (style.css / nexus-data-light) --- */
+    --bg: #fff8f1;
+    --bg-primary: #fff8f1;
+    --bg-secondary: #fef1e3;
+    --bg-hover: #ffe4d1;
+    --surface: #fffdfa;
+    --surface2: #fff4e9;
+    --surface-2: #fff4e9;
+    --surface3: #fff2e6;
+    --card: #fffdfa;
+    --card-hover: #fffaf5;
+    --border: #f0d9c4;
+    --border-color: #f0d9c4;
+    --border-soft: #f7e7d7;
+    --input-bg: #fffdfa;
+    --accent: #ff7542;
+    --primary: #ff7542;
+    --accent-hover: #e8451f;
+    --accent-blue: #ff7542;
+    --accent-2: #e8451f;
+    --accent-3: #f5b301;
+    --accent-red: #a83220;
+    --text: #2b1a10;
+    --text-primary: #2b1a10;
+    --text-secondary: #5b4133;
+    --text-muted: #7a6455;
+    --green: #1f6b45;
+    --yellow: #8a6200;
+    --orange: #c93a18;
+    --red: #a83220;
+
+    /* ---- Accent dùng trong theme Jimmy ---- */
+    --jimmy-orange: #ff7542;
+    --jimmy-orange-dark: #e8451f;
+    --jimmy-orange-deep: #c93a18;
+    --jimmy-gold: #f5b301;
+    --jimmy-gold-deep: #8a6200;
+    --jimmy-gold-soft: #fff3d4;
+    --jimmy-page: #fff8f1;
+    --jimmy-page-2: #fef1e3;
+    --jimmy-panel: #fffdfa;
+    --jimmy-panel-soft: #fff4e9;
+    --jimmy-item: #fff2e6;
+    --jimmy-item-hover: #ffe4d1;
+    --jimmy-selected: #ffdfc8;
+    --jimmy-border: #f0d9c4;
+    --jimmy-border-strong: #dfb894;
+    --jimmy-text: #2b1a10;
+    --jimmy-text-2: #5b4133;
+    --jimmy-muted: #7a6455;
+    --jimmy-green-soft: #e2f5e8;
+    --jimmy-green-text: #1f6b45;
+    --jimmy-red-soft: #fde7e2;
+    --jimmy-red-text: #a83220;
+    --jimmy-yellow-soft: #fdf1d5;
+    --jimmy-yellow-text: #8a6200;
+    --jimmy-shadow: 0 10px 28px rgba(120, 62, 20, .10);
+    --jimmy-shadow-accent: 0 8px 20px rgba(255, 117, 66, .28);
+}
+
+/* ==========================================================================
+   1. NỀN TRANG + CHỮ
+   ========================================================================== */
+html,
+html body,
+html body[data-theme="light"],
+html body[data-theme="dark"] {
+    color: var(--jimmy-text) !important;
+    background: linear-gradient(140deg, var(--jimmy-page), var(--jimmy-page-2)) fixed !important;
+}
+
+html body h1,
+html body h2,
+html body h3,
+html body h4,
+html body h5,
+html body h6,
+html body strong,
+html body b,
+html body .title,
+html body .card-title,
+html body .page-title,
+html body .section-title,
+html body .account-card-name,
+html body .gc-job-title,
+html body .schedmon-topbar-title,
+html body .members-data-heading,
+html body .groups-page-title {
+    color: var(--jimmy-text) !important;
+    font-weight: 800 !important;
+}
+
+html body p,
+html body small,
+html body label,
+html body .muted,
+html body .subtitle,
+html body .description,
+html body .helper-text,
+html body .hint {
+    color: var(--jimmy-text-2) !important;
+    font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   2. SIDEBAR
+   ========================================================================== */
+html body .app-sidebar.header,
+html body .header.app-sidebar {
+    color: var(--jimmy-text) !important;
+    background: #fffdfa !important;
+    border-right: 1px solid var(--jimmy-border) !important;
+    box-shadow: 2px 0 12px rgba(120, 62, 20, .04) !important;
+}
+
+html body .app-sidebar .header-content,
+html body .header.app-sidebar .header-content {
+    border-bottom: 1px solid #f7e7d7 !important;
+}
+
+html body .app-sidebar .brand-logo,
+html body .header.app-sidebar .brand-logo,
+html body .app-sidebar .header-content .brand .brand-logo {
+    background: linear-gradient(135deg, #ffb03a 0%, #ff7542 55%, #e8451f 100%) !important;
+    background-image: linear-gradient(135deg, #ffb03a 0%, #ff7542 55%, #e8451f 100%) !important;
+    border-color: transparent !important;
+    box-shadow: 0 3px 10px rgba(255, 117, 66, .30) !important;
+}
+
+html body .app-sidebar .brand-copy h1,
+html body .header.app-sidebar .brand-copy h1,
+html body .app-sidebar .header-content .brand h1,
+html body .header.app-sidebar .header-content .brand h1 {
+    color: var(--jimmy-text) !important;
+    font-weight: 800 !important;
+}
+
+html body .app-sidebar .brand-subtitle,
+html body .header.app-sidebar .brand-subtitle {
+    color: var(--jimmy-muted) !important;
+}
+
+html body .app-sidebar .nav-section-label,
+html body .header.app-sidebar .nav-section-label {
+    color: #b08a6d !important;
+    font-weight: 800 !important;
+}
+
+html body .app-sidebar .header-nav>a,
+html body .header.app-sidebar .header-nav>a,
+html body .app-sidebar .header-nav > a,
+html body .header.app-sidebar .header-nav > a,
+html body .sidebar-mini-link,
+html body .sidebar-policy-link {
+    color: var(--jimmy-text) !important;
+    background: transparent !important;
+    background-image: none !important;
+    border-color: transparent !important;
+}
+
+html body .app-sidebar .header-nav>a .nav-icon,
+html body .header.app-sidebar .header-nav>a .nav-icon,
+html body .app-sidebar .header-nav > a .nav-icon,
+html body .header.app-sidebar .header-nav > a .nav-icon,
+html body .sidebar-mini-link>span,
+html body .sidebar-policy-link>span {
+    color: var(--jimmy-orange-dark) !important;
+    background: var(--jimmy-panel-soft) !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border) !important;
+}
+
+html body .app-sidebar .header-nav>a .nav-icon svg,
+html body .header.app-sidebar .header-nav>a .nav-icon svg,
+html body .app-sidebar .header-nav > a .nav-icon svg,
+html body .header.app-sidebar .header-nav > a .nav-icon svg,
+html body .sidebar-mini-link svg,
+html body .sidebar-policy-link svg {
+    color: var(--jimmy-orange-dark) !important;
+    stroke: var(--jimmy-orange-dark) !important;
+}
+
+html body .app-sidebar .header-nav>a .nav-text,
+html body .header.app-sidebar .header-nav>a .nav-text,
+html body .app-sidebar .header-nav > a .nav-text,
+html body .header.app-sidebar .header-nav > a .nav-text,
+html body .app-sidebar .header-nav>a .nav-copy strong,
+html body .header.app-sidebar .header-nav>a .nav-copy strong {
+    color: var(--jimmy-text) !important;
+    font-weight: 600 !important;
+}
+
+html body .app-sidebar .header-nav>a .nav-copy small,
+html body .header.app-sidebar .header-nav>a .nav-copy small {
+    color: var(--jimmy-muted) !important;
+}
+
+html body .app-sidebar .header-nav>a:hover,
+html body .header.app-sidebar .header-nav>a:hover,
+html body .app-sidebar .header-nav > a:hover,
+html body .header.app-sidebar .header-nav > a:hover,
+html body .sidebar-mini-link:hover,
+html body .sidebar-policy-link:hover {
+    color: var(--jimmy-text) !important;
+    background: var(--jimmy-item-hover) !important;
+    background-image: none !important;
+    border-color: transparent !important;
+}
+
+html body .app-sidebar .header-nav>a:hover .nav-icon,
+html body .header.app-sidebar .header-nav>a:hover .nav-icon,
+html body .app-sidebar .header-nav > a:hover .nav-icon,
+html body .header.app-sidebar .header-nav > a:hover .nav-icon,
+html body .sidebar-mini-link:hover>span,
+html body .sidebar-policy-link:hover>span {
+    color: var(--jimmy-orange-dark) !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border-strong) !important;
+}
+
+html body .app-sidebar .header-nav>a:hover .nav-icon svg,
+html body .header.app-sidebar .header-nav>a:hover .nav-icon svg,
+html body .app-sidebar .header-nav > a:hover .nav-icon svg,
+html body .header.app-sidebar .header-nav > a:hover .nav-icon svg,
+html body .sidebar-mini-link:hover svg,
+html body .sidebar-policy-link:hover svg {
+    color: var(--jimmy-orange-dark) !important;
+    stroke: var(--jimmy-orange-dark) !important;
+}
+
+/* Active: nền cam sáng, chữ nâu đậm.
+   Lỗi cũ: nền cam #ff7542→#e8451f + chữ trắng → 2.67:1 (vô hình).
+   Nay: giữ nền cam sáng (đúng bản chất "chủ đạo") nhưng đổi chữ sang
+   nâu đậm #2b1a10 → 6.26:1 trên #ff7542, 4.21:1 trên #e8451f ✓ */
+html body .app-sidebar .header-nav>a.active,
+html body .header.app-sidebar .header-nav>a.active,
+html body .app-sidebar .header-nav > a.active,
+html body .header.app-sidebar .header-nav > a.active,
+html body .app-sidebar .header-nav>a[aria-current="page"],
+html body .header.app-sidebar .header-nav>a[aria-current="page"],
+html body .app-sidebar .header-nav > a[aria-current="page"],
+html body .header.app-sidebar .header-nav > a[aria-current="page"],
+html body .sidebar-mini-link.active {
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    background: linear-gradient(135deg, #ff7542 0%, #f4622f 100%) !important;
+    background-image: linear-gradient(135deg, #ff7542 0%, #f4622f 100%) !important;
+    border-color: var(--jimmy-orange-dark) !important;
+    box-shadow: 0 4px 12px rgba(232, 69, 31, .28) !important;
+}
+
+html body .app-sidebar .header-nav>a.active *,
+html body .header.app-sidebar .header-nav>a.active *,
+html body .app-sidebar .header-nav > a.active *,
+html body .header.app-sidebar .header-nav > a.active *,
+html body .app-sidebar .header-nav>a[aria-current="page"] *,
+html body .header.app-sidebar .header-nav>a[aria-current="page"] *,
+html body .sidebar-mini-link.active * {
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    opacity: 1 !important;
+}
+
+html body .app-sidebar .header-nav>a.active .nav-icon,
+html body .header.app-sidebar .header-nav>a.active .nav-icon,
+html body .app-sidebar .header-nav > a.active .nav-icon,
+html body .header.app-sidebar .header-nav > a.active .nav-icon,
+html body .app-sidebar .header-nav>a[aria-current="page"] .nav-icon,
+html body .header.app-sidebar .header-nav>a[aria-current="page"] .nav-icon {
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    background: rgba(255, 255, 255, .52) !important;
+    background-image: none !important;
+    border-color: rgba(43, 26, 16, .22) !important;
+}
+
+html body .app-sidebar .header-nav>a.active .nav-icon svg,
+html body .header.app-sidebar .header-nav>a.active .nav-icon svg,
+html body .app-sidebar .header-nav > a.active .nav-icon svg,
+html body .header.app-sidebar .header-nav > a.active .nav-icon svg,
+html body .app-sidebar .header-nav>a[aria-current="page"] .nav-icon svg,
+html body .header.app-sidebar .header-nav>a[aria-current="page"] .nav-icon svg {
+    color: #2b1a10 !important;
+    stroke: #2b1a10 !important;
+}
+
+/* Badge trên sidebar */
+html body .app-sidebar .nav-badge-pill,
+html body .header.app-sidebar .nav-badge-pill,
+html body .app-sidebar .nav-beta-tag,
+html body .header.app-sidebar .nav-beta-tag {
+    background: var(--jimmy-gold-soft) !important;
+    background-image: none !important;
+    color: var(--jimmy-gold-deep) !important;
+    border: 1px solid #f0cf85 !important;
+}
+
+html body .app-sidebar .header-nav>a.active .nav-badge-pill,
+html body .header.app-sidebar .header-nav>a.active .nav-badge-pill,
+html body .app-sidebar .header-nav > a.active .nav-badge-pill,
+html body .header.app-sidebar .header-nav > a.active .nav-badge-pill,
+html body .app-sidebar .header-nav>a.active .nav-beta-tag,
+html body .header.app-sidebar .header-nav>a.active .nav-beta-tag {
+    background: rgba(255, 255, 255, .62) !important;
+    background-image: none !important;
+    color: #5c3d00 !important;
+    -webkit-text-fill-color: #5c3d00 !important;
+    border-color: rgba(92, 61, 0, .24) !important;
+}
+
+/* Chân sidebar */
+html body .app-sidebar .sidebar-bottom,
+html body .header.app-sidebar .sidebar-bottom {
+    background: #fffaf5 !important;
+    border-top: 1px solid var(--jimmy-border) !important;
+}
+
+html body .app-sidebar .sidebar-mini-link,
+html body .app-sidebar .sidebar-policy-link,
+html body .app-sidebar .sidebar-updater,
+html body .app-sidebar .sidebar-footer {
+    color: var(--jimmy-text-2) !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    border: 1px solid var(--jimmy-border) !important;
+    box-shadow: none !important;
+}
+
+html body .app-sidebar .sidebar-mini-link:hover,
+html body .app-sidebar .sidebar-policy-link:hover {
+    background: var(--jimmy-panel-soft) !important;
+    background-image: none !important;
+    border-color: var(--jimmy-orange) !important;
+    color: var(--jimmy-orange-deep) !important;
+}
+
+html body .app-sidebar .sidebar-mini-link svg,
+html body .app-sidebar .sidebar-policy-link svg {
+    color: var(--jimmy-orange-dark) !important;
+    stroke: var(--jimmy-orange-dark) !important;
+}
+
+html body .app-sidebar .sidebar-mini-link:hover svg,
+html body .app-sidebar .sidebar-policy-link:hover svg {
+    color: var(--jimmy-orange-deep) !important;
+    stroke: var(--jimmy-orange-deep) !important;
+}
+
+html body .app-sidebar .sidebar-mini-link strong,
+html body .app-sidebar .sidebar-policy-link strong,
+html body .app-sidebar .sidebar-updater strong {
+    color: var(--jimmy-text) !important;
+}
+
+html body .app-sidebar .sidebar-mini-link small,
+html body .app-sidebar .sidebar-policy-link small,
+html body .app-sidebar .sidebar-updater span,
+html body .app-sidebar .sidebar-footer {
+    color: var(--jimmy-muted) !important;
+}
+
+html body .app-sidebar .sidebar-link-item {
+    background: #ffffff !important;
+    background-image: none !important;
+    border: 1px solid var(--jimmy-border) !important;
+    color: var(--jimmy-text-2) !important;
+}
+
+html body .app-sidebar .sidebar-link-item:hover {
+    background: var(--jimmy-panel-soft) !important;
+    border-color: var(--jimmy-orange) !important;
+    color: var(--jimmy-orange-deep) !important;
+}
+
+html body .app-sidebar .sidebar-link-item:hover svg {
+    color: var(--jimmy-orange-deep) !important;
+    stroke: var(--jimmy-orange-deep) !important;
+}
+
+html body .app-sidebar .sidebar-link-item.active,
+html body .app-sidebar .sidebar-link-item.active:hover,
+html body .app-sidebar .sidebar-link-item[aria-current="page"],
+html body .app-sidebar .sidebar-link-item[aria-current="page"]:hover {
+    background: linear-gradient(135deg, #ff7542, #f4622f) !important;
+    background-image: linear-gradient(135deg, #ff7542, #f4622f) !important;
+    border-color: var(--jimmy-orange-dark) !important;
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    box-shadow: 0 3px 9px rgba(232, 69, 31, .26) !important;
+}
+
+html body .app-sidebar .sidebar-link-item.active span,
+html body .app-sidebar .sidebar-link-item[aria-current="page"] span,
+html body .app-sidebar .sidebar-link-item.active svg,
+html body .app-sidebar .sidebar-link-item[aria-current="page"] svg {
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    stroke: #2b1a10 !important;
+}
+
+/* Nút kiểm tra phiên bản */
+html body .app-sidebar .nexus-update-pill,
+html body .header.app-sidebar .nexus-update-pill,
+html body button.nexus-update-pill {
+    background: #ffffff !important;
+    background-image: none !important;
+    border: 1px solid var(--jimmy-border) !important;
+    color: var(--jimmy-text) !important;
+}
+
+html body .app-sidebar .nexus-update-pill:hover,
+html body .header.app-sidebar .nexus-update-pill:hover,
+html body button.nexus-update-pill:hover {
+    background: var(--jimmy-panel-soft) !important;
+    background-image: none !important;
+    border-color: var(--jimmy-orange) !important;
+    color: var(--jimmy-text) !important;
+    -webkit-text-fill-color: var(--jimmy-text) !important;
+}
+
+html body .nexus-update-icon {
+    color: var(--jimmy-orange-dark) !important;
+    stroke: var(--jimmy-orange-dark) !important;
+}
+
+html body .nexus-update-dot {
+    background: var(--jimmy-orange) !important;
+}
+
+html body .nexus-update-text {
+    color: var(--jimmy-text) !important;
+}
+
+html body .nexus-update-ver-label {
+    color: var(--jimmy-muted) !important;
+}
+
+/* ==========================================================================
+   3. BỐ CỤC TRANG + KHOẢNG CÁCH SIDEBAR
+   ========================================================================== */
+@media (min-width: 901px) {
+    :root,
+    html,
+    body {
+        --nexus-sidebar: 240px !important;
+        --ux-sidebar-width: 240px !important;
+        --nx-sidebar-fixed: 240px !important;
+        --nexus-sidebar-width: 240px !important;
+        --nexus-page-gap: 32px !important;
+    }
+
+    html body .app-sidebar.header,
+    html body .header.app-sidebar,
+    html body aside.app-sidebar {
+        width: 240px !important;
+        min-width: 240px !important;
+        max-width: 240px !important;
+        border-right: 1px solid var(--jimmy-border) !important;
+    }
+
+    html body .page,
+    html body>.page,
+    html body main.page,
+    html body>main,
+    html body .accounts-shell,
+    html body .dash-shell,
+    html body .groups-page,
+    html body .members-data-page,
+    html body.members-page .page,
+    html body .personal-page,
+    html body .friends-page,
+    html body .campaign-page,
+    html body .campaign-builder-page .page,
+    html body .marketing-page,
+    html body .guide-shell,
+    html body .schedmon-shell,
+    html body .group-copy-page,
+    html body .settings-page,
+    html body .activation-page,
+    html body .devices-page,
+    html body .gateway-page {
+        margin-left: 240px !important;
+        width: calc(100vw - 240px) !important;
+        max-width: calc(100vw - 240px) !important;
+        padding-left: 32px !important;
+        padding-right: 32px !important;
+        padding-top: 22px !important;
+        padding-bottom: 28px !important;
+        box-sizing: border-box !important;
+    }
+
+    html body .chatbot-page {
+        margin-left: 240px !important;
+        width: calc(100vw - 240px) !important;
+        max-width: calc(100vw - 240px) !important;
+        padding: 14px 20px 24px 20px !important;
+        box-sizing: border-box !important;
+    }
+}
+
+/* ==========================================================================
+   4. BỐ CỤC TRANG
+   ========================================================================== */
+html body .card,
+html body .page-hero,
+html body .acc-topbar,
+html body .dash-topbar,
+html body .groups-page-header,
+html body .groups-sidebar-card,
+html body .groups-detail-card,
+html body .groups-main-card,
+html body .members-data-topbar,
+html body .members-data-card,
+html body .schedmon-topbar,
+html body .schedmon-all-card,
+html body .schedmon-side-card,
+html body .group-copy-jobs-card,
+html body .guide-section-pro,
+html body .guide-principle-panel,
+html body .activation-hero,
+html body .message-kpi-card,
+html body .account-card,
+html body .gc-job-card {
+    color: var(--jimmy-text) !important;
+    background: var(--jimmy-panel) !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border) !important;
+    box-shadow: var(--jimmy-shadow) !important;
+}
+
+html body .card h1,
+html body .card h2,
+html body .card h3,
+html body .card h4,
+html body .card strong,
+html body .card b {
+    color: var(--jimmy-text) !important;
+    font-weight: 800 !important;
+}
+
+html body .card p,
+html body .card small {
+    color: var(--jimmy-text-2) !important;
+    font-weight: 600 !important;
+}
+
+/* Thẻ số liệu / item nhỏ */
+html body .dash-stat,
+html body .acc-stat,
+html body .gc-stat,
+html body .gc-job-metric,
+html body .gc-job-operator,
+html body .gc-job-route-node,
+html body .group-copy-account-trigger,
+html body .group-copy-account-option,
+html body .group-copy-toggle-card,
+html body .group-copy-detail-item,
+html body .gc-picker-row,
+html body .guide-step-card,
+html body .guide-menu-item,
+html body .guide-process-card,
+html body .guide-help-card,
+html body .groups-list-item,
+html body .conversation-item {
+    color: var(--jimmy-text) !important;
+    background: var(--jimmy-item) !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border) !important;
+}
+
+html body .dash-stat:hover,
+html body .acc-stat:hover,
+html body .gc-stat:hover,
+html body .gc-job-card:hover,
+html body .group-copy-account-option:hover,
+html body .gc-picker-row:hover,
+html body .guide-step-card:hover,
+html body .guide-menu-item:hover,
+html body .guide-process-card:hover,
+html body .guide-help-card:hover,
+html body .groups-list-item:hover,
+html body .conversation-item:hover {
+    background: var(--jimmy-item-hover) !important;
+    background-image: none !important;
+    border-color: var(--jimmy-orange) !important;
+}
+
+html body .dash-stat *,
+html body .acc-stat *,
+html body .gc-stat *,
+html body .gc-job-card *:not(.gc-btn-sm):not(.gc-btn-sm *),
+html body .groups-list-item *,
+html body .conversation-item * {
+    color: inherit !important;
+}
+
+/* Icon tiêu đề trang Sao chép nhóm rõ nét, chuẩn tone cam Jimmy */
+html body .gc-page-icon {
+    border: 1px solid rgba(210, 71, 28, .28) !important;
+    background: linear-gradient(135deg, rgba(255, 117, 66, .16), rgba(245, 179, 1, .16)) !important;
+    color: #d2471c !important;
+    box-shadow: 0 10px 24px rgba(210, 71, 28, .12), inset 0 1px 0 rgba(255, 255, 255, .7) !important;
+}
+html body .gc-page-icon svg {
+    width: 32px !important;
+    height: 32px !important;
+    stroke: #d2471c !important;
+    stroke-width: 2.2 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+}
+
+/* Nút thao tác Chi tiết / Kiểm tra ngay / Tạm dừng: căn chỉnh icon và chữ thẳng hàng */
+html body .gc-job-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+html body .gc-job-actions .gc-btn-sm,
+html body button.gc-btn-sm {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 12px !important;
+    border-radius: 9px !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+}
+
+html body .gc-job-actions .gc-btn-sm span,
+html body button.gc-btn-sm span {
+    display: inline-block !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+}
+
+html body .gc-job-actions .gc-btn-sm svg,
+html body button.gc-btn-sm svg {
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+    width: 15px !important;
+    height: 15px !important;
+    margin: 0 !important;
+    vertical-align: middle !important;
+    stroke-width: 2.2 !important;
+}
+
+/* ==========================================================================
+   5. NÚT
+   ========================================================================== */
+html body button:not(:disabled),
+html body .btn:not(:disabled),
+html body a.btn,
+html body [role="button"]:not([aria-disabled="true"]),
+html body [role="tab"]:not([aria-disabled="true"]),
+html body .schedmon-quick-btn,
+html body .schedmon-calendar-nav-btn,
+html body .schedmon-today-btn {
+    color: var(--jimmy-text) !important;
+    -webkit-text-fill-color: var(--jimmy-text) !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border-strong) !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+}
+
+/* Nút chính: nền cam đậm + chữ trắng.
+   Gradient cũ #ff8a52→#e8451f cho chữ trắng chỉ 2.33–3.96:1 (dưới AA).
+   Gradient mới #d2471c→#b03a16 cho 4.51–6.06:1 ✓ */
+html body .btn-primary:not(:disabled),
+html body button.btn-primary:not(:disabled),
+html body a.btn-primary:not(:disabled),
+html body .policy-button:not(:disabled),
+html body .gc-run-btn:not(:disabled),
+html body .nexus-update-toast-btn:not(:disabled),
+html body .btn-info:not(:disabled),
+html body button.btn-info:not(:disabled),
+html body a.btn-info:not(:disabled),
+html body .sendbtn:not(:disabled) {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: linear-gradient(135deg, #d2471c 0%, #b03a16 100%) !important;
+    background-image: linear-gradient(135deg, #d2471c 0%, #b03a16 100%) !important;
+    border-color: #8f2f11 !important;
+    box-shadow: 0 4px 12px rgba(176, 58, 22, .28) !important;
+    text-shadow: none !important;
+}
+
+html body .btn-primary:not(:disabled):hover,
+html body button.btn-primary:not(:disabled):hover,
+html body a.btn-primary:not(:disabled):hover,
+html body .policy-button:not(:disabled):hover,
+html body .gc-run-btn:not(:disabled):hover,
+html body .sendbtn:not(:disabled):hover,
+html body .btn-info:not(:disabled):hover,
+html body button.btn-info:not(:disabled):hover,
+html body a.btn-info:not(:disabled):hover {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: linear-gradient(135deg, #b03a16 0%, #8f2f11 100%) !important;
+    background-image: linear-gradient(135deg, #b03a16 0%, #8f2f11 100%) !important;
+    border-color: #7a270d !important;
+    box-shadow: 0 6px 16px rgba(143, 47, 17, .34) !important;
+}
+
+/* Hover nút: KHÔNG ép chữ trắng lên nền cam sáng.
+   Lỗi cũ: `button:hover { color:#fff }` + nền `--jimmy-orange` (#ff7542) → 2.67:1.
+   Nay: nút chính dùng nền cam đậm #d2471c (4.51:1) với chữ trắng;
+        nút phụ dùng nền cam nhạt #ffe4d1 + chữ nâu đậm (5.03:1). */
+html body button:not(:disabled):hover,
+html body .btn:not(:disabled):hover,
+html body a.btn:hover,
+html body [role="button"]:not([aria-disabled="true"]):hover,
+html body [role="tab"]:not([aria-disabled="true"]):hover,
+html body .schedmon-quick-btn:hover,
+html body .schedmon-calendar-nav-btn:hover,
+html body .schedmon-today-btn:hover {
+    color: var(--jimmy-text) !important;
+    -webkit-text-fill-color: var(--jimmy-text) !important;
+    background: var(--jimmy-item-hover) !important;
+    background-image: none !important;
+    border-color: var(--jimmy-orange) !important;
+}
+
+html body button:not(:disabled):hover *,
+html body .btn:not(:disabled):hover *,
+html body a.btn:hover *,
+html body [role="button"]:not([aria-disabled="true"]):hover *,
+html body [role="tab"]:not([aria-disabled="true"]):hover * {
+    color: var(--jimmy-text) !important;
+    -webkit-text-fill-color: var(--jimmy-text) !important;
+}
+
+html body button:not(:disabled):hover svg,
+html body .btn:not(:disabled):hover svg,
+html body a.btn:hover svg,
+html body [role="button"]:not([aria-disabled="true"]):hover svg {
+    color: var(--jimmy-text) !important;
+    stroke: var(--jimmy-text) !important;
+    fill: none !important;
+}
+
+/* Nút phụ: nền trắng, chữ tối */
+html body .btn-secondary:not(:disabled):not(:hover),
+html body button.btn-secondary:not(:disabled):not(:hover),
+html body a.btn-secondary:not(:disabled):not(:hover),
+html body .btn-ghost:not(:disabled):not(:hover),
+html body button.btn-ghost:not(:disabled):not(:hover) {
+    color: var(--jimmy-text) !important;
+    -webkit-text-fill-color: var(--jimmy-text) !important;
+}
+
+html body .btn-danger:not(:disabled),
+html body .btn-icon-danger:not(:disabled) {
+    color: var(--jimmy-red-text) !important;
+    background: var(--jimmy-red-soft) !important;
+    background-image: none !important;
+    border-color: #f0b4a6 !important;
+}
+
+html body .btn-success:not(:disabled) {
+    color: var(--jimmy-green-text) !important;
+    background: var(--jimmy-green-soft) !important;
+    background-image: none !important;
+    border-color: #a8d7bd !important;
+}
+
+html body button:disabled,
+html body .btn:disabled,
+html body [aria-disabled="true"],
+html body button.btn-primary:disabled,
+html body .btn.btn-primary:disabled {
+    opacity: 1 !important;
+    color: #7a6455 !important;
+    -webkit-text-fill-color: #7a6455 !important;
+    background: #f1e7dc !important;
+    background-color: #f1e7dc !important;
+    background-image: none !important;
+    border-color: #ddc9b6 !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+}
+
+/* ==========================================================================
+   6. TAB / TRẠNG THÁI CHỌN
+   ========================================================================== */
+html body button.active,
+html body [role="tab"][aria-selected="true"],
+html body [aria-pressed="true"],
+html body .tab-btn.active,
+html body .tab-nav button.active,
+html body .gc-segmented button.active,
+html body .gc-jobs-filter button.active,
+html body .groups-filter-pill.active,
+html body .group-copy-mode-switch button.active,
+html body .groups-list-item.active,
+html body .group-copy-account-option.active,
+html body .groups-account-option.active,
+html body .conversation-item.active,
+html body .plan-item.active,
+html body .log-drawer-tab.active {
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    background: linear-gradient(135deg, #ff7542, #f4622f) !important;
+    background-image: linear-gradient(135deg, #ff7542, #f4622f) !important;
+    border-color: var(--jimmy-orange-dark) !important;
+    box-shadow: none !important;
+}
+
+html body button.active *,
+html body [role="tab"][aria-selected="true"] *,
+html body [aria-pressed="true"] *,
+html body .tab-btn.active *,
+html body .tab-nav button.active *,
+html body .gc-segmented button.active *,
+html body .gc-jobs-filter button.active *,
+html body .groups-filter-pill.active *,
+html body .group-copy-mode-switch button.active *,
+html body .groups-list-item.active *,
+html body .group-copy-account-option.active *,
+html body .groups-account-option.active *,
+html body .conversation-item.active *,
+html body .plan-item.active *,
+html body .log-drawer-tab.active * {
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+}
+
+/* ==========================================================================
+   7. Ô NHẬP
+   ========================================================================== */
+html body input:not([type="checkbox"]):not([type="radio"]),
+html body select,
+html body textarea,
+html body .form-group input,
+html body .form-group select,
+html body .form-group textarea,
+html body .af-input,
+html body .ig-search,
+html body .overlay-textarea,
+html body .group-copy-account-search,
+html body .schedmon-search-field,
+html body .schedmon-select-field select {
+    color: var(--jimmy-text) !important;
+    background: #fffdfa !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border-strong) !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+}
+
+html body input::placeholder,
+html body textarea::placeholder {
+    color: #a3866f !important;
+    font-weight: 500 !important;
+}
+
+html body option {
+    color: var(--jimmy-text) !important;
+    background: #fffdfa !important;
+}
+
+html body input:focus,
+html body select:focus,
+html body textarea:focus {
+    border-color: var(--jimmy-orange) !important;
+    box-shadow: 0 0 0 3px rgba(255, 117, 66, .18) !important;
+    outline: none !important;
+}
+
+/* ==========================================================================
+   8. BẢNG
+   ========================================================================== */
+html body table,
+html body tbody,
+html body .table-scroll,
+html body .table-container,
+html body .members-table-stage,
+html body .groups-members-table-wrap,
+html body .personal-groups-table-wrap,
+html body .schedmon-table-shell,
+html body .accounts-table-wrap,
+html body .message-table-wrap,
+html body .group-copy-member-wrap,
+html body .sched-table-wrap {
+    color: var(--jimmy-text) !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border) !important;
+}
+
+/* Header bảng: nền sáng + chữ nâu đậm.
+   Lỗi cũ: ép `#ffffff` cho `thead *` (kể cả con của th) trong khi nền `th` bị
+   `style.css` đặt thành `#f6f8fb` → chữ trắng trên nền trắng (1.06:1, vô hình).
+   Sửa: bỏ ép trắng, dùng nền sáng #f6f8fb + chữ #4a2f1d (11.51:1). */
+html body thead,
+html body thead tr,
+html body th,
+html body .schedmon-table-head {
+    color: #4a2f1d !important;
+    -webkit-text-fill-color: #4a2f1d !important;
+    background: #f6f8fb !important;
+    background-image: none !important;
+    border-color: #d7e1ec !important;
+    font-weight: 800 !important;
+}
+
+html body thead *,
+html body th *,
+html body .schedmon-table-head * {
+    color: #4a2f1d !important;
+    -webkit-text-fill-color: #4a2f1d !important;
+    font-weight: 800 !important;
+}
+
+html body td,
+html body td *,
+html body .account-card-id,
+html body .account-card-proxy-cell,
+html body .schedmon-table-row,
+html body .schedmon-table-row *,
+html body .members-table td,
+html body .groups-members-table td,
+html body .personal-groups-table td,
+html body .recipient-table td {
+    color: var(--jimmy-text) !important;
+    font-weight: 600 !important;
+}
+
+html body tbody tr {
+    background: #ffffff !important;
+    background-image: none !important;
+}
+
+html body tbody tr:nth-child(even) {
+    background: #fffaf5 !important;
+    background-image: none !important;
+}
+
+html body tbody tr:hover {
+    background: var(--jimmy-item-hover) !important;
+    background-image: none !important;
+}
+
+html body tbody tr.selected,
+html body tbody tr.is-selected {
+    background: var(--jimmy-selected) !important;
+    background-image: none !important;
+    box-shadow: inset 4px 0 0 var(--jimmy-orange) !important;
+}
+
+/* ==========================================================================
+   9. BADGE / TRẠNG THÁI
+   ========================================================================== */
+html body .status-badge,
+html body .badge,
+html body .pill,
+html body .members-count-chip,
+html body .schedmon-count-pill,
+html body .gc-health-chip,
+html body .account-card-status,
+html body .dashboard-status-pill,
+html body .schedule-status-badge,
+html body .status-chip {
+    background: var(--jimmy-panel-soft) !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border-strong) !important;
+    color: var(--jimmy-orange-deep) !important;
+    font-weight: 700 !important;
+}
+
+html body .status-badge.success,
+html body .status-badge.done,
+html body .account-card-status.ok,
+html body .account-card-status.running,
+html body .dashboard-status-pill.success,
+html body .schedule-status-badge.done {
+    color: var(--jimmy-green-text) !important;
+    background: var(--jimmy-green-soft) !important;
+    background-image: none !important;
+    border-color: #a8d7bd !important;
+}
+
+html body .status-badge.error,
+html body .status-badge.failed,
+html body .dashboard-status-pill.danger,
+html body .schedule-status-badge.failed {
+    color: var(--jimmy-red-text) !important;
+    background: var(--jimmy-red-soft) !important;
+    background-image: none !important;
+    border-color: #f0b4a6 !important;
+}
+
+html body .status-badge.pending,
+html body .status-badge.warning,
+html body .account-card-status.wait,
+html body .schedule-status-badge.pending,
+html body .schedule-status-badge.partial {
+    color: var(--jimmy-yellow-text) !important;
+    background: var(--jimmy-yellow-soft) !important;
+    background-image: none !important;
+    border-color: #e8c979 !important;
+}
+
+/* ==========================================================================
+   10. OVERLAY / MODAL / TOAST
+   ========================================================================== */
+html body .overlay-backdrop,
+html body #msgOverlayBackdrop,
+html body .member-data-overlay,
+html body .nexus-update-backdrop,
+html body .groups-modal-backdrop,
+html body .group-copy-modal {
+    background: rgba(80, 44, 22, .30) !important;
+    backdrop-filter: blur(7px) saturate(108%) !important;
+}
+
+html body .overlay-card,
+html body .nexus-update-modal,
+html body .log-drawer,
+html body .detail-modal-content,
+html body .groups-modal-card {
+    color: var(--jimmy-text) !important;
+    background: var(--jimmy-panel) !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border) !important;
+    box-shadow: 0 28px 70px rgba(90, 48, 22, .22) !important;
+}
+
+html body .overlay-header,
+html body .overlay-footer,
+html body .gc-create-head,
+html body .log-drawer-header,
+html body .nexus-update-head,
+html body .nexus-update-actions,
+html body .groups-modal-head {
+    color: var(--jimmy-text) !important;
+    background: var(--jimmy-panel-soft) !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border) !important;
+}
+
+html body .overlay-body,
+html body .gc-create-body,
+html body .group-copy-detail-body,
+html body .nexus-update-body,
+html body .groups-modal-body {
+    color: var(--jimmy-text) !important;
+    background: var(--jimmy-panel) !important;
+    background-image: none !important;
+}
+
+html body .overlay-name,
+html body .overlay-title,
+html body .pf-user-name,
+html body .gc-create-head strong,
+html body .nexus-update-head h3,
+html body .groups-modal-head strong {
+    color: var(--jimmy-text) !important;
+    font-weight: 800 !important;
+}
+
+html body .overlay-uid,
+html body .overlay-label,
+html body .pf-user-uid,
+html body .gc-create-head small,
+html body .nexus-update-head p,
+html body .groups-modal-head small {
+    color: var(--jimmy-muted) !important;
+}
+
+html body .member-toast-stack,
+html body .groups-toast,
+html body .notification-overlay,
+html body .nexus-update-toast {
+    top: auto !important;
+    right: 18px !important;
+    bottom: 18px !important;
+    left: auto !important;
+}
+
+html body .member-toast,
+html body .groups-toast,
+html body .notification-card,
+html body .nexus-update-toast {
+    color: var(--jimmy-text) !important;
+    background: var(--jimmy-panel) !important;
+    background-image: none !important;
+    border: 1px solid var(--jimmy-border) !important;
+    box-shadow: 0 16px 42px rgba(90, 48, 22, .20) !important;
+}
+
+html body .member-toast *,
+html body .groups-toast *,
+html body .notification-card *,
+html body .nexus-update-toast * {
+    color: var(--jimmy-text) !important;
+}
+
+html body .notification-message {
+    color: var(--jimmy-text-2) !important;
+}
+
+html body .member-toast.success {
+    border-left: 4px solid #4fae7d !important;
+}
+
+html body .member-toast.error {
+    border-left: 4px solid #e0705a !important;
+}
+
+html body .member-toast.warning,
+html body .member-toast.warn {
+    border-left: 4px solid var(--jimmy-gold) !important;
+}
+
+html body .member-toast.info {
+    border-left: 4px solid var(--jimmy-orange) !important;
+}
+
+html body .nexus-update-toast-btn:not(:disabled) {
+    color: #ffffff !important;
+    background: var(--jimmy-orange-dark) !important;
+    background-image: none !important;
+    border-color: var(--jimmy-orange-deep) !important;
+}
+
+/* ==========================================================================
+   11. TRANG HƯỚNG DẪN / CHÍNH SÁCH
+   ========================================================================== */
+html body.guide-page .guide-hero-main,
+html body.guide-page .guide-start-panel,
+html body.policy-masterise .policy-story,
+html body.policy-masterise .policy-document,
+html body.policy-masterise .policy-shell {
+    color: var(--jimmy-text) !important;
+    background: linear-gradient(140deg, #fffdfa 0%, #fff1e0 100%) !important;
+    background-image: linear-gradient(140deg, #fffdfa 0%, #fff1e0 100%) !important;
+    border-color: var(--jimmy-border) !important;
+}
+
+html body.guide-page .guide-hero-main *,
+html body.guide-page .guide-start-panel *,
+html body.policy-masterise .policy-story *,
+html body.policy-masterise .policy-document * {
+    color: var(--jimmy-text) !important;
+    opacity: 1 !important;
+}
+
+html body.guide-page .guide-hero-main .btn-primary,
+html body.guide-page .guide-start-panel .btn-primary,
+html body.guide-page .btn-primary,
+html body.policy-masterise .btn-primary,
+html body.policy-masterise .policy-story .btn-primary,
+html body.policy-masterise .policy-document .btn-primary {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+html body.guide-page .guide-hero-main .btn-secondary,
+html body.guide-page .guide-start-panel .btn-secondary,
+html body.guide-page .btn-secondary,
+html body.policy-masterise .btn-secondary {
+    color: var(--jimmy-text) !important;
+    -webkit-text-fill-color: var(--jimmy-text) !important;
+}
+
+html body.guide-page .guide-start-list>li>span,
+html body.guide-page .guide-section-number,
+html body.guide-page .guide-step-index,
+html body.guide-page .guide-process-label,
+html body.policy-masterise .policy-number {
+    color: var(--jimmy-orange-deep) !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border-strong) !important;
+    font-weight: 800 !important;
+}
+
+html body.guide-page .guide-anchor-nav {
+    background: #fffdfa !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border) !important;
+}
+
+html body.guide-page .guide-anchor-nav a {
+    color: var(--jimmy-text-2) !important;
+    background: transparent !important;
+    background-image: none !important;
+}
+
+html body.guide-page .guide-anchor-nav a:hover,
+html body.guide-page .guide-anchor-nav a:focus-visible,
+html body.guide-page .guide-anchor-nav a.active {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: var(--jimmy-orange) !important;
+    background-image: none !important;
+}
+
+html body.guide-page .guide-kicker,
+html body.guide-page .guide-section-eyebrow,
+html body.policy-masterise .policy-eyebrow,
+html body.policy-masterise .eyebrow {
+    color: var(--jimmy-gold-deep) !important;
+}
+
+/* ==========================================================================
+   12. LOADER CHUYỂN TAB
+   ========================================================================== */
+.nexus-workspace-loader {
+    color: var(--jimmy-text) !important;
+    background: rgba(255, 248, 241, .92) !important;
+    background-image: none !important;
+    border: 1px solid var(--jimmy-border) !important;
+    box-shadow: 0 12px 30px rgba(120, 62, 20, .16) !important;
+}
+
+.nexus-workspace-loader strong {
+    color: var(--jimmy-text) !important;
+}
+
+.nexus-workspace-loader-spinner {
+    border: 2px solid #f6d9c2 !important;
+    border-top-color: var(--jimmy-orange) !important;
+}
+
+/* ==========================================================================
+   13. BRAND BAR DI ĐỘNG
+   ========================================================================== */
+html body .nexus-mobile-bar {
+    background: #fffdfa !important;
+    background-image: none !important;
+    border-bottom: 1px solid var(--jimmy-border) !important;
+}
+
+html body .nexus-mobile-brand strong {
+    color: var(--jimmy-text) !important;
+}
+
+html body .nexus-mobile-brand small {
+    color: var(--jimmy-muted) !important;
+}
+
+/* ==========================================================================
+   14. SCROLLBAR + VÒNG ĐẸN (browser surfaces thuộc thiết kế)
+   ========================================================================== */
+html body ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+}
+
+html body ::-webkit-scrollbar-track {
+    background: #fdf3e8;
+}
+
+html body ::-webkit-scrollbar-thumb {
+    background: #e6c6a8;
+    border: 3px solid #fdf3e8;
+    border-radius: 999px;
+}
+
+html body ::-webkit-scrollbar-thumb:hover {
+    background: #d9a87f;
+}
+
+html body ::selection {
+    background: #ffd9c2;
+    color: var(--jimmy-text);
+}
+
+html body :focus-visible {
+    outline: 2px solid var(--jimmy-orange) !important;
+    outline-offset: 2px !important;
+}
+
+/* ==========================================================================
+   15. NÚT CỦA TRANG TELEGRAM (.tg-btn-*)
+   Rule chung ở mục 5 đè mất màu riêng của các nút này,
+   nên khai báo lại với độ ưu tiên cao hơn.
+   ========================================================================== */
+html body .tg-btn.tg-btn-primary,
+html body button.tg-btn.tg-btn-primary,
+html body a.tg-btn.tg-btn-primary {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: linear-gradient(135deg, #ff8a52 0%, #ff7542 45%, #e8451f 100%) !important;
+    background-image: linear-gradient(135deg, #ff8a52 0%, #ff7542 45%, #e8451f 100%) !important;
+    border-color: var(--jimmy-orange-dark) !important;
+    box-shadow: 0 4px 12px rgba(232, 69, 31, .24) !important;
+    text-shadow: none !important;
+}
+
+html body .tg-btn.tg-btn-primary:hover,
+html body button.tg-btn.tg-btn-primary:hover,
+html body a.tg-btn.tg-btn-primary:hover {
+    background: linear-gradient(135deg, #f96a35 0%, #e8451f 55%, #c93a18 100%) !important;
+    background-image: linear-gradient(135deg, #f96a35 0%, #e8451f 55%, #c93a18 100%) !important;
+    border-color: var(--jimmy-orange-deep) !important;
+    box-shadow: 0 6px 16px rgba(201, 58, 24, .30) !important;
+}
+
+html body .tg-btn.tg-btn-primary svg,
+html body .tg-btn.tg-btn-primary .tg-ico {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+    fill: none !important;
+}
+
+html body .tg-btn.tg-btn-gold,
+html body button.tg-btn.tg-btn-gold,
+html body a.tg-btn.tg-btn-gold {
+    color: #3d1a08 !important;
+    -webkit-text-fill-color: #3d1a08 !important;
+    background: linear-gradient(135deg, #ffc94d 0%, #f5b301 100%) !important;
+    background-image: linear-gradient(135deg, #ffc94d 0%, #f5b301 100%) !important;
+    border-color: #d19000 !important;
+    box-shadow: 0 4px 12px rgba(245, 179, 1, .26) !important;
+    text-shadow: none !important;
+}
+
+html body .tg-btn.tg-btn-gold:hover,
+html body button.tg-btn.tg-btn-gold:hover,
+html body a.tg-btn.tg-btn-gold:hover {
+    background: linear-gradient(135deg, #f5b301 0%, #d19000 100%) !important;
+    background-image: linear-gradient(135deg, #f5b301 0%, #d19000 100%) !important;
+    border-color: #b87f00 !important;
+    box-shadow: 0 6px 16px rgba(179, 127, 0, .32) !important;
+}
+
+html body .tg-btn.tg-btn-gold svg,
+html body .tg-btn.tg-btn-gold .tg-ico {
+    color: #3d1a08 !important;
+    stroke: #3d1a08 !important;
+    fill: none !important;
+}
+
+html body .tg-btn.tg-btn-danger,
+html body button.tg-btn.tg-btn-danger,
+html body a.tg-btn.tg-btn-danger {
+    color: var(--jimmy-red-text) !important;
+    -webkit-text-fill-color: var(--jimmy-red-text) !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    border-color: #f0b4a6 !important;
+    box-shadow: none !important;
+}
+
+html body .tg-btn.tg-btn-danger:hover,
+html body button.tg-btn.tg-btn-danger:hover,
+html body a.tg-btn.tg-btn-danger:hover {
+    background: var(--jimmy-red-soft) !important;
+    background-image: none !important;
+    border-color: #e08b78 !important;
+    color: var(--jimmy-red-text) !important;
+}
+
+/* Nút phụ (nền trắng) — giữ chữ tối, không bị rule hover đổi trắng */
+html body .tg-btn:not(.tg-btn-primary):not(.tg-btn-gold):not(.tg-btn-danger):not(:disabled) {
+    color: var(--jimmy-text) !important;
+    -webkit-text-fill-color: var(--jimmy-text) !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    border-color: var(--jimmy-border-strong) !important;
+}
+
+html body .tg-btn:not(.tg-btn-primary):not(.tg-btn-gold):not(.tg-btn-danger):hover {
+    color: var(--jimmy-orange-dark) !important;
+    -webkit-text-fill-color: var(--jimmy-orange-dark) !important;
+    background: var(--jimmy-item-hover) !important;
+    background-image: none !important;
+    border-color: var(--jimmy-orange) !important;
+}
+
+html body .tg-btn:not(.tg-btn-primary):not(.tg-btn-gold):not(.tg-btn-danger):hover svg,
+html body .tg-btn:not(.tg-btn-primary):not(.tg-btn-gold):not(.tg-btn-danger):hover .tg-ico {
+    color: var(--jimmy-orange-dark) !important;
+    stroke: var(--jimmy-orange-dark) !important;
+}
+
+html body .tg-btn:disabled {
+    color: #7a6455 !important;
+    -webkit-text-fill-color: #7a6455 !important;
+    background: #f1e7dc !important;
+    background-image: none !important;
+    border-color: #ddc9b6 !important;
+    opacity: 1 !important;
+}
+
+/* ==========================================================================
+   16. LINK/BRAND CÒN MÀU XANH (do nexus-masterise.css ép a:not(.btn))
+   ========================================================================== */
+html body a:not(.btn):not(.header-nav a):not(.sidebar-mini-link):not(.sidebar-policy-link):not(.tg-btn) {
+    color: var(--jimmy-text-2) !important;
+}
+
+html body .app-sidebar .brand,
+html body .app-sidebar a.brand,
+html body .app-sidebar .brand-copy,
+html body .app-sidebar .brand-copy h1,
+html body .app-sidebar .brand-copy strong,
+html body .nexus-mobile-brand,
+html body .nexus-mobile-brand strong {
+    color: var(--jimmy-orange-deep) !important;
+}
+
+html body .app-sidebar .sidebar-link-item,
+html body .app-sidebar .sidebar-link-item span,
+html body .app-sidebar .sidebar-link-item svg {
+    color: var(--jimmy-text-2) !important;
+    stroke: var(--jimmy-text-2) !important;
+}
+
+html body .app-sidebar .sidebar-link-item:hover,
+html body .app-sidebar .sidebar-link-item:hover span,
+html body .app-sidebar .sidebar-link-item:hover svg {
+    color: var(--jimmy-orange-deep) !important;
+    stroke: var(--jimmy-orange-deep) !important;
+}
+
+html body .app-sidebar .sidebar-link-item.active,
+html body .app-sidebar .sidebar-link-item.active span,
+html body .app-sidebar .sidebar-link-item.active svg,
+html body .app-sidebar .sidebar-link-item[aria-current="page"],
+html body .app-sidebar .sidebar-link-item[aria-current="page"] span,
+html body .app-sidebar .sidebar-link-item[aria-current="page"] svg {
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    stroke: #2b1a10 !important;
+}
+
+html body button.nexus-update-toast-btn:not(:disabled),
+html body .nexus-update-toast-btn:not(:disabled),
+html body .nexus-update-toast-btn {
+    background: linear-gradient(135deg, #d2471c 0%, #b03a16 100%) !important;
+    background-image: linear-gradient(135deg, #d2471c 0%, #b03a16 100%) !important;
+    background-color: #b03a16 !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    border-color: #8f2f11 !important;
+}
+
+html body input[type="checkbox"],
+html body input[type="radio"] {
+    accent-color: #d2471c !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+html body input[type="checkbox"]:focus,
+html body input[type="checkbox"]:focus-visible,
+html body input[type="radio"]:focus,
+html body input[type="radio"]:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+html body .gc-skip-leaders {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    padding: 0 !important;
+}
+
+html body .gc-skip-leaders:hover {
+    border: none !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* ==========================================================================
+   17. FIX GIAO DIỆN SPA + TINH CHỈNH SIDEBAR
+   ========================================================================== */
+
+/* --- 17.1 Logo / brand: bỏ viền bao quanh, cân đối --- */
+html body .app-sidebar .header-content,
+html body .header.app-sidebar .header-content {
+    border-bottom: none !important;
+    padding: 16px 14px 10px !important;
+}
+
+html body .app-sidebar .brand,
+html body .header.app-sidebar .brand,
+html body .app-sidebar .header-content .brand,
+html body .header.app-sidebar .header-content .brand,
+html body .app-sidebar a.brand {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-height: auto !important;
+    height: auto !important;
+    flex: 0 0 auto !important;
+    text-decoration: none !important;
+}
+
+html body .app-sidebar .brand:hover,
+html body .header.app-sidebar .brand:hover,
+html body .app-sidebar .header-content .brand:hover {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Logo căn giữa theo chiều cao chữ */
+html body .app-sidebar .brand-logo,
+html body .header.app-sidebar .brand-logo,
+html body .app-sidebar .header-content .brand .brand-logo {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    padding: 0 !important;
+    flex: 0 0 34px !important;
+    border-radius: 10px !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: 0 3px 10px rgba(255, 117, 66, .28) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+html body .app-sidebar .brand-logo img,
+html body .header.app-sidebar .brand-logo img {
+    width: 20px !important;
+    height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    flex: 0 0 20px !important;
+    object-fit: contain !important;
+    display: block !important;
+}
+
+html body .app-sidebar .brand-copy,
+html body .header.app-sidebar .brand-copy {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 1px !important;
+    min-width: 0 !important;
+    line-height: 1.15 !important;
+}
+
+html body .app-sidebar .brand-copy h1,
+html body .header.app-sidebar .brand-copy h1,
+html body .app-sidebar .header-content .brand h1 {
+    font-size: 15.5px !important;
+    line-height: 1.2 !important;
+    color: var(--jimmy-text) !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+}
+
+html body .app-sidebar .brand-subtitle,
+html body .header.app-sidebar .brand-subtitle {
+    font-size: 10.5px !important;
+    line-height: 1.2 !important;
+    color: var(--jimmy-muted) !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+}
+
+/* --- 17.2 Nav item 2 dòng (Chatbot: "Chatbot" + "Zalo + Telegram") --- */
+html body .app-sidebar .header-nav>a.nav-item-stack,
+html body .header.app-sidebar .header-nav>a.nav-item-stack {
+    align-items: center !important;
+    gap: 10px !important;
+    height: auto !important;
+    min-height: 46px !important;
+    padding: 6px 10px !important;
+}
+
+html body .app-sidebar .header-nav>a .nav-text.nav-text-stack,
+html body .header.app-sidebar .header-nav>a .nav-text.nav-text-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 1px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
+html body .app-sidebar .header-nav>a .nav-text.nav-text-stack strong,
+html body .header.app-sidebar .header-nav>a .nav-text.nav-text-stack strong {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    color: #3f2a1d !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
+html body .app-sidebar .header-nav>a .nav-text.nav-text-stack small,
+html body .header.app-sidebar .header-nav>a .nav-text.nav-text-stack small {
+    display: block !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    letter-spacing: .01em !important;
+    color: #a3805f !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
+html body .app-sidebar .header-nav>a:hover .nav-text.nav-text-stack strong,
+html body .header.app-sidebar .header-nav>a:hover .nav-text.nav-text-stack strong {
+    color: #2b1a10 !important;
+}
+
+html body .app-sidebar .header-nav>a:hover .nav-text.nav-text-stack small,
+html body .header.app-sidebar .header-nav>a:hover .nav-text.nav-text-stack small {
+    color: var(--jimmy-orange-dark) !important;
+}
+
+html body .app-sidebar .header-nav>a.active .nav-text.nav-text-stack strong,
+html body .header.app-sidebar .header-nav>a.active .nav-text.nav-text-stack strong,
+html body .app-sidebar .header-nav>a[aria-current="page"] .nav-text.nav-text-stack strong {
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+}
+
+html body .app-sidebar .header-nav>a.active .nav-text.nav-text-stack small,
+html body .header.app-sidebar .header-nav>a.active .nav-text.nav-text-stack small,
+html body .app-sidebar .header-nav>a[aria-current="page"] .nav-text.nav-text-stack small {
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+}
+
+/* --- 17.3 Badge không bị trắng khi hover (theme cũ ép `a:hover * { color:#fff }`) --- */
+html body .app-sidebar .header-nav>a .nav-badge-pill,
+html body .header.app-sidebar .header-nav>a .nav-badge-pill,
+html body .app-sidebar .header-nav>a .nav-beta-tag,
+html body .header.app-sidebar .header-nav>a .nav-beta-tag,
+html body .app-sidebar .nav-badge-pill,
+html body .header.app-sidebar .nav-badge-pill,
+html body .app-sidebar .nav-beta-tag,
+html body .header.app-sidebar .nav-beta-tag {
+    color: var(--jimmy-gold-deep) !important;
+    -webkit-text-fill-color: var(--jimmy-gold-deep) !important;
+}
+
+html body .app-sidebar .header-nav>a:hover .nav-text,
+html body .header.app-sidebar .header-nav>a:hover .nav-text,
+html body .app-sidebar .header-nav>a:hover .nav-text strong,
+html body .header.app-sidebar .header-nav>a:hover .nav-text strong,
+html body .app-sidebar .header-nav>a:hover .nav-copy strong,
+html body .header.app-sidebar .header-nav>a:hover .nav-copy strong {
+    color: #2b1a10 !important;
+}
+
+html body .app-sidebar .header-nav>a:hover .nav-badge-pill,
+html body .header.app-sidebar .header-nav>a:hover .nav-badge-pill,
+html body .app-sidebar .header-nav>a:hover .nav-beta-tag,
+html body .header.app-sidebar .header-nav>a:hover .nav-beta-tag,
+html body .app-sidebar .nav-badge-pill:hover,
+html body .header.app-sidebar .nav-badge-pill:hover {
+    background: #ffd97a !important;
+    background-image: none !important;
+    color: #5c3d00 !important;
+    -webkit-text-fill-color: #5c3d00 !important;
+    border-color: #e0b448 !important;
+}
+
+html body .app-sidebar .header-nav>a.active .nav-badge-pill,
+html body .header.app-sidebar .header-nav>a.active .nav-badge-pill,
+html body .app-sidebar .header-nav>a.active .nav-beta-tag,
+html body .header.app-sidebar .header-nav>a.active .nav-beta-tag {
+    background: rgba(255, 255, 255, .24) !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    border-color: rgba(255, 255, 255, .42) !important;
+}
+
+/* --- 17.4 Xóa màu xanh còn sót trong các thành phần còn lại --- */
+html body .guide-anchor-nav.guide-anchor-nav-v2 a[href]:hover {
+    color: var(--jimmy-orange-dark) !important;
+    background: var(--jimmy-item-hover) !important;
+    border-color: var(--jimmy-border-strong) !important;
+}
+
+html body .guide-anchor-nav.guide-anchor-nav-v2 a[href].active {
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    background: var(--jimmy-orange) !important;
+    border-color: var(--jimmy-orange-dark) !important;
+}
+
+html body .guide-anchor-nav.guide-anchor-nav-v2 a[href].active .guide-anchor-num {
+    background: rgba(255, 255, 255, .58) !important;
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+}
+
+html body .guide-anchor-num {
+    background: var(--jimmy-item-hover) !important;
+    color: var(--jimmy-muted) !important;
+}
+
+html body .guide-anchor-label {
+    color: #a3805f !important;
+}
+
+/* --- 17.5 Nội dung guide còn xám-xanh → chuyển sang nâu ấm --- */
+html body .guide-menu-copy p,
+html body .guide-step-copy p,
+html body .guide-process-card p,
+html body .guide-section-heading p,
+html body .guide-principle-panel p,
+html body .guide-start-list small,
+html body .guide-hero-lead,
+html body .guide-note-panel p,
+html body .guide-help-card p,
+html body .guide-step-card p,
+html body .guide-api-note {
+    color: #6b5245 !important;
+}
+
+html body .guide-menu-copy h4,
+html body .guide-step-copy h3,
+html body .guide-process-card h3,
+html body .guide-section-heading h2,
+html body .guide-principle-panel h2,
+html body .guide-start-list strong,
+html body .guide-help-card h3 {
+    color: #2b1a10 !important;
+}
+
+html body .guide-menu-item {
+    background: #fffdfa !important;
+    border-color: #f0d9c4 !important;
+}
+
+html body .guide-menu-item:hover {
+    background: #fff4e9 !important;
+    border-color: #ffb894 !important;
+}
+
+html body .guide-api-code code,
+html body code {
+    color: #c93a18 !important;
+}
+
+/* Xem trước tin nhắn: nền trắng viền cam chữ đen rõ ràng */
+html body .gc-invite-preview,
+html body #groupCopyInvitePreview {
+    background: #ffffff !important;
+    border: 1.5px solid #d2471c !important;
+    color: #2b1a10 !important;
+    -webkit-text-fill-color: #2b1a10 !important;
+    border-radius: 11px !important;
+    box-shadow: 0 2px 8px rgba(210, 71, 28, .08) !important;
+}
+
+/* Badge hiển thị loại license trên sidebar */
+html body .brand-copy .nav-license-badge {
+    display: inline-block !important;
+    align-self: flex-start !important;
+    padding: 1px 7px !important;
+    margin-top: 3px !important;
+    border-radius: 999px !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em !important;
+    background: #ffedd5 !important;
+    color: #c2410c !important;
+    border: 1px solid #fed7aa !important;
+    line-height: 1.4 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    html body *,
+    html body *::before,
+    html body *::after {
+        animation-duration: .001ms !important;
+        transition-duration: .001ms !important;
+    }
+}

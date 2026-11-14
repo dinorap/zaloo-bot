@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import requests
+from core.zalo import http as zalo_http
 
 
 # Cho phép chạy trực tiếp file: python features/members/group_getmg.py
@@ -141,7 +142,7 @@ def post_zalo_api(
 ) -> Tuple[requests.Response, Dict[str, Any], Any]:
     plaintext = compact_json(payload)
     encoded = zalo_encode(plaintext, zpw_enk, url_encode=True)
-    response = requests.post(
+    response = zalo_http.post(
         url,
         params={"zpw_ver": zpw_ver, "zpw_type": "30"},
         data=f"params={encoded}",

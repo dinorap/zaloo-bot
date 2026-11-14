@@ -13,17 +13,15 @@
                 <button id="lookupPhonesBtn" class="btn btn-primary btn-sm" onclick="schedLookupPhones()" style="display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Tra thông tin</button>
             </div>
 
-            <div class="sched-source-grid">
-                <div class="form-group">
-                    <label>Chọn tài khoản gửi</label>
-                    <div id="schedPhoneAccountDropdown" class="account-dropdown"></div>
-                    <input type="hidden" id="schedPhoneAccountId">
-                </div>
+            <div class="form-group sched-account-narrow">
+                <label>Chọn tài khoản gửi</label>
+                <div id="schedPhoneAccountDropdown" class="account-dropdown"></div>
+                <input type="hidden" id="schedPhoneAccountId">
+            </div>
 
-                <div class="form-group">
-                    <label>Danh sách số điện thoại</label>
-                    <textarea id="phoneInput" placeholder="Nhập số điện thoại, mỗi số một dòng" style="min-height:58px"></textarea>
-                </div>
+            <div class="form-group">
+                <label>Danh sách số điện thoại</label>
+                <textarea id="phoneInput" placeholder="Nhập số điện thoại, mỗi số một dòng" style="min-height:92px"></textarea>
             </div>
             <div id="phoneLookupStatus" class="sched-inline-status"></div>
         </section>
@@ -64,10 +62,9 @@
         <section class="sched-panel sched-groups-right">
             <div class="sched-panel-head">
                 <div>
-                    <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>Cấu hình lịch</h3>
-                    <p>Nội dung, thời gian và tốc độ gửi.</p>
+                    <h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>Cấu hình lịch gửi</h3>
+                    <p>Hỗ trợ gửi nhiều nội dung tin nhắn và nhiều khung giờ.</p>
                 </div>
-                <button type="button" class="btn btn-ghost btn-sm" onclick="schedToggleAdvanced('phone')">Cài đặt nâng cao</button>
             </div>
 
             <div class="form-group">
@@ -76,53 +73,83 @@
             </div>
 
             <div class="form-group">
-                <label>Nội dung *</label>
-                <textarea id="schedPhoneMessage" placeholder="Nhập nội dung..."></textarea>
+                <label>Nội dung tin nhắn *</label>
+                <div class="sched-msg-list">
+                    <div class="sched-msg-card">
+                        <div class="sched-msg-head">
+                            <span class="sched-msg-badge">Tin nhắn #1</span>
+                        </div>
+                        <textarea id="schedPhoneMessage" placeholder="Nhập nội dung tin nhắn..."></textarea>
+                        <input type="file" id="schedPhonePhotoInput" accept="image/*" style="display:none">
+                        <div class="sched-msg-photo-row">
+                            <button type="button" class="btn btn-secondary btn-sm" id="schedPhonePhotoBtn">Chọn ảnh đính kèm</button>
+                            <div id="schedPhonePhotoWrap" style="display:none;align-items:center;gap:8px">
+                                <img id="schedPhonePhotoPreview" src="" alt="" style="width:36px;height:36px;border-radius:8px;object-fit:cover;border:1px solid var(--border,#ddd)">
+                                <span id="schedPhonePhotoName" style="font-size:12px;color:var(--text-secondary);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+                                <button type="button" id="schedPhonePhotoRemove" title="Bỏ ảnh" class="sched-del-mini">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="schedPhoneExtraMsgs" class="sched-msg-list"></div>
+                </div>
+                <button type="button" class="sched-add-row-btn" onclick="schedAddExtraMsg('phone')">+ Thêm nội dung tin</button>
             </div>
 
-            <div class="form-group">
-                <label>Ảnh đính kèm (tùy chọn)</label>
-                <input type="file" id="schedPhonePhotoInput" accept="image/*" style="display:none">
-                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                    <button type="button" class="btn btn-secondary btn-sm" id="schedPhonePhotoBtn">📷 Chọn ảnh</button>
-                    <div id="schedPhonePhotoWrap" style="display:none;align-items:center;gap:8px">
-                        <img id="schedPhonePhotoPreview" src="" alt="" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid var(--border,#ddd)">
-                        <span id="schedPhonePhotoName" style="font-size:12px;color:var(--text-secondary);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-                        <button type="button" id="schedPhonePhotoRemove" title="Bỏ ảnh" style="border:none;background:rgba(239,68,68,0.12);color:#ef4444;border-radius:6px;width:22px;height:22px;cursor:pointer;font-size:13px;line-height:1">&times;</button>
-                    </div>
-                </div>
-                <small style="color:var(--text-secondary)">Có ảnh: hệ thống gửi ảnh trước, nội dung gửi thành tin nhắn ngay sau.</small>
+            <div class="form-group" id="schedPhoneMultiModeWrap" style="display:none">
+                <label>Cách gửi khi có nhiều tin nhắn</label>
+                <select id="schedPhoneMultiMode">
+                    <option value="sequence">1 khung giờ gửi lần lượt tất cả tin (1 time nhiều tin)</option>
+                    <option value="per_time">Mỗi khung giờ gửi 1 tin kế tiếp (đủ nhiều giờ)</option>
+                    <option value="rotate_recipient">Xoay vòng từng tin cho mỗi người nhận</option>
+                </select>
             </div>
 
             <div class="form-group">
                 <label>Thời gian gửi *</label>
-                <input type="datetime-local" id="schedPhoneDateTime">
+                <div class="sched-time-list">
+                    <input type="datetime-local" id="schedPhoneDateTime">
+                    <div id="schedPhoneExtraTimes" class="sched-time-list"></div>
+                </div>
+                <div class="sched-quick-times">
+                    <button type="button" class="sched-chip-btn" onclick="schedQuickAddTime('phone', 60)">+1 giờ</button>
+                    <button type="button" class="sched-chip-btn" onclick="schedQuickAddTime('phone', '20:00')">Tối 20:00</button>
+                    <button type="button" class="sched-chip-btn" onclick="schedQuickAddTime('phone', 'tomorrow_09:00')">Mai 09:00</button>
+                </div>
+                <button type="button" class="sched-add-row-btn" onclick="schedAddExtraTime('phone')">+ Thêm khung giờ</button>
             </div>
 
-            <div id="phoneAdvancedSettings" class="sched-advanced" style="display:none">
-                <div class="sched-mini-grid">
-                    <div class="form-group">
-                        <label>Min Delay (s)</label>
-                        <input type="number" id="schedPhoneMinDelay" value="3" min="1">
-                    </div>
-                    <div class="form-group">
-                        <label>Max Delay (s)</label>
-                        <input type="number" id="schedPhoneMaxDelay" value="5" min="2">
-                    </div>
-                    <div class="form-group">
-                        <label>Max Errors</label>
-                        <input type="number" id="schedPhoneMaxErrors" value="5" min="1">
-                    </div>
-                    <div class="form-group">
-                        <label>Batch Size</label>
-                        <input type="number" id="schedPhoneBatchSize" value="10" min="1">
-                    </div>
-                    <div class="form-group">
-                        <label>Batch Delay (s)</label>
-                        <input type="number" id="schedPhoneBatchDelay" value="30" min="1">
+            <details class="sched-details" style="margin-top:8px">
+                <summary>Cài đặt nâng cao (tốc độ gửi, chia đợt)</summary>
+                <div id="phoneAdvancedSettings" class="sched-advanced" style="margin-top:10px">
+                    <div class="sched-mini-grid">
+                        <div class="form-group">
+                            <label>Min Delay (s)</label>
+                            <input type="number" id="schedPhoneMinDelay" value="3" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Max Delay (s)</label>
+                            <input type="number" id="schedPhoneMaxDelay" value="5" min="2">
+                        </div>
+                        <div class="form-group">
+                            <label>Max Errors</label>
+                            <input type="number" id="schedPhoneMaxErrors" value="5" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Batch Size</label>
+                            <input type="number" id="schedPhoneBatchSize" value="10" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Batch Delay (s)</label>
+                            <input type="number" id="schedPhoneBatchDelay" value="30" min="1">
+                        </div>
                     </div>
                 </div>
-            </div>
+            </details>
+
+            <button type="button" class="sched-save-cta" onclick="schedSaveSchedule()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Lưu lịch gửi
+            </button>
         </section>
     </div>
 </div>

@@ -3,6 +3,7 @@ import requests
 from core.zalo.enc import zalo_encode
 from core.zalo.dec import zalo_decode
 from core.zalo.zalo_headers import zalo_mobile_headers
+from core.zalo import http as zalo_http
 
 
 def resolve_group_id_from_url(link: str, zpw_enk: str, cookies: str,
@@ -42,7 +43,7 @@ def resolve_group_id_from_url(link: str, zpw_enk: str, cookies: str,
             key, value = item.split("=", 1)
             cookie_dict[key.strip()] = value.strip()
     try:
-        response = requests.post(
+        response = zalo_http.post(
             url,
             params={"zpw_ver": zpw_ver, "zpw_type": "30"},
             data=f"params={encoded}",
@@ -122,7 +123,7 @@ def get_group_info(link: str, zpw_enk: str, cookies: str, mpage: int = 1,
         if "=" in item:
             key, value = item.split("=", 1)
             cookie_dict[key.strip()] = value.strip()
-    response = requests.post(
+    response = zalo_http.post(
         url,
         params={"zpw_ver": zpw_ver, "zpw_type": "30"},
         data=f"params={encoded}",

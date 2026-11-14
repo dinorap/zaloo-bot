@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="vi">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workspace đa nền tảng - Jimmy BOT CHAT</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=ws-v1">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/nexus-data-light.css') }}?v=nexus-light-v3-20260728">
+<style>
+.page.ws-page{overflow-y:auto!important;height:100dvh!important;display:block!important;padding:24px 32px 60px;box-sizing:border-box!important}
+@media (min-width: 901px) {
+    .page.ws-page {
+        margin-left: 240px !important;
+        width: calc(100vw - 240px) !important;
+        max-width: calc(100vw - 240px) !important;
+    }
+}
+.ws-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;margin-bottom:16px}
+.ws-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.ws-item{border:1px solid #e2e8f0;border-radius:12px;padding:14px}
+.ws-item-head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.ws-avatar{width:44px;height:44px;border-radius:50%;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;overflow:hidden}
+.ws-avatar img{width:100%;height:100%;object-fit:cover}
+.ws-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.ws-pill{font-size:12px;padding:4px 10px;border-radius:999px;background:#f1f5f9}
+.ws-pill.on{background:#dcfce7;color:#166534}
+.ws-pill.off{background:#fee2e2;color:#991b1b}
+.btn{padding:8px 14px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-weight:700;font-size:13px}
+.btn-primary{background:#0f172a;color:#fff;border-color:#0f172a}
+.btn-green{background:#16a34a;color:#fff;border-color:#16a34a}
+code.tok{background:#f1f5f9;padding:2px 7px;border-radius:6px;font-size:12px;word-break:break-all}
+.ws-space{border-top:1px dashed #e2e8f0;margin-top:10px;padding-top:10px}
+.ws-space h4{margin:0 0 6px;font-size:13px}
+</style>
+</head>
+<body>
+{% set active_page = 'workspace' %}
+{% include '_nav.html' %}
+<div class="page ws-page">
+  <div class="ws-card">
+    <h3>🖥️ Workspace đa nền tảng — kiểu zDesk</h3>
+    <p style="color:#64748b;font-size:13px">Mỗi tài khoản 1 không gian độc lập: <b>Zalo Web</b> (Chrome profile riêng, đã có) + <b>Zalo PC</b> (mở bằng data-dir riêng, chạy song song) + <b>Zalo Mobile</b> (giả lập, mở thủ công). Proxy riêng từng acc, sao lưu 1-click.</p>
+    <div class="ws-row">
+      <span class="ws-pill" id="wsZaloPc">Zalo PC: ...</span>
+      <button class="btn btn-green" onclick="wsLoad()">🔄 Làm mới</button>
+      <button class="btn" onclick="wsRestore()">📥 Khôi phục từ .zip</button>
+      <input type="file" id="wsRestoreFile" accept=".zip" style="display:none" onchange="wsDoRestore(this)">
+    </div>
+  </div>
+  <div class="ws-card">
+    <h3>Không gian làm việc <span class="ws-pill" id="wsCount">...</span></h3>
+    <div id="wsList" class="ws-grid"></div>
+  </div>
+</div>
+<script>
+async function wsLoad(){
+  const r = await fetch('/api/workspace'); const d = await r.json();
+  if(!d.success){ alert(d.error||'lỗi'); return; }
+  document.getElementById('wsZaloPc').textContent = d.zaloInstalled ? ('Zalo PC: đã cài — ' + d.zaloExe) : 'Zalo PC: chưa thấy Zalo.exe — cài Zalo PC trước';
+  document.getElementById('wsCount').textContent = (d.workspaces||[]).length + ' đang mở/khả dụng';
+  const list = document.getElementById('wsList'); list.innerHTML = '';
+  (d.workspaces||[]).forEach(w=>{
+    const el = document.createElement('div'); el.className = 'ws-item';
+    const av = w.avatarUrl ? `<img src="${w.avatarUrl.startsWith('//')?'https:'+w.avatarUrl:w.avatarUrl}" onerror="this.remove()">` : (w.name||'?').charAt(0).toUpperCase();
+    el.innerHTML = `
+      <div class="ws-item-head">
+        <div class="ws-avatar">${av}</div>
+        <div><b>${escWs(w.name)}</b><br><code class="tok">${(w.accountId||'').slice(0,8)}...</code>
+        <div style="font-size:12px;color:#64748b">${w.proxy ? 'Proxy: '+escWs(w.proxy.split('@').pop()) : 'Chưa cấu hình proxy'}</div></div>
+      </div>
+      <div class="ws-space"><h4>🌐 Zalo Web — phiên trình duyệt riêng</h4>
+        <span class="ws-pill ${w.web.running?'on':'off'}">${w.web.running?'Đang mở':'Chưa mở'}</span>
+        <span class="ws-pill ${w.web.hasSession?'on':'off'}">${w.web.hasSession?'đủ session':'thiếu session'}</span>
+        <div class="ws-row">
+          ${w.web.running
+            ? `<button class="btn" onclick="wsWebClose('${w.accountId}')">Dừng Web</button>`
+            : `<button class="btn btn-primary" onclick="wsWebOpen('${w.accountId}')">Mở nhanh Web</button>`}
+        </div></div>
+      <div class="ws-space"><h4>💻 Zalo PC — không gian riêng, chạy song song</h4>
+        <span class="ws-pill ${w.pc.running?'on':'off'}">${w.pc.running?('Đang mở PID '+w.pc.pid):'Chưa mở'}</span>
+        <div style="font-size:11px;color:#64748b">data: <code class="tok">${escWs((w.pc.dataDir||'').slice(-60))}</code></div>
+        <div class="ws-row">
+          ${w.pc.running
+            ? `<button class="btn" onclick="wsPcClose('${w.accountId}')">Dừng PC</button>`
+            : `<button class="btn btn-primary" onclick="wsPcOpen('${w.accountId}')">Mở nhanh PC</button>`}
+        </div></div>
+      <div class="ws-space"><h4>📱 Zalo Mobile — giả lập</h4>
+        <span class="ws-pill off">Mở thủ công</span>
+        <div style="font-size:12px;color:#64748b">${escWs(w.mobile.note||'')}</div></div>
+      <div class="ws-space"><h4>💾 Sao lưu & khôi phục</h4>
+        <div class="ws-row">
+          <button class="btn btn-green" onclick="wsBackup('${w.accountId}')">📦 Sao lưu 1-click</button>
+        </div></div>`;
+    list.appendChild(el);
+  });
+}
+function escWs(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+async function wsWebOpen(id){ await fetch('/api/accounts/'+encodeURIComponent(id)+'/open',{method:'POST'}); wsLoad(); }
+async function wsWebClose(id){ await fetch('/api/accounts/'+encodeURIComponent(id)+'/close',{method:'POST'}); wsLoad(); }
+async function wsPcOpen(id){
+  const r = await fetch('/api/workspace/'+encodeURIComponent(id)+'/pc/open',{method:'POST'});
+  const d = await r.json(); if(!d.success) alert(d.error||'lỗi'); wsLoad();
+}
+async function wsPcClose(id){ await fetch('/api/workspace/'+encodeURIComponent(id)+'/pc/close',{method:'POST'}); wsLoad(); }
+function wsBackup(id){ window.location.href = '/api/workspace/'+encodeURIComponent(id)+'/backup'; }
+function wsRestore(){ document.getElementById('wsRestoreFile').click(); }
+async function wsDoRestore(inp){
+  if(!inp.files || !inp.files[0]) return;
+  const fd = new FormData(); fd.append('file', inp.files[0]);
+  const r = await fetch('/api/workspace/restore',{method:'POST',body:fd}); const d = await r.json();
+  alert(d.success ? ('Đã khôi phục workspace ' + (d.accountId||'')) : ('Lỗi: ' + (d.error||'')));
+  inp.value=''; wsLoad();
+}
+wsLoad();
+</script>
+</body>
+</html>

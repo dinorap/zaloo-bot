@@ -23,9 +23,14 @@
     function setBusy(isBusy, text) {
         var checkBtn = $('nexusUpdateBtn');
         var applyBtn = $('nexusApplyUpdateBtn');
+        var hint = $('nexusUpdateHint');
         if (checkBtn) {
             checkBtn.disabled = !!isBusy;
-            checkBtn.textContent = text || (isBusy ? 'Đang kiểm tra...' : 'Cập nhật');
+            if (hint) {
+                hint.textContent = text || 'Kiểm tra phiên bản';
+            } else {
+                checkBtn.textContent = text || (isBusy ? 'Đang kiểm tra...' : 'Cập nhật');
+            }
         }
         if (applyBtn) applyBtn.disabled = !!isBusy || !state.canApply;
     }
@@ -56,8 +61,10 @@
 
             state.checked = true;
             state.canApply = data.state === 'ready';
+            var verLabel = 'Đang dùng v' + (data.currentVersion || '—') + (state.canApply ? ' · Có v' + (data.latestVersion || 'mới') : ' · Đã mới nhất');
             setText('nexusUpdateHint', 'Kiểm tra phiên bản');
-            setText('nexusUpdateVersion', 'Đang dùng v' + (data.currentVersion || '—') + (state.canApply ? ' · Có v' + (data.latestVersion || 'mới') : ' · Đã mới nhất'));
+            setText('nexusUpdateVersion', verLabel);
+            storageSet(LAST_VERSION_KEY, verLabel);
             var updateDot = $('nexusUpdateDot');
             if (updateDot) updateDot.hidden = !state.canApply;
 
@@ -111,6 +118,7 @@
     // ─── Tự động kiểm tra + thông báo (không tự tải/áp dụng bản cập nhật) ────
     var AUTO_CHECK_MIN_INTERVAL_MS = 30 * 60 * 1000; // tối đa 1 lần / 30 phút, tránh gọi GitHub API quá nhiều
     var LAST_CHECK_KEY = 'nexus_update_last_autocheck';
+    var LAST_VERSION_KEY = 'nexus_update_last_version_label';
     var DISMISSED_KEY = 'nexus_update_dismissed_version';
 
     function storageGet(key) {
@@ -146,6 +154,10 @@
     }
 
     async function autoCheck(force) {
+        var cachedLabel = storageGet(LAST_VERSION_KEY);
+        if (cachedLabel) {
+            setText('nexusUpdateVersion', cachedLabel);
+        }
         if (!force) {
             var last = Number(storageGet(LAST_CHECK_KEY) || 0);
             if (Date.now() - last < AUTO_CHECK_MIN_INTERVAL_MS) return;
@@ -158,8 +170,10 @@
             if (!data.success) return;
 
             var hasUpdate = data.state === 'ready';
+            var verLabel = 'Đang dùng v' + (data.currentVersion || '—') + (hasUpdate ? ' · Có v' + (data.latestVersion || 'mới') : ' · Đã mới nhất');
             setText('nexusUpdateHint', 'Kiểm tra phiên bản');
-            setText('nexusUpdateVersion', 'Đang dùng v' + (data.currentVersion || '—') + (hasUpdate ? ' · Có v' + (data.latestVersion || 'mới') : ' · Đã mới nhất'));
+            setText('nexusUpdateVersion', verLabel);
+            storageSet(LAST_VERSION_KEY, verLabel);
             var autoUpdateDot = $('nexusUpdateDot');
             if (autoUpdateDot) autoUpdateDot.hidden = !hasUpdate;
             state.canApply = hasUpdate;

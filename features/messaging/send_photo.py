@@ -22,12 +22,12 @@ import json
 import time
 from typing import Optional, Tuple
 
-import requests
 
 from core.zalo.enc import zalo_encode
 from core.zalo.dec import zalo_decode
 from core.zalo.zalo_config import get_zpw_ver
 from core.zalo.zalo_headers import zalo_mobile_headers
+from core.zalo import http as zalo_http
 
 FILE_DOMAIN = "https://tt-files-wpa.chat.zalo.me"
 # Zalo Web chia chunk theo cấu hình; 1MB là mức an toàn cho ảnh.
@@ -138,7 +138,7 @@ def upload_photo(
             url_encode=False,
         )
         files = {"chunkContent": (file_name, chunk, "application/octet-stream")}
-        response = requests.post(
+        response = zalo_http.post(
             upload_url,
             params={
                 "zpw_ver": zpw_ver,
@@ -255,7 +255,7 @@ def send_photo_message(
         zpw_enk,
         url_encode=False,
     )
-    response = requests.post(
+    response = zalo_http.post(
         send_url,
         params={"zpw_ver": zpw_ver, "zpw_type": "30", "nretry": "0"},
         data={"params": enc_params},
@@ -317,6 +317,7 @@ def send_photo(
         "message": "Đã gửi ảnh" if ok else (error_message or f"Gửi ảnh lỗi error_code={error_code}"),
         "step": "send",
         "photoId": upload_info.get("photoId"),
+        "clientId": upload_info.get("clientId"),
         "urls": {
             "thumbUrl": upload_info.get("thumbUrl"),
             "normalUrl": upload_info.get("normalUrl"),

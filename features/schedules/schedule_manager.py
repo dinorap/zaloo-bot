@@ -112,9 +112,39 @@ def save_schedule(schedule: dict):
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
+def _normalize_message_items(schedule: dict) -> List[dict]:
+    """Chuẩn hóa danh sách nội dung tin nhắn (hỗ trợ nhiều tin + ảnh kèm từng tin)."""
+    raw_items = schedule.get("messages")
+    items = []
+    if isinstance(raw_items, list):
+        for entry in raw_items:
+            if isinstance(entry, str):
+                txt = entry.strip()
+                if txt:
+                    items.append({"text": txt, "photoPath": "", "photoName": ""})
+            elif isinstance(entry, dict):
+                txt = str(entry.get("text") if "text" in entry else (entry.get("message") or "")).strip()
+                ppath = str(entry.get("photoPath") or "").strip()
+                pname = str(entry.get("photoName") or "").strip()
+                if txt or ppath:
+                    items.append({"text": txt, "photoPath": ppath, "photoName": pname})
+    if not items:
+        txt = str(schedule.get("message") or "").strip()
+        ppath = str(schedule.get("photoPath") or "").strip()
+        pname = str(schedule.get("photoName") or "").strip()
+        if txt or ppath:
+            items.append({"text": txt, "photoPath": ppath, "photoName": pname})
+    return items
+
+
 def normalize_schedule(schedule: dict) -> dict:
     """Chuẩn hóa schedule."""
     now_ms = int(time.time() * 1000)
+    messages = _normalize_message_items(schedule)
+    first_msg = messages[0] if messages else {"text": "", "photoPath": "", "photoName": ""}
+    mode = str(schedule.get("messageMode") or "sequence").strip()
+    if mode not in ("sequence", "rotate_recipient"):
+        mode = "sequence"
 
     return {
         "scheduleId": schedule.get("scheduleId", "sch_" + str(uuid.uuid4())[:8]),
@@ -128,10 +158,12 @@ def normalize_schedule(schedule: dict) -> dict:
             "name": "",
             "totalMember": 0
         },
-        "message": (schedule.get("message") or "").strip(),
+        "message": first_msg["text"],
         # Ảnh đính kèm (tùy chọn): đường dẫn file tương đối trong thư mục data.
-        "photoPath": str(schedule.get("photoPath") or "").strip(),
-        "photoName": str(schedule.get("photoName") or "").strip(),
+        "photoPath": first_msg["photoPath"],
+        "photoName": first_msg["photoName"],
+        "messages": messages,
+        "messageMode": mode,
         "runAt": schedule.get("runAt", ""),
         "status": schedule.get("status", "pending"),
         "rateLimit": {
@@ -156,7 +188,7 @@ def create_schedule(payload: dict) -> dict:
     # Validate
     if not schedule["accountId"]:
         raise ValueError("Chưa chọn tài khoản gửi")
-    if not schedule["message"] and not schedule["photoPath"]:
+    if not schedule["messages"] and not schedule["message"] and not schedule["photoPath"]:
         raise ValueError("Tin nhắn không được để trống (hoặc phải đính kèm ảnh)")
     if not schedule["recipients"]:
         raise ValueError("Chưa chọn người nhận")

@@ -619,13 +619,195 @@ schedInitPhotoAttach('group', 'schedGroup');
 schedInitPhotoAttach('phone', 'schedPhone');
 schedInitPhotoAttach('personal-groups', 'schedPersonalGroup');
 
+// ─── MULTI-MESSAGE & MULTI-TIME CAMPAIGN HELPERS ────────────────────────
+var _schedExtraMsgs = { 'group': [], 'phone': [], 'personal-groups': [] };
+var _schedExtraTimes = { 'group': [], 'phone': [], 'personal-groups': [] };
+
+function _schedTabPrefix(tabKey) {
+    if (tabKey === 'group') return 'schedGroup';
+    if (tabKey === 'phone') return 'schedPhone';
+    return 'schedPersonalGroup';
+}
+
+function _schedTimeInputId(tabKey) {
+    if (tabKey === 'group') return 'schedGroupDateTime';
+    if (tabKey === 'phone') return 'schedPhoneDateTime';
+    return 'schedPersonalGroupRunAt';
+}
+
+function _schedFmtLocal(d) {
+    function p(n) { return String(n).padStart(2, '0'); }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+function _schedSyncExtraMsgInputs(tabKey) {
+    var box = document.getElementById(_schedTabPrefix(tabKey) + 'ExtraMsgs');
+    if (!box) return;
+    var list = _schedExtraMsgs[tabKey] || [];
+    box.querySelectorAll('textarea[data-extra-msg-idx]').forEach(function(ta) {
+        var idx = parseInt(ta.getAttribute('data-extra-msg-idx'), 10);
+        if (!isNaN(idx) && list[idx]) list[idx].text = ta.value;
+    });
+}
+
+function _schedRenderExtraMsgs(tabKey) {
+    var prefix = _schedTabPrefix(tabKey);
+    var box = document.getElementById(prefix + 'ExtraMsgs');
+    var modeWrap = document.getElementById(prefix + 'MultiModeWrap');
+    var list = _schedExtraMsgs[tabKey] || [];
+    if (modeWrap) modeWrap.style.display = list.length > 0 ? 'block' : 'none';
+    if (!box) return;
+    box.innerHTML = list.map(function(item, idx) {
+        var num = idx + 2;
+        var safeTxt = String(item.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        var photoPreview = item.previewUrl
+            ? '<div style="display:inline-flex;align-items:center;gap:8px">'
+                + '<img src="' + item.previewUrl + '" alt="" style="width:36px;height:36px;border-radius:8px;object-fit:cover;border:1px solid #cbd5e1">'
+                + '<span style="font-size:12px;color:#475569;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtmlSchedules(item.photoFile ? item.photoFile.name : '') + '</span>'
+                + '<button type="button" class="sched-del-mini" title="Bỏ ảnh" onclick="schedClearExtraMsgPhoto(\'' + tabKey + '\',' + idx + ')">&times;</button>'
+              + '</div>'
+            : '';
+        return '<div class="sched-msg-card">'
+            + '<div class="sched-msg-head">'
+                + '<span class="sched-msg-badge">Tin nhắn #' + num + '</span>'
+                + '<button type="button" class="sched-del-mini" title="Xóa tin nhắn này" onclick="schedRemoveExtraMsg(\'' + tabKey + '\',' + idx + ')">&times;</button>'
+            + '</div>'
+            + '<textarea data-extra-msg-idx="' + idx + '" placeholder="Nhập nội dung tin #' + num + '...">' + safeTxt + '</textarea>'
+            + '<input type="file" id="' + prefix + 'ExtraPhoto_' + idx + '" accept="image/*" style="display:none" onchange="schedSelectExtraMsgPhoto(\'' + tabKey + '\',' + idx + ',this)">'
+            + '<div class="sched-msg-photo-row">'
+                + '<button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById(\'' + prefix + 'ExtraPhoto_' + idx + '\').click()">Chọn ảnh đính kèm</button>'
+                + photoPreview
+            + '</div>'
+        + '</div>';
+    }).join('');
+}
+
+function schedAddExtraMsg(tabKey) {
+    _schedSyncExtraMsgInputs(tabKey);
+    _schedExtraMsgs[tabKey].push({ text: '', photoFile: null, previewUrl: '' });
+    _schedRenderExtraMsgs(tabKey);
+    var prefix = _schedTabPrefix(tabKey);
+    var box = document.getElementById(prefix + 'ExtraMsgs');
+    var tas = box ? box.querySelectorAll('textarea') : [];
+    if (tas.length) tas[tas.length - 1].focus();
+}
+
+function schedRemoveExtraMsg(tabKey, idx) {
+    _schedSyncExtraMsgInputs(tabKey);
+    _schedExtraMsgs[tabKey].splice(idx, 1);
+    _schedRenderExtraMsgs(tabKey);
+}
+
+function schedSelectExtraMsgPhoto(tabKey, idx, inputEl) {
+    _schedSyncExtraMsgInputs(tabKey);
+    var file = inputEl && inputEl.files && inputEl.files[0];
+    if (!file) return;
+    if (!/^image\//.test(file.type)) {
+        schedShowNotif('Lỗi', 'File chọn không phải ảnh.', 'error');
+        inputEl.value = '';
+        return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+        schedShowNotif('Lỗi', 'Ảnh vượt quá 20MB.', 'error');
+        inputEl.value = '';
+        return;
+    }
+    var item = _schedExtraMsgs[tabKey][idx];
+    if (item) {
+        item.photoFile = file;
+        item.previewUrl = URL.createObjectURL(file);
+        _schedRenderExtraMsgs(tabKey);
+    }
+}
+
+function schedClearExtraMsgPhoto(tabKey, idx) {
+    _schedSyncExtraMsgInputs(tabKey);
+    var item = _schedExtraMsgs[tabKey][idx];
+    if (item) {
+        item.photoFile = null;
+        item.previewUrl = '';
+        _schedRenderExtraMsgs(tabKey);
+    }
+}
+
+function _schedSyncExtraTimeInputs(tabKey) {
+    var box = document.getElementById(_schedTabPrefix(tabKey) + 'ExtraTimes');
+    if (!box) return;
+    var list = _schedExtraTimes[tabKey] || [];
+    box.querySelectorAll('input[data-extra-time-idx]').forEach(function(inp) {
+        var idx = parseInt(inp.getAttribute('data-extra-time-idx'), 10);
+        if (!isNaN(idx)) list[idx] = inp.value || '';
+    });
+}
+
+function _schedRenderExtraTimes(tabKey) {
+    var prefix = _schedTabPrefix(tabKey);
+    var box = document.getElementById(prefix + 'ExtraTimes');
+    if (!box) return;
+    var list = _schedExtraTimes[tabKey] || [];
+    box.innerHTML = list.map(function(val, idx) {
+        return '<div class="sched-time-row">'
+            + '<input type="datetime-local" data-extra-time-idx="' + idx + '" value="' + escapeHtmlSchedules(val || '') + '">'
+            + '<button type="button" class="sched-del-mini" title="Xóa khung giờ này" onclick="schedRemoveExtraTime(\'' + tabKey + '\',' + idx + ')">&times;</button>'
+        + '</div>';
+    }).join('');
+}
+
+function schedAddExtraTime(tabKey, defaultVal) {
+    _schedSyncExtraTimeInputs(tabKey);
+    var val = defaultVal || '';
+    if (!val) {
+        var baseEl = document.getElementById(_schedTimeInputId(tabKey));
+        var baseStr = (baseEl && baseEl.value) ? baseEl.value : _schedFmtLocal(new Date());
+        var d = new Date(baseStr);
+        if (isNaN(d.getTime())) d = new Date();
+        d.setHours(d.getHours() + (_schedExtraTimes[tabKey].length + 1));
+        val = _schedFmtLocal(d);
+    }
+    _schedExtraTimes[tabKey].push(val);
+    _schedRenderExtraTimes(tabKey);
+}
+
+function schedRemoveExtraTime(tabKey, idx) {
+    _schedSyncExtraTimeInputs(tabKey);
+    _schedExtraTimes[tabKey].splice(idx, 1);
+    _schedRenderExtraTimes(tabKey);
+}
+
+function schedQuickAddTime(tabKey, spec) {
+    var d = new Date();
+    if (typeof spec === 'number') {
+        d.setMinutes(d.getMinutes() + spec);
+    } else if (spec === '20:00') {
+        d.setHours(20, 0, 0, 0);
+        if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+    } else if (spec === 'tomorrow_09:00') {
+        d.setDate(d.getDate() + 1);
+        d.setHours(9, 0, 0, 0);
+    }
+    var val = _schedFmtLocal(d);
+    var mainEl = document.getElementById(_schedTimeInputId(tabKey));
+    if (mainEl && !mainEl.value) {
+        mainEl.value = val;
+        return;
+    }
+    _schedSyncExtraTimeInputs(tabKey);
+    var existing = [mainEl ? mainEl.value : ''].concat(_schedExtraTimes[tabKey] || []);
+    if (existing.indexOf(val) >= 0) {
+        schedShowNotif('Thông báo', 'Khung giờ ' + val.replace('T', ' ') + ' đã có sẵn.', 'info');
+        return;
+    }
+    _schedExtraTimes[tabKey].push(val);
+    _schedRenderExtraTimes(tabKey);
+}
+
 // ─── SAVE SCHEDULE ──────────────────────────────────────────────────────
 
 function schedSaveSchedule() {
     var gt = document.getElementById('tab-group');
     var pt = document.getElementById('tab-phone');
-    var pg = document.getElementById('tab-personal-groups');
     var tab = gt && gt.classList.contains('active') ? 'group' : (pt && pt.classList.contains('active') ? 'phone' : 'personal-groups');
+    var prefix = _schedTabPrefix(tab);
 
     var data = { recipients: [], source: tab, rateLimit: { minDelaySec: 3, maxDelaySec: 5, maxConsecutiveErrors: 5 }, batchConfig: { batchSize: 10, batchDelaySec: 30 } };
 
@@ -678,51 +860,82 @@ function schedSaveSchedule() {
         data.batchConfig.batchDelaySec = parseInt((document.getElementById('schedPersonalGroupBatchDelay') || {}).value) || 30;
     }
 
-    var photoFile = _schedPhotoFiles[tab] || null;
+    _schedSyncExtraMsgInputs(tab);
+    _schedSyncExtraTimeInputs(tab);
+
+    // Gom danh sách tin nhắn (Tin #1 + Tin #2, #3...)
+    var rawMessages = [{ text: (data.message || '').trim(), photoFile: _schedPhotoFiles[tab] || null }];
+    (_schedExtraMsgs[tab] || []).forEach(function(item) {
+        rawMessages.push({ text: (item.text || '').trim(), photoFile: item.photoFile || null });
+    });
+    var activeMessages = rawMessages.filter(function(item) { return item.text || item.photoFile; });
+
+    // Gom danh sách khung giờ gửi
+    var allTimes = [];
+    [data.runAt].concat(_schedExtraTimes[tab] || []).forEach(function(t) {
+        var ts = String(t || '').trim();
+        if (ts && allTimes.indexOf(ts) < 0) allTimes.push(ts);
+    });
+
+    var multiModeEl = document.getElementById(prefix + 'MultiMode');
+    data.messageMode = (multiModeEl && multiModeEl.value) ? multiModeEl.value : 'sequence';
 
     if (!data.accountId) { schedShowNotif('Lỗi', 'Chưa chọn tài khoản gửi', 'error'); return; }
     if (!data.title) { schedShowNotif('Lỗi', 'Chưa nhập tiêu đề', 'error'); return; }
-    // Có ảnh đính kèm thì cho phép bỏ trống nội dung (nội dung là chú thích ảnh).
-    if (!data.message && !photoFile) { schedShowNotif('Lỗi', 'Chưa nhập nội dung hoặc chọn ảnh', 'error'); return; }
-    if (!data.runAt) { schedShowNotif('Lỗi', 'Chưa chọn thời gian', 'error'); return; }
-    if (!data.recipients.length) { schedShowNotif('Lỗi', 'Chưa chọn người nhận', 'error'); return; }
+    if (!activeMessages.length) { schedShowNotif('Lỗi', 'Chưa nhập nội dung tin nhắn hoặc chọn ảnh', 'error'); return; }
+    if (!allTimes.length) { schedShowNotif('Lỗi', 'Chưa chọn thời gian gửi', 'error'); return; }
+    if (!data.recipients.length) { schedShowNotif('Lỗi', 'Chưa chọn người/nhóm nhận', 'error'); return; }
 
     var bid = tab === 'group' ? 'btnSaveScheduleGroup' : (tab === 'phone' ? 'btnSaveSchedulePhone' : 'btnSaveSchedulePersonalGroup');
     var btn = document.getElementById(bid);
+    var ctaBtn = document.querySelector('#tab-' + tab + ' .sched-save-cta');
     var orig = btn ? btn.innerHTML : '';
+    var ctaOrig = ctaBtn ? ctaBtn.innerHTML : '';
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Đang lưu...'; }
+    if (ctaBtn) { ctaBtn.disabled = true; ctaBtn.innerHTML = 'Đang lưu lịch...'; }
 
-    // Nếu có ảnh: upload lên server trước để lấy photoPath, rồi mới tạo lịch.
-    var prepare = Promise.resolve();
-    if (photoFile) {
+    function uploadOnePhoto(file) {
+        if (!file) return Promise.resolve({ photoPath: '', photoName: '' });
         var fd = new FormData();
-        fd.append('photo', photoFile, photoFile.name);
-        prepare = fetch('/api/schedules/upload-photo', { method: 'POST', body: fd })
+        fd.append('photo', file, file.name);
+        return fetch('/api/schedules/upload-photo', { method: 'POST', body: fd })
             .then(function(r) { return r.json(); })
             .then(function(j) {
                 if (!j || j.error || !j.photoPath) {
                     throw new Error((j && j.error) || 'Upload ảnh đính kèm thất bại');
                 }
-                data.photoPath = j.photoPath;
-                data.photoName = j.photoName || photoFile.name;
+                return { photoPath: j.photoPath, photoName: j.photoName || file.name };
             });
     }
 
-    prepare
-        .then(function() {
+    Promise.all(activeMessages.map(function(item) {
+        return uploadOnePhoto(item.photoFile).then(function(up) {
+            return { text: item.text, photoPath: up.photoPath, photoName: up.photoName };
+        });
+    }))
+        .then(function(uploadedMsgs) {
+            data.messages = uploadedMsgs;
+            data.message = uploadedMsgs[0].text || '';
+            data.photoPath = uploadedMsgs[0].photoPath || '';
+            data.photoName = uploadedMsgs[0].photoName || '';
+            data.runAt = allTimes[0];
+            data.runTimes = allTimes;
             return fetch('/api/schedules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         })
         .then(function(r) { return r.json(); })
         .then(function(j) {
             if (j.error) { schedShowNotif('Lỗi', j.error, 'error'); return; }
             if (j.scheduleCount && j.scheduleCount > 1) {
-                schedShowNotif('Thành công', 'Đã tạo ' + j.scheduleCount + ' lịch cho ' + j.accountCount + ' tài khoản (chia người nhận không trùng). Xem tại trang Lịch gửi.', 'success');
+                schedShowNotif('Thành công', 'Đã tạo ' + j.scheduleCount + ' đợt lịch (' + (j.timeCount || 1) + ' khung giờ). Xem tiến độ tại Lịch hoạt động.', 'success');
             } else {
-                schedShowNotif('Thành công', 'Đã lưu lịch! Xem tiến độ tại trang Lịch gửi.', 'success');
+                schedShowNotif('Thành công', 'Đã lưu lịch! Xem tiến độ tại trang Lịch hoạt động.', 'success');
             }
         })
         .catch(function(e) { schedShowNotif('Lỗi', e.message, 'error'); })
-        .finally(function() { if (btn) { btn.disabled = false; btn.innerHTML = orig; } });
+        .finally(function() {
+            if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+            if (ctaBtn) { ctaBtn.disabled = false; ctaBtn.innerHTML = ctaOrig; }
+        });
 }
 
 // ─── GROUP MEMBERS ──────────────────────────────────────────────────────
@@ -1445,7 +1658,7 @@ function schedRenderPersonalGroupsTable() {
 
         var avatarHtml = avatar
             ? "<img src=\"" + safeAvatar + "\" class=\"recipient-avatar\" onclick=\"showAvatarOverlay('" + safeAvatar + "', '" + safeName + "'); event.stopPropagation();\" style=\"cursor:pointer;\">"
-            : "<div class=\"recipient-avatar\" style=\"background:rgba(88,166,255,0.2);display:flex;align-items:center;justify-content:center;\">👥</div>";
+            : "<div class=\"recipient-avatar\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"9\" cy=\"8\" r=\"3.5\"/><circle cx=\"17\" cy=\"9\" r=\"2.5\"/><path d=\"M2.5 20a6.5 6.5 0 0 1 13 0\"/><path d=\"M14.5 15.5a5 5 0 0 1 7 4.5\"/></svg></div>";
 
         return ""
             + "<tr class=\"sched-personal-group-row\" style=\"cursor:pointer\" onclick=\"schedTogglePersonalGroupSelection('" + safeGid + "')\">"

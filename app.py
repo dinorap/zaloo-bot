@@ -67,6 +67,36 @@ app_root = get_app_root()
 ACTIVITY_LOG_FILE = os.path.join(app_root, "Nexus.log")
 _ACTIVITY_LOG_LOCK = threading.RLock()
 _ACTIVITY_LOG_INITIALIZED = False
+# File handle giữ mở thay vì mở/đóng cho mỗi dòng log. Trước đây mỗi dòng
+# (bao gồm cả access log của werkzeug) đều tạo một lần open+close file -> rất
+# nặng khi app phục vụ hàng trăm request/phút.
+_ACTIVITY_LOG_FILE_HANDLE = None
+
+
+def _get_activity_log_handle():
+    """Lấy (hoặc mở) handle ghi log dùng chung."""
+    global _ACTIVITY_LOG_FILE_HANDLE
+    if _ACTIVITY_LOG_FILE_HANDLE is not None:
+        return _ACTIVITY_LOG_FILE_HANDLE
+    try:
+        os.makedirs(os.path.dirname(ACTIVITY_LOG_FILE), exist_ok=True)
+        _ACTIVITY_LOG_FILE_HANDLE = open(
+            ACTIVITY_LOG_FILE, "a", encoding="utf-8", newline="\n"
+        )
+    except Exception:
+        _ACTIVITY_LOG_FILE_HANDLE = None
+    return _ACTIVITY_LOG_FILE_HANDLE
+
+
+def _close_activity_log_handle():
+    global _ACTIVITY_LOG_FILE_HANDLE
+    if _ACTIVITY_LOG_FILE_HANDLE is not None:
+        try:
+            _ACTIVITY_LOG_FILE_HANDLE.flush()
+            _ACTIVITY_LOG_FILE_HANDLE.close()
+        except Exception:
+            pass
+        _ACTIVITY_LOG_FILE_HANDLE = None
 
 
 def _append_activity_log(message, level="INFO"):
@@ -78,13 +108,14 @@ def _append_activity_log(message, level="INFO"):
     normalized_level = str(level or "INFO").upper().replace("TASK:", "TASK-")
     lines = text.split("\n")
     try:
-        os.makedirs(os.path.dirname(ACTIVITY_LOG_FILE), exist_ok=True)
         with _ACTIVITY_LOG_LOCK:
-            with open(ACTIVITY_LOG_FILE, "a", encoding="utf-8", newline="\n") as log_file:
-                for line in lines:
-                    if line:
-                        log_file.write(f"[{timestamp}] [{normalized_level}] {line}\n")
-                log_file.flush()
+            log_file = _get_activity_log_handle()
+            if log_file is None:
+                return
+            for line in lines:
+                if line:
+                    log_file.write(f"[{timestamp}] [{normalized_level}] {line}\n")
+            log_file.flush()
     except Exception:
         # Logging must never stop the application from starting.
         pass
@@ -153,6 +184,7 @@ def _initialize_activity_logging():
                 pass
     except Exception:
         pass
+    _close_activity_log_handle()
 
     original_stdout = sys.stdout
     original_stderr = sys.stderr
@@ -163,13 +195,15 @@ def _initialize_activity_logging():
 
 
 if __name__ == "__main__":
+    # Đảm bảo worker import `from app import ...` dùng chung module `__main__` (cùng _inbox_sse_clients / _sse_clients).
+    sys.modules.setdefault("app", sys.modules["__main__"])
     _initialize_activity_logging()
 
 base_path = get_base_path()
 template_path = os.path.join(base_path, 'templates')
 static_path = os.path.join(base_path, 'static')
 
-app = Flask(__name__, 
+app = Flask(__name__,
             template_folder=template_path,
             static_folder=static_path)
 app.secret_key = "zalo-tool-secret-key"
@@ -178,6 +212,45 @@ app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 # UI patches must be visible immediately after overwrite/restart.
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['TEMPLATES_AUTO_RELOAD'] = True
+
+# ─── Giảm log access ồn ào của werkzeug ──────────────────────────────────────
+# Mặc định werkzeug in MỘT dòng cho MỌI request ra stderr. Ứng dụng này bị
+# frontend poll liên tục (mỗi 10s gọi /api/group-copy/jobs, SSE, static asset)
+# nên Nexus.log bị ngập dòng "[ERROR] 127.0.0.1 - - [GET /...]" làm file phình
+# to nhanh, đọc log chậm và tốn I/O. Chỉ giữ lại các request lỗi (>=400) và
+# các request chậm (>5s) để vẫn còn dấu vết khi cần debug.
+class _QuietAccessLogFilter:
+    """Lọc access log của werkzeug: bỏ request 2xx/3xx thường."""
+
+    def filter(self, record):
+        try:
+            status = getattr(record, "status", None)
+            if status is None:
+                response = getattr(record, "response", None)
+                status = getattr(response, "status_code", None)
+            status = int(status) if status is not None else 0
+        except Exception:
+            return True
+        if status >= 500:
+            return True
+        if status >= 400:
+            return True
+        # Giữ lại request chậm để phát hiện nghẽn hiệu năng.
+        try:
+            if float(getattr(record, "request_duration", 0) or 0) > 5.0:
+                return True
+        except Exception:
+            pass
+        return False
+
+
+try:
+    from werkzeug.logging import logging as _werkzeug_logging
+
+    _werkzeug_logging.getLogger("werkzeug").setLevel(_werkzeug_logging.WARNING)
+    _werkzeug_logging.getLogger("werkzeug").addFilter(_QuietAccessLogFilter())
+except Exception:
+    pass
 
 # ─── Setup sys.path for source/packaged modules ───────────────────────────────
 if getattr(sys, "frozen", False):
@@ -195,7 +268,7 @@ if auth_path not in sys.path:
     sys.path.insert(0, auth_path)
 
 from features.members.group_member_service import fetch_group_members_by_input, format_group_info, normalize_group_input, resolve_group_input_to_group_id
-from features.profiles.profile_service import fetch_profiles_with_single_fallback, build_member_rows_from_uids, fetch_friend_relations
+from features.profiles.profile_service import fetch_profiles_with_single_fallback, build_member_rows_from_uids, fetch_friend_relations, fetch_friend_genders
 from features.messaging.send_sms import send_sms
 from features.messaging.add_friend import send_friend_request
 from features.groups.add_group import create_group as _create_group
@@ -266,6 +339,15 @@ from features.messages.unread_manager import (
     start_unread_worker,
 )
 from core.zalo.zalo_config import get_zpw_ver
+from features.chatbot import store as chatbot_store
+from features.chatbot import worker as chatbot_worker
+from features.telegram import store as telegram_store
+from features.telegram import worker as telegram_worker
+from features.telegram import telegram_client
+from features.gateway import config as gateway_config
+from features.gateway import auth as gateway_auth
+from features.gateway import send_queue as gateway_queue
+from features.gateway import tunnel as gateway_tunnel
 
 
 # ─── Friend request planning storage ─────────────────────────────────────────
@@ -836,56 +918,96 @@ def _update_action_plan_batch_status(plan_type: str, plan_id: str, batch_day, pa
     return plan, batch
 
 # ─── Device Activation / Info (optional - for device management) ─────────────
+# DEV MODE: tat hoan toan check kich hoat — mo la chay, khong can ma.
+DEVICE_TRACKING_ENABLED = False
+# ─── Device Activation / Info (Hệ thống kích hoạt máy & License) ─────────────
+DEVICE_TRACKING_ENABLED = True
+
+def validate_activation_code():
+    return True, 9999, "Dev mode: bo check kich hoat"
 try:
     from authencation.send_info_device import (
-        register_device_on_startup,
-        register_device_with_activation,
-        check_activation_on_startup,
-        validate_activation_code,
-        save_user_activation_code,
-        send_device_log,
-        get_activation_duration_options,
-        get_license_plan,
+        validate_activation_code as _device_validate_activation_code,
+        save_user_activation_code as _device_save_user_activation_code,
+        register_device_on_startup as _real_register_startup,
+        register_device_with_activation as _real_register_activation,
+        get_activation_duration_options as _real_get_duration_options,
     )
-    DEVICE_TRACKING_ENABLED = True
-except Exception as e:
-    print(f"⚠️  Device activation disabled: {str(e)}")
-    DEVICE_TRACKING_ENABLED = False
-
     def validate_activation_code():
-        return True, 9999, "Activation module disabled"
+        return _device_validate_activation_code()
 
+def save_user_activation_code(code_text):
+    return True, "Dev mode: bo check kich hoat"
     def save_user_activation_code(code_text):
-        return False, "Activation module disabled"
-
-    def register_device_on_startup(*args, **kwargs):
-        return False
+        return _device_save_user_activation_code(code_text)
 
     def register_device_with_activation(*args, **kwargs):
-        return False
+        return _real_register_activation(*args, **kwargs)
 
-    def check_activation_on_startup():
+    def get_activation_duration_options():
+        return _real_get_duration_options()
+except Exception:
+    def validate_activation_code():
+        return True, 9999, "License dev mode"
+
+    def save_user_activation_code(code_text):
+        return True, "Kích hoạt dev mode"
+
+    def register_device_with_activation(*args, **kwargs):
         return True
-
-    def send_device_log(action, details=None):
-        return False
 
     def get_activation_duration_options():
         return [
-            {"key": "3d", "label": "3 Ngày", "icon": "📅"},
-            {"key": "7d", "label": "1 Tuần", "icon": "📈"},
-            {"key": "10d", "label": "10 Ngày", "icon": "📈"},
-            {"key": "1m", "label": "1 Tháng", "icon": "📊"},
-            {"key": "2m", "label": "2 Tháng", "icon": "📊"},
-            {"key": "3m", "label": "3 Tháng", "icon": "📊"},
-            {"key": "6m", "label": "6 Tháng", "icon": "📊"},
-            {"key": "lifetime", "label": "Vĩnh viễn", "icon": "💎"},
+            {"key": "3d", "label": "3 Ngày", "days": 3, "icon": "📅"},
+            {"key": "7d", "label": "1 Tuần", "days": 7, "icon": "📈"},
+            {"key": "10d", "label": "10 Ngày", "days": 10, "icon": "📈"},
+            {"key": "1m", "label": "1 Tháng", "days": 30, "icon": "📊"},
+            {"key": "2m", "label": "2 Tháng", "days": 60, "icon": "📊"},
+            {"key": "3m", "label": "3 Tháng", "days": 90, "icon": "📊"},
+            {"key": "6m", "label": "6 Tháng", "days": 180, "icon": "📊"},
+            {"key": "lifetime", "label": "Vĩnh viễn", "days": None, "icon": "💎", "is_permanent": True},
         ]
 
-    def get_license_plan():
-        # Module kích hoạt bị tắt: mở full để không chặn khi phát triển.
-        return {"activated": True, "planKey": "", "planLabel": "", "isPermanent": True,
-                "daysRemaining": 9999, "maxAccounts": 0, "multiAccountExec": True}
+def register_device_on_startup(*args, **kwargs):
+    return True
+
+def register_device_with_activation(*args, **kwargs):
+    return True
+
+def check_activation_on_startup():
+    return True
+
+def send_device_log(action, details=None):
+    return False
+
+def get_activation_duration_options():
+    return [
+        {"key": "lifetime", "label": "Vinh vien (dev)", "icon": "💎"},
+    ]
+
+def get_license_plan():
+    from features.license import license_manager
+    info = license_manager.get_license_info()
+    return {
+        "activated": info["activated"],
+        "planKey": f"tier{info['tier']}",
+        "planLabel": info["tierName"],
+        "tier": info["tier"],
+        "tierBadge": info["tierBadge"],
+        "isPermanent": info["isPermanent"],
+        "daysRemaining": info["daysRemaining"],
+        "maxAccounts": 0,
+        "multiAccountExec": True,
+        "allowedFeatures": info["allowedFeatures"],
+        "defaultUrl": info["defaultUrl"],
+    }
+try:
+    from authencation.send_info_device import (
+        register_device_on_startup as _real_register_startup,
+        register_device_with_activation as _real_register_activation,
+    )
+except Exception:
+    pass
 
 # ─── Global log queue for SSE streaming ───────────────────────────────────────
 _log_queue = queue.Queue()
@@ -926,9 +1048,8 @@ def _load_policy_acceptance():
 
 
 def _policy_is_accepted():
-    # Bắt buộc xác nhận lại sau mỗi lần mở ứng dụng. File chỉ lưu lịch sử
-    # phiên bản/thời điểm đã đồng ý, không được dùng để bỏ qua màn chính sách.
-    return bool(POLICY_ACCEPTED_THIS_SESSION)
+    # DEV MODE: luon coi nhu da dong y chinh sach.
+    return True
 
 
 def _save_policy_acceptance():
@@ -959,74 +1080,118 @@ def ensure_schedule_worker_started():
         start_schedule_worker()
         start_group_copy_worker()
         start_unread_worker()
+        try:
+            chatbot_worker.ensure_started()
+        except Exception as e:
+            print(f"[chatbot] khong start worker: {e}", flush=True)
+        try:
+            telegram_worker.ensure_started()
+        except Exception as e:
+            print(f"[telegram] khong start worker: {e}", flush=True)
+        try:
+            from features.inbox import worker as _iw
+            _iw.ensure_started()
+        except Exception as e:
+            print(f"[inbox-sync] khong start worker: {e}", flush=True)
         SCHEDULE_WORKER_STARTED = True
-        print("✅ Schedule worker, group-copy worker và unread worker đã khởi động", flush=True)
+        print("✅ Schedule worker, group-copy worker, unread worker, chatbot worker va telegram worker da khoi dong", flush=True)
         return True
 
 
 def _activation_status_payload():
-    try:
-        is_valid, days_remaining, message = validate_activation_code()
-    except Exception as e:
-        is_valid, days_remaining, message = False, 0, f"Lỗi kiểm tra kích hoạt: {e}"
+    from features.license import license_manager
+    info = license_manager.get_license_info()
     return {
         "success": True,
-        "activated": bool(is_valid),
-        "days_remaining": int(days_remaining or 0),
-        "message": message,
+        "activated": bool(info["activated"]),
+        "tier": info["tier"],
+        "tierName": info["tierName"],
+        "tierBadge": info["tierBadge"],
+        "description": info["description"],
+        "days_remaining": int(info["daysRemaining"] or 0),
+        "is_permanent": bool(info["isPermanent"]),
+        "key": info.get("key", ""),
+        "allowed_features": info["allowedFeatures"],
+        "all_tiers": info["allTiers"],
+        "message": f"License {info['tierName']} đang hoạt động",
     }
+
+
+@app.context_processor
+def inject_license_context():
+    """Tự động tiêm thông tin gói bản quyền vào tất cả template Jinja2."""
+    from features.license import license_manager
+    info = license_manager.get_license_info()
+    return {
+        "license_info": info,
+        "license_tier": info["tier"],
+        "allowed_features": set(info["allowedFeatures"]),
+        "default_nav_url": info["defaultUrl"],
+    }
+
+
+_CLIENT_ALLOWED_EXACT_PATHS = {
+    "/inbox",
+    "/favicon.ico",
+    "/api/inbox/conversations",
+    "/api/inbox/directory",
+    "/api/inbox/sync",
+    "/api/inbox/messages",
+    "/api/inbox/send",
+    "/api/inbox/recall",
+    "/api/inbox/claim",
+    "/api/inbox/read",
+    "/api/inbox/presence",
+    "/api/inbox/supervisor",
+    "/api/inbox/supervisor/action",
+    "/api/inbox/audit",
+    "/api/inbox/stream",
+    "/api/gateway/session/health",
+    "/api/gateway/messages/group-latest",
+    "/api/gateway/send-group-message",
+    "/api/gateway/send-sms",
+    "/api/gateway/status",
+}
+_CLIENT_ALLOWED_PREFIXES = ("/static/", "/media/")
+
+
+def _is_client_allowed_path(path: str) -> bool:
+    p = (path or "").strip() or "/"
+    if p in _CLIENT_ALLOWED_EXACT_PATHS:
+        return True
+    return any(p.startswith(pref) for pref in _CLIENT_ALLOWED_PREFIXES)
 
 
 @app.before_request
 def require_activation_before_use():
-    """Chặn giao diện/API cho đến khi đồng ý chính sách và kích hoạt hợp lệ."""
-    path = request.path or ""
-    endpoint = request.endpoint or ""
-    policy_endpoints = {"policy_page", "api_policy_status", "api_policy_accept", "static"}
+    """Kiểm tra điều kiện trước khi xử lý request:
+    1. Khởi động background workers.
+    2. Cách ly máy Client (chỉ được vào /inbox).
+    3. Bảo vệ và chặn các trang/API không thuộc gói License (Loại 1, 2, 3).
+    """
+    ensure_schedule_worker_started()
+    if not gateway_auth.is_host_request():
+        path = request.path or "/"
+        if not _is_client_allowed_path(path):
+            if path.startswith("/api/") or path == "/run" or request.method not in ("GET", "HEAD"):
+                return jsonify({"success": False, "error": "Chỉ máy chủ Host mới có quyền truy cập trang/API quản trị."}), 403
+            return redirect(url_for("inbox_page"))
 
-    if endpoint in policy_endpoints or path.startswith("/static/") or path.startswith("/api/policy/"):
-        return None
-
-    if not _policy_is_accepted():
-        if path.startswith("/api/") or request.accept_mimetypes.best == "application/json":
+    # ─── BẢO VỆ PHÂN HỆ THEO 3 LOẠI KEY LICENSE (LOẠI 1, 2, 3) ───
+    from features.license import license_manager
+    path = request.path or "/"
+    if not license_manager.is_path_allowed(path, endpoint=request.endpoint):
+        if path.startswith("/api/") or path == "/run" or request.method not in ("GET", "HEAD"):
             return jsonify({
                 "success": False,
-                "policy_required": True,
-                "error": "Bạn cần đồng ý chính sách người dùng trước khi tiếp tục.",
+                "error": f"Phân hệ này không thuộc {license_manager.get_license_info()['tierName']}.",
+                "code": "FEATURE_RESTRICTED_BY_LICENSE",
+                "tier": license_manager.get_current_tier(),
             }), 403
-        return redirect(url_for("policy_page"))
+        target = license_manager.get_redirect_for_forbidden_path(path)
+        return redirect(target)
 
-    if not DEVICE_TRACKING_ENABLED:
-        ensure_schedule_worker_started()
-        return None
-
-    allowed_endpoints = {
-        "activation_page",
-        "api_activation_status",
-        "api_activation_save",
-        "api_activation_resend",
-        "api_device_register",
-        "api_device_log",
-        "static",
-    }
-
-    if endpoint in allowed_endpoints or path.startswith("/api/activation/"):
-        return None
-
-    status = _activation_status_payload()
-    if status.get("activated"):
-        ensure_schedule_worker_started()
-        return None
-
-    if path.startswith("/api/") or request.accept_mimetypes.best == "application/json":
-        return jsonify({
-            "success": False,
-            "activation_required": True,
-            "error": "Phần mềm chưa được kích hoạt",
-            "message": status.get("message", "Vui lòng nhập mã kích hoạt."),
-        }), 403
-
-    return redirect(url_for("activation_page"))
+    return None
 
 
 @app.route("/policy", methods=["GET"])
@@ -1113,19 +1278,78 @@ def api_license_plan():
 
 @app.route("/api/activation/save", methods=["POST"])
 def api_activation_save():
+    from features.license import license_manager
     data = request.get_json(silent=True) or request.form or {}
     code_text = (data.get("code") or data.get("activation_code") or "").strip()
-    ok, message = save_user_activation_code(code_text)
-    status = _activation_status_payload()
-    if ok and status.get("activated"):
+    if not code_text:
+        return jsonify({"success": False, "message": "Vui lòng nhập mã kích hoạt."}), 400
+
+    # 1. Thử xác thực theo định dạng key license 3 loại (JM1-..., JM2-..., JM3-... hoặc JM1-TEST...)
+    ok, message, info = license_manager.activate_license_key(code_text)
+
+    # 2. Nếu không khớp dạng JM1/2/3, thử kiểm tra theo cơ chế check key cũ (mã 12 ký tự thiết bị qua email)
+    if not ok:
+        try:
+            dev_ok, dev_msg = save_user_activation_code(code_text)
+            if dev_ok:
+                ok = True
+                message = dev_msg
+                # Kích hoạt gói license (mặc định theo tier người dùng chọn, hoặc Loại 1 Full)
+                tier = int(data.get("tier") or 1)
+                license_manager.activate_license_key(license_manager.generate_license_key(tier=tier, days=30))
+                info = license_manager.get_license_info()
+            else:
+                message = dev_msg
+        except Exception as e:
+            pass
+
+    if ok and info.get("activated"):
         ensure_schedule_worker_started()
+
     return jsonify({
         "success": bool(ok),
         "message": message,
-        "activated": bool(status.get("activated")),
-        "days_remaining": status.get("days_remaining", 0),
-        "status_message": status.get("message", ""),
+        "activated": bool(info.get("activated")),
+        "tier": info.get("tier"),
+        "tierName": info.get("tierName"),
+        "tierBadge": info.get("tierBadge"),
+        "days_remaining": info.get("daysRemaining", 0),
+        "status_message": message,
+        "license_info": info,
     }), 200 if ok else 400
+
+
+@app.route("/api/activation/switch-tier", methods=["POST"])
+def api_activation_switch_tier():
+    """Chuyển nhanh giữa 3 loại key license (dành cho quản trị / test giao diện)."""
+    from features.license import license_manager
+    data = request.get_json(silent=True) or request.form or {}
+    tier = int(data.get("tier") or 1)
+    if tier not in (1, 2, 3):
+        tier = 1
+    sample_key = license_manager.generate_license_key(tier=tier, permanent=True)
+    ok, message, info = license_manager.activate_license_key(sample_key)
+    return jsonify({
+        "success": bool(ok),
+        "message": f"Đã chuyển sang {info['tierName']}.",
+        "license_info": info,
+    })
+
+
+@app.route("/api/activation/generate-sample", methods=["POST"])
+def api_activation_generate_sample():
+    """Tạo key mẫu theo loại license."""
+    from features.license import license_manager
+    data = request.get_json(silent=True) or request.form or {}
+    tier = int(data.get("tier") or 1)
+    days = int(data.get("days") or 9999)
+    key = license_manager.generate_license_key(tier=tier, days=days, permanent=(days >= 9999))
+    return jsonify({
+        "success": True,
+        "tier": tier,
+        "key": key,
+        "tierName": license_manager.TIER_INFO.get(tier, {}).get("name", ""),
+    })
 
 
 @app.route("/api/activation/resend", methods=["POST"])
@@ -1168,7 +1392,9 @@ def api_activation_resend():
 @app.route("/")
 def index():
     from flask import redirect
-    return redirect(url_for("guide_page"))
+    from features.license import license_manager
+    info = license_manager.get_license_info()
+    return redirect(info.get("defaultUrl") or url_for("dashboard_page"))
 
 
 @app.route("/dashboard")
@@ -1204,6 +1430,951 @@ def messages_page():
 @app.route("/groups")
 def groups_page():
     return render_template("groups.html", active_page="groups")
+
+
+@app.route("/chatbot")
+def chatbot_page():
+    return render_template("chatbot.html", active_page="chatbot")
+
+
+@app.route("/telegram")
+def telegram_page():
+    """Trang Chatbot Telegram — chuyển hướng về tab Telegram trong trang Chatbot."""
+    return redirect(url_for("chatbot_page", tab="telegram"))
+
+
+@app.route("/api/bot/shared", methods=["GET"])
+def api_bot_shared():
+    """Cau hinh bot dung chung cho moi nen tang (Zalo, Telegram)."""
+    try:
+        chatbot_worker.ensure_started()
+    except Exception:
+        pass
+    cfg = chatbot_store.load_shared_config()
+    return jsonify({"success": True, "config": cfg, "status": chatbot_worker.status()})
+
+
+@app.route("/api/bot/shared", methods=["POST"])
+def api_bot_shared_save():
+    """Luu cau hinh bot dung chung. Chi nhan cac key thuoc ve phan dung chung."""
+    data = request.get_json(silent=True) or {}
+    patch = {}
+    for k in chatbot_store.SHARED_KEYS:
+        if k in data:
+            patch[k] = data[k]
+    for k in ("strictDoc", "triggerEnabled"):
+        if k in patch:
+            patch[k] = bool(patch[k])
+    if "modelCascade" in patch and isinstance(patch["modelCascade"], str):
+        patch["modelCascade"] = [x.strip() for x in patch["modelCascade"].split(",") if x.strip()]
+    cfg = chatbot_store.save_shared_config(patch)
+    try:
+        chatbot_worker.ensure_started()
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Luu xong nhung worker loi: {e}"}), 500
+    return jsonify({"success": True, "config": cfg, "status": chatbot_worker.status()})
+
+
+@app.route("/api/chatbot/config", methods=["GET"])
+def api_chatbot_config():
+    cfg = chatbot_store.load_config()
+    safe = dict(cfg)
+    key = str(safe.get("geminiApiKey") or "")
+    # tra key that cho UI tu dien, chi an khi log
+    try:
+        chatbot_worker.ensure_started()
+    except Exception:
+        pass
+    return jsonify({"success": True, "config": safe, "status": chatbot_worker.status()})
+
+
+@app.route("/api/chatbot/config", methods=["POST"])
+def api_chatbot_save():
+    data = request.get_json(silent=True) or {}
+    patch = {}
+    for k in ("enabled", "accountId", "targetGroupIds", "destGroupId", "mode",
+              "geminiApiKey", "geminiApiKeys", "pollIntervalSec", "allowSelfReply", "sendGapSec",
+              "systemPrompt", "globalContext", "modelCascade", "strictDoc", "handoffText",
+              "replyToSource", "includeSenderName", "triggerEnabled", "triggerMode", "triggerKeywords"):
+        if k in data:
+            patch[k] = data[k]
+    if "enabled" in patch:
+        patch["enabled"] = bool(patch["enabled"])
+    if "strictDoc" in patch:
+        patch["strictDoc"] = bool(patch["strictDoc"])
+    if "includeSenderName" in patch:
+        patch["includeSenderName"] = bool(patch["includeSenderName"])
+    if "triggerEnabled" in patch:
+        patch["triggerEnabled"] = bool(patch["triggerEnabled"])
+    if "modelCascade" in patch and isinstance(patch["modelCascade"], str):
+        patch["modelCascade"] = [x.strip() for x in patch["modelCascade"].split(",") if x.strip()]
+    cfg = chatbot_store.save_config(patch)
+    try:
+        chatbot_worker.ensure_started()
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Luu xong nhung worker loi: {e}"}), 500
+    return jsonify({"success": True, "config": cfg, "status": chatbot_worker.status()})
+
+
+@app.route("/api/chatbot/keys/unmark", methods=["POST"])
+def api_chatbot_keys_unmark():
+    data = request.get_json(silent=True) or {}
+    key_val = "" if data.get("all") else str(data.get("key") or "").strip()
+    cfg = chatbot_store.unmark_key_limited(key_val)
+    chatbot_worker.log("[gemini] da bo danh dau limit cho " + ("tat ca key" if not key_val else f"key ...{key_val[-4:]}"))
+    return jsonify({"success": True, "config": cfg, "status": chatbot_worker.status()})
+
+
+@app.route("/api/chatbot/logs", methods=["GET"])
+def api_chatbot_logs():
+    try:
+        limit = int(request.args.get("limit") or 80)
+    except Exception:
+        limit = 80
+    return jsonify({"success": True, "logs": chatbot_worker.get_logs(limit),
+                    "status": chatbot_worker.status()})
+
+
+@app.route("/api/chatbot/knowledge", methods=["GET"])
+def api_chatbot_knowledge():
+    try:
+        info = chatbot_store.load_knowledge()
+        text = info.get("text") or ""
+        # UI chi hien 60k ky tu dau de nhe
+        return jsonify({"success": True, "chars": info.get("chars") or 0,
+                        "text": text[:60000], "path": info.get("path") or ""})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/chatbot/knowledge", methods=["POST"])
+def api_chatbot_knowledge_save():
+    data = request.get_json(silent=True) or {}
+    text = str(data.get("text") or "")
+    try:
+        info = chatbot_store.save_knowledge(text)
+        chatbot_worker.log(f"[knowledge] da luu {info.get('chars')} ky tu vao {info.get('path')}")
+        return jsonify({"success": True, **info})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/chatbot/send-test", methods=["POST"])
+def api_chatbot_send_test():
+    data = request.get_json(silent=True) or {}
+    message = str(data.get("message") or "").strip() or "🤖 Test tu trang Chatbot Jimmy BOT CHAT"
+    cfg = chatbot_store.load_config()
+    account_id = str(cfg.get("accountId") or "").strip()
+    dest = str(cfg.get("destGroupId") or "").strip() or ((cfg.get("targetGroupIds") or [""])[0] if (cfg.get("targetGroupIds") or []) else "")
+    if not account_id:
+        return jsonify({"success": False, "error": "Chua chon tai khoan o trang Chatbot."}), 400
+    if not dest:
+        return jsonify({"success": False, "error": "Chua co nhom dich. Nhap DEST o trang Chatbot."}), 400
+    try:
+        account, cookies, zpw_enk, imei = _get_account_credentials(account_id, require_imei=True)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    try:
+        from features.messaging.send_link import send_message_smart
+        out = send_message_smart(dest, message, zpw_enk, cookies, imei, is_group=True)
+        if out.get("ok"):
+            chatbot_worker.log(f"[send-test] -> {dest} ok=True msg={message[:120]}")
+            return jsonify({"success": True, "dest": dest})
+        return jsonify({"success": False, "error": out.get("error") or "Zalo tu choi gui.", "dest": dest}), 502
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TELEGRAM CHATBOT — Bot API long polling, dung chung bo nao Gemini + tai lieu
+# voi chatbot Zalo. Token/chat ID do khach tu nhap, huong dan trong trang UI.
+# ═══════════════════════════════════════════════════════════════════════════
+@app.route("/api/telegram/config", methods=["GET"])
+def api_telegram_config():
+    try:
+        telegram_worker.ensure_started()
+    except Exception:
+        pass
+    cfg = telegram_store.load_config()
+    return jsonify({"success": True, "config": telegram_store.public_config(cfg),
+                    "status": telegram_worker.status()})
+
+
+@app.route("/api/telegram/config", methods=["POST"])
+def api_telegram_save():
+    """Luu cau hinh RIENG cho Telegram.
+
+    Bao gom ca noi dung tu van (tai lieu, prompt, xung ho, cau handoff) rieng
+    cua bot Telegram. Key Gemini, cascade, trigger dung chung qua /api/bot/shared.
+    """
+    data = request.get_json(silent=True) or {}
+    patch = {}
+    for k in ("enabled", "botToken", "botUsername", "botName", "allowedChatIds",
+              "pollIntervalSec", "sendGapSec", "maxMessageChars",
+              "useSharedGeminiKeys", "geminiApiKey", "replyToSource",
+              "includeSenderName", "onlyPrivateChats", "ignoreBotMessages",
+              "systemPrompt", "globalContext", "strictDoc", "handoffText"):
+        if k in data:
+            patch[k] = data[k]
+    for k in ("enabled", "replyToSource", "includeSenderName",
+              "onlyPrivateChats", "ignoreBotMessages", "useSharedGeminiKeys", "strictDoc"):
+        if k in patch:
+            patch[k] = bool(patch[k])
+    if "allowedChatIds" in patch:
+        v = patch["allowedChatIds"]
+        if isinstance(v, str):
+            v = [x.strip() for x in v.split(",")]
+        patch["allowedChatIds"] = [str(x).strip() for x in (v or []) if str(x).strip()]
+    cfg = telegram_store.save_config(patch)
+    try:
+        telegram_worker.ensure_started()
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Luu xong nhung worker loi: {e}"}), 500
+    return jsonify({"success": True, "config": telegram_store.public_config(cfg),
+                    "status": telegram_worker.status()})
+
+
+@app.route("/api/telegram/knowledge", methods=["GET"])
+def api_telegram_knowledge():
+    try:
+        info = telegram_store.load_knowledge()
+        return jsonify({"success": True, "text": info.get("text") or "",
+                        "chars": info.get("chars") or 0, "path": info.get("path") or ""})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "text": "", "chars": 0}), 500
+
+
+@app.route("/api/telegram/knowledge", methods=["POST"])
+def api_telegram_knowledge_save():
+    data = request.get_json(silent=True) or {}
+    text = str(data.get("text") or "")
+    try:
+        info = telegram_store.save_knowledge(text)
+        telegram_worker.log(f"[knowledge] da luu {info.get('chars')} ky tu vao {info.get('path')}")
+        return jsonify({"success": True, "chars": info.get("chars") or 0,
+                        "path": info.get("path") or ""})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/telegram/check-token", methods=["POST"])
+def api_telegram_check_token():
+    """Kiem tra token co hop le khong, tra them username bot de hien thi."""
+    data = request.get_json(silent=True) or {}
+    token = str(data.get("botToken") or "").strip()
+    if not token:
+        return jsonify({"success": False, "error": "Chua nhap Bot Token."}), 400
+    res = telegram_client.get_me(token)
+    if not res.get("ok"):
+        return jsonify({"success": False, "error": res.get("error") or "Token khong hop le."}), 400
+    return jsonify({"success": True,
+                    "botUsername": res.get("username") or "",
+                    "botName": res.get("name") or "",
+                    "botId": res.get("id")})
+
+
+@app.route("/api/telegram/check-chat", methods=["POST"])
+def api_telegram_check_chat():
+    """Kiem tra mot chat ID co truy cap duoc khong (dung de khong doan Chat ID)."""
+    data = request.get_json(silent=True) or {}
+    token = str(data.get("botToken") or "").strip()
+    chat_id = str(data.get("chatId") or "").strip()
+    if not token or not chat_id:
+        return jsonify({"success": False, "error": "Thieu Bot Token hoac Chat ID."}), 400
+    res = telegram_client.get_chat(token, chat_id)
+    if not res.get("ok"):
+        return jsonify({"success": False, "error": res.get("error") or "Khong tim thay chat."}), 400
+    info = res.get("result") or {}
+    return jsonify({"success": True,
+                    "title": info.get("title") or " ".join(
+                        x for x in (str(info.get("first_name") or ""), str(info.get("last_name") or "")) if x),
+                    "type": info.get("type") or "",
+                    "username": info.get("username") or ""})
+
+
+@app.route("/api/telegram/send-test", methods=["POST"])
+def api_telegram_send_test():
+    data = request.get_json(silent=True) or {}
+    token = str(data.get("botToken") or "").strip()
+    chat_id = str(data.get("chatId") or "").strip()
+    message = str(data.get("message") or "").strip() or "Xin chao! Jimmy BOT CHAT da ket noi thanh cong."
+    if not token or not chat_id:
+        return jsonify({"success": False, "error": "Thieu Bot Token hoac Chat ID."}), 400
+    res = telegram_client.send_message(token, chat_id, message)
+    if res.get("ok"):
+        telegram_worker.log(f"[send-test] -> {chat_id} ok=True msg={message[:120]}")
+        return jsonify({"success": True})
+    return jsonify({"success": False, "error": res.get("error") or "Telegram tu choi gui."}), 502
+
+
+@app.route("/api/telegram/scan-chats", methods=["POST"])
+def api_telegram_scan_chats():
+    """Quet cac chat da nhan tin nhan de khach lay Chat ID ma khong can doan.
+
+    Neu bot dang chay, danh sach chat da duoc worker ghi nho san.
+    Neu bot dang tat, poll mot lan lay update gan nhat.
+    """
+    data = request.get_json(silent=True) or {}
+    token = str(data.get("botToken") or "").strip()
+    if not token:
+        cfg = telegram_store.load_config()
+        token = str(cfg.get("botToken") or "").strip()
+    if not token:
+        return jsonify({"success": False, "error": "Chua co Bot Token."}), 400
+
+    chats = []
+    seen = {}
+    for item in telegram_store.load_seen_chats():
+        cid = str((item or {}).get("chatId") or "").strip()
+        if cid and cid not in seen:
+            seen[cid] = {
+                "chatId": cid,
+                "title": str((item or {}).get("title") or ""),
+                "type": str((item or {}).get("type") or ""),
+            }
+            chats.append(seen[cid])
+
+    # Bot chua chay -> poll mot lan de bat update gan nhat (offset -1 khong xoa du lieu).
+    if not chats and not telegram_worker.is_running():
+        res = telegram_client.get_updates(token, offset=-1, timeout=0)
+        if res.get("ok"):
+            for upd in (res.get("result") or []):
+                rec = telegram_client.parse_update(upd)
+                if not rec or not rec.get("chatId"):
+                    continue
+                cid = str(rec.get("chatId"))
+                if cid in seen:
+                    continue
+                seen[cid] = {
+                    "chatId": cid,
+                    "title": str(rec.get("chatTitle") or ""),
+                    "type": str(rec.get("chatType") or ""),
+                }
+                chats.append(seen[cid])
+        else:
+            return jsonify({"success": False, "error": res.get("error") or "Khong doc duoc tin nhan."}), 400
+
+    return jsonify({"success": True, "chats": chats})
+
+
+@app.route("/api/telegram/logs", methods=["GET"])
+def api_telegram_logs():
+    try:
+        limit = int(request.args.get("limit") or 120)
+    except Exception:
+        limit = 120
+    return jsonify({"success": True, "logs": telegram_worker.get_logs(limit),
+                    "status": telegram_worker.status()})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GATEWAY ĐA MÁY (P3+P4): 1 Host ôm session thật, Client gọi qua token nội bộ.
+# Client KHÔNG BAO GIỜ cầm cookies/zpwEnk. Host xếp hàng FIFO + chống ban.
+# ═══════════════════════════════════════════════════════════════════════════
+@app.route("/gateway")
+def gateway_page():
+    return render_template("gateway.html", active_page="gateway")
+
+
+def _parse_bool_flag(val, default: bool = False) -> bool:
+    if val is None:
+        return default
+    if isinstance(val, str):
+        return val.strip().lower() not in ("0", "false", "no", "off", "")
+    return bool(val)
+
+
+def _ip_priority_key(ip: str, outbound_ip: str = "", preferred_ip: str = ""):
+    if preferred_ip and ip == preferred_ip:
+        return (0, ip)
+    if outbound_ip and ip == outbound_ip:
+        return (1, ip)
+    if ip.startswith("192.168."):
+        return (2, ip)
+    if ip.startswith("10."):
+        return (3, ip)
+    if ip.startswith("169.254."):
+        return (5, ip)
+    return (4, ip)
+
+
+def _detect_lan_ips() -> list:
+    """Lấy danh sách IP LAN của Host, ưu tiên IP card mạng thật đi ra Internet."""
+    import socket as _so
+    raw_ips: list = []
+    try:
+        hn = _so.gethostname()
+        for _ip in _so.gethostbyname_ex(hn)[2] or []:
+            _ip = str(_ip or "").strip()
+            if _ip and not _ip.startswith("127.") and _ip not in raw_ips:
+                raw_ips.append(_ip)
+    except Exception:
+        pass
+    outbound_ip = ""
+    try:
+        _s = _so.socket(_so.AF_INET, _so.SOCK_DGRAM)
+        _s.settimeout(1.5)
+        _s.connect(("8.8.8.8", 80))
+        _lip = str(_s.getsockname()[0] or "").strip()
+        _s.close()
+        if _lip and not _lip.startswith("127."):
+            outbound_ip = _lip
+            if _lip not in raw_ips:
+                raw_ips.append(_lip)
+    except Exception:
+        pass
+    preferred_ip = ""
+    try:
+        preferred_ip = gateway_config.get_preferred_lan_ip()
+        if preferred_ip and preferred_ip not in raw_ips:
+            raw_ips.append(preferred_ip)
+    except Exception:
+        preferred_ip = ""
+    raw_ips.sort(key=lambda x: _ip_priority_key(x, outbound_ip=outbound_ip, preferred_ip=preferred_ip))
+    return raw_ips
+
+
+def _build_share_inbox_link(
+    host_url: str,
+    token: str,
+    is_loopback: bool,
+    include_token: bool,
+    preset_enabled: bool = False,
+    preset_name: str = "",
+    staff_sig: str = "",
+) -> str:
+    if not host_url:
+        return ""
+    from urllib.parse import urlencode
+    params = []
+    if include_token and is_loopback and token:
+        params.append(("token", token))
+    if preset_enabled and preset_name:
+        params.append(("name", preset_name))
+        sig = staff_sig or (gateway_config.sign_staff_name(preset_name, token) if (is_loopback and token) else "")
+        if sig:
+            params.append(("nsig", sig))
+    base = f"{host_url.rstrip('/')}/inbox"
+    return f"{base}?{urlencode(params)}" if params else base
+
+
+def _build_staff_share_links(
+    host_url: str,
+    token: str,
+    is_loopback: bool,
+    include_token: bool,
+    names: list,
+    profiles: list = None,
+) -> list:
+    if not is_loopback:
+        return []
+    prof_map = {}
+    for p in (profiles or []):
+        if isinstance(p, dict) and p.get("name"):
+            prof_map[str(p.get("name")).strip().lower()] = p
+    per_staff_pw = gateway_config.get_per_staff_password_enabled()
+    out = []
+    for nm in names or []:
+        sig = gateway_config.sign_staff_name(nm, token)
+        p = prof_map.get(str(nm).strip().lower()) or {}
+        eff_tok = (str(p.get("password") or "").strip() or token) if per_staff_pw else token
+        link = _build_share_inbox_link(
+            host_url, eff_tok, is_loopback, include_token,
+            preset_enabled=True, preset_name=nm, staff_sig=sig,
+        )
+        out.append({
+            "name": nm,
+            "sig": sig,
+            "link": link,
+            "role": gateway_config.normalize_staff_role(p.get("role")),
+            "accountIds": list(p.get("accountIds") or []),
+            "password": str(p.get("password") or "") if is_loopback else "",
+        })
+    return out
+
+
+@app.route("/api/gateway/config", methods=["GET"])
+def api_gateway_config():
+    from features.gateway.auth import client_ip, is_loopback as _lb
+    tok = gateway_config.get_internal_token()
+    ip = client_ip()
+    loop = _lb(ip)
+    show = tok if loop else (tok[:4] + "***" + tok[-3:] if len(tok) > 8 else "***")
+    profiles = gateway_config.get_staff_profiles()
+    if not loop:
+        profiles = [{k: v for k, v in p.items() if k != "password"} for p in profiles]
+    names = gateway_config.get_preset_staff_names()
+    sigs = {nm: gateway_config.sign_staff_name(nm, tok) for nm in names} if loop else {}
+    return jsonify({"success": True, "internalToken": show, "isLoopback": loop,
+                    "allowLan": gateway_config.get_allowed_lan(),
+                    "sendGapSec": gateway_config.get_send_gap(),
+                    "publicUrl": gateway_tunnel.get_effective_public_url(gateway_config.get_public_url()),
+                    "allowWan": gateway_config.get_allow_wan(),
+                    "includeTokenInLink": gateway_config.get_include_token_in_link(),
+                    "perStaffPassword": gateway_config.get_per_staff_password_enabled(),
+                    "presetStaffEnabled": gateway_config.get_preset_staff_enabled(),
+                    "presetStaffName": ", ".join(names) if names else gateway_config.get_preset_staff_name(),
+                    "presetStaffNames": names,
+                    "staffProfiles": profiles,
+                    "staffSignatures": sigs,
+                    "preferredLanIp": gateway_config.get_preferred_lan_ip(),
+                    "sharedAccountIds": gateway_config.get_shared_account_ids(),
+                    "clientIp": ip,
+                    "tunnel": gateway_tunnel.get_status()})
+
+
+@app.route("/api/gateway/config", methods=["POST"])
+def api_gateway_config_save():
+    from features.gateway.auth import client_ip, is_loopback as _lb
+    if not _lb(client_ip()):
+        return jsonify({"success": False, "error": "Chỉ được đổi cấu hình trên chính máy Host."}), 403
+    data = request.get_json(silent=True) or {}
+    if data.get("rotateToken"):
+        import secrets as _s
+        tok = _s.token_urlsafe(32)
+        gateway_config._save_file_cfg({"internalToken": tok})
+    elif "internalToken" in data:
+        tok = str(data.get("internalToken") or "").strip()
+        if not tok:
+            return jsonify({"success": False, "error": "Mật khẩu không được để trống."}), 400
+        gateway_config._save_file_cfg({"internalToken": tok})
+    if "allowLan" in data:
+        v = data.get("allowLan")
+        if isinstance(v, list):
+            v = ",".join(v)
+        gateway_config._save_file_cfg({"allowLan": str(v or "")})
+    if "publicUrl" in data:
+        gateway_config._save_file_cfg({"publicUrl": str(data.get("publicUrl") or "").strip().rstrip("/")})
+    if "preferredLanIp" in data:
+        gateway_config._save_file_cfg({"preferredLanIp": str(data.get("preferredLanIp") or "").strip()})
+    if "allowWan" in data:
+        gateway_config._save_file_cfg({"allowWan": _parse_bool_flag(data.get("allowWan"), True)})
+    if "includeTokenInLink" in data:
+        gateway_config._save_file_cfg({"includeTokenInLink": _parse_bool_flag(data.get("includeTokenInLink"), True)})
+    if "perStaffPassword" in data:
+        gateway_config._save_file_cfg({"perStaffPassword": _parse_bool_flag(data.get("perStaffPassword"), False)})
+    if "presetStaffEnabled" in data:
+        gateway_config._save_file_cfg({"presetStaffEnabled": _parse_bool_flag(data.get("presetStaffEnabled"), False)})
+    if "staffProfiles" in data:
+        gateway_config.save_staff_profiles(data.get("staffProfiles"))
+    elif "presetStaffNames" in data:
+        names = gateway_config.parse_staff_names(data.get("presetStaffNames"))
+        old_map = {str(p.get("name") or "").strip().lower(): p for p in gateway_config.get_staff_profiles()}
+        rebuilt = []
+        for nm in names:
+            prev = old_map.get(nm.lower()) or {}
+            rebuilt.append({"name": nm, "role": prev.get("role") or "sale", "accountIds": prev.get("accountIds") or []})
+        gateway_config.save_staff_profiles(rebuilt)
+    elif "presetStaffName" in data:
+        names = gateway_config.parse_staff_names(data.get("presetStaffName"))
+        old_map = {str(p.get("name") or "").strip().lower(): p for p in gateway_config.get_staff_profiles()}
+        rebuilt = []
+        for nm in names:
+            prev = old_map.get(nm.lower()) or {}
+            rebuilt.append({"name": nm, "role": prev.get("role") or "sale", "accountIds": prev.get("accountIds") or []})
+        gateway_config.save_staff_profiles(rebuilt)
+    if "sharedAccountIds" in data or "shared_account_ids" in data:
+        v = data.get("sharedAccountIds", data.get("shared_account_ids"))
+        if isinstance(v, str):
+            v = [x.strip() for x in v.replace(";", ",").split(",") if x.strip()]
+        shared_ids = [str(x).strip() for x in (v or []) if str(x).strip()]
+        gateway_config._save_file_cfg({"sharedAccountIds": shared_ids})
+        if shared_ids:
+            try:
+                from features.inbox import store as _ib_store
+                _ib_store.save_config({"accountId": shared_ids[0]})
+            except Exception:
+                pass
+    if "sendGapSec" in data:
+        try:
+            gateway_config._save_file_cfg({"sendGapSec": max(0.5, float(data.get("sendGapSec") or 1.2))})
+        except Exception:
+            pass
+    return api_gateway_config()
+
+
+@app.route("/api/gateway/session/health", methods=["GET", "POST"])
+@gateway_auth.gateway_auth_required
+def api_gateway_session_health():
+    """Client kiểm tra acc sống/chết. KHÔNG trả key thật."""
+    if request.method == "POST":
+        data = request.get_json(silent=True) or request.form or {}
+    else:
+        data = request.args
+    account_id = str(data.get("accountId") or data.get("account_id") or "").strip()
+    try:
+        accs = load_accounts()
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+    def _pub(a):
+        _cks = str(a.get("cookies") or "")
+        _enk = str(a.get("zpwEnk") or "").strip()
+        return {"accountId": a.get("accountId"), "name": a.get("name"),
+                "avatarUrl": a.get("avatarUrl") or "",
+                "uid": a.get("uid") or "",
+                "loginCaptured": bool(a.get("loginCaptured")),
+                "ready": bool(a.get("loginCaptured") and _enk),
+                "hasSession": bool(_enk and "zpw_sek" in _cks)}
+    if account_id:
+        a = next((x for x in accs if str(x.get("accountId") or "") == account_id), None)
+        if not a:
+            return jsonify({"success": False, "error": "Khong tim thay account."}), 404
+        return jsonify({"success": True, "account": _pub(a),
+                        "circuit": gateway_queue.circuit_status(account_id),
+                        "queueDepth": gateway_queue.queue_depths().get(account_id, 0)})
+    return jsonify({"success": True, "accounts": [_pub(a) for a in accs]})
+
+
+@app.route("/api/gateway/messages/group-latest", methods=["GET", "POST"])
+@gateway_auth.gateway_auth_required
+def api_gateway_group_latest():
+    if request.method == "POST":
+        data = request.get_json(silent=True) or request.form or {}
+    else:
+        data = request.args
+    group_id = str(data.get("groupId") or data.get("group_id") or "").strip()
+    account_id = str(data.get("accountId") or data.get("account_id") or "").strip()
+    if not group_id or not account_id:
+        return jsonify({"success": False, "error": "Thieu groupId/accountId."}), 400
+    try:
+        # dung session that cua Host, khong tra key ra ngoai
+        account, cookies, zpw_enk, imei = _get_account_credentials(account_id, require_imei=False)
+        from features.messaging.last_messages import fetch_last_messages
+        res = fetch_last_messages({f"{group_id}_1": "0"}, cookies, zpw_enk, imei, zpw_ver=get_zpw_ver())
+        if not res.get("ok"):
+            return jsonify({"success": False, "error": res.get("message") or "Zalo loi."}), 502
+        items = [m for m in (res.get("groupMsgs") or []) if str(m.get("groupId") or "") == group_id]
+        items.sort(key=lambda x: int(x.get("ts") or 0), reverse=True)
+        latest = items[0] if items else None
+        if latest:
+            latest = {"msgId": latest.get("msgId"), "senderUid": latest.get("senderUid"),
+                      "text": latest.get("text"), "ts": latest.get("ts"),
+                      "msgType": latest.get("msgType")}
+        return jsonify({"success": True, "groupId": group_id, "count": len(items), "latest": latest})
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        msg = str(e)
+        code = 502
+        if "429" in msg or "431" in msg:
+            code = 429
+        return jsonify({"success": False, "error": msg[:300]}), code
+
+
+@app.route("/api/gateway/send-group-message", methods=["POST"])
+@gateway_auth.gateway_auth_required
+def api_gateway_send_group():
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        account_id = str(data.get("accountId") or data.get("account_id") or "").strip()
+        group_id = str(data.get("group_id") or data.get("groupId") or data.get("grid") or "").strip()
+        message = str(data.get("message") or data.get("msg") or "").strip()
+        photo_bytes, photo_name = None, ""
+    else:
+        account_id = str(request.form.get("accountId") or request.form.get("account_id") or "").strip()
+        group_id = str(request.form.get("group_id") or request.form.get("groupId") or request.form.get("grid") or "").strip()
+        message = str(request.form.get("message") or request.form.get("msg") or "").strip()
+        f = request.files.get("photo") or request.files.get("image") or request.files.get("file")
+        photo_bytes, photo_name = None, ""
+        if f:
+            try:
+                photo_bytes = f.read()
+                photo_name = f.filename or "image.jpg"
+                if len(photo_bytes) > 20 * 1024 * 1024:
+                    return jsonify({"success": False, "error": "Anh vuot qua 20MB."}), 400
+            except Exception as e:
+                return jsonify({"success": False, "error": str(e)}), 400
+    import re as _re
+    m = _re.search(r"\d{8,}", group_id or "")
+    if m:
+        group_id = m.group(0)
+    if not account_id or not group_id or (not message and not photo_bytes):
+        return jsonify({"success": False, "error": "Thieu accountId/group_id/message."}), 400
+    out = gateway_queue.enqueue(account_id, "group", group_id, message, photo_bytes, photo_name, timeout=90)
+    code = 200 if out.get("ok") else (429 if ("429" in str(out.get("error") or "") or "ngat mach" in str(out.get("error") or "")) else 502)
+    return jsonify({"success": bool(out.get("ok")), **out}), code
+
+
+@app.route("/api/gateway/send-sms", methods=["POST"])
+@gateway_auth.gateway_auth_required
+def api_gateway_send_sms():
+    data = request.get_json(silent=True) or request.form or {}
+    account_id = str(data.get("accountId") or data.get("account_id") or "").strip()
+    to_uid = str(data.get("to_uid") or data.get("toid") or data.get("toId") or data.get("uid") or "").strip()
+    import re as _re2
+    mm = _re2.search(r"\d{8,}", to_uid or "")
+    if mm:
+        to_uid = mm.group(0)
+    message = str(data.get("message") or data.get("msg") or "").strip()
+    if not account_id or not to_uid or not message:
+        return jsonify({"success": False, "error": "Thieu accountId/to_uid/message."}), 400
+    out = gateway_queue.enqueue(account_id, "sms", to_uid, message, timeout=90)
+    code = 200 if out.get("ok") else (429 if ("429" in str(out.get("error") or "") or "ngat mach" in str(out.get("error") or "")) else 502)
+    return jsonify({"success": bool(out.get("ok")), **out}), code
+
+
+@app.route("/api/gateway/status", methods=["GET"])
+@gateway_auth.gateway_auth_required
+def api_gateway_status():
+    depths = gateway_queue.queue_depths()
+    circuits = {aid: gateway_queue.circuit_status(aid) for aid in depths}
+    return jsonify({"success": True, "queueDepths": depths, "circuits": circuits,
+                    "sendGapSec": gateway_config.get_send_gap(),
+                    "tunnel": gateway_tunnel.get_status()})
+
+
+@app.route("/api/gateway/share-info", methods=["GET"])
+def api_gateway_share_info():
+    """1-cham share: tra ve IP LAN + token + acc mac dinh + group de Client copy la chay.
+
+    Mo tren chinh Host (loopback) thi tra full token. May LAN chi thay dang che.
+    Nếu Host đã cấu hình Public URL (ngrok/cloudflare/tên miền) thì ưu tiên
+    URL đó để máy khách ở xa (vài trăm km) chỉ cần mở 1 link + nhập 1 Token.
+    """
+    from features.gateway.auth import client_ip, is_loopback as _lb
+    lan_ips = _detect_lan_ips()
+    tok = gateway_config.get_internal_token()
+    ip = client_ip()
+    loop = _lb(ip)
+    try:
+        accs = load_accounts()
+    except Exception:
+        accs = []
+    def _ready(a):
+        _cks = str(a.get("cookies") or "")
+        _enk = str(a.get("zpwEnk") or "").strip()
+        return bool(a.get("loginCaptured") and _enk and "zpw_sek" in _cks)
+    default_acc = next((a for a in accs if _ready(a)), (accs[0] if accs else None))
+    # Danh sách acc được Host tick share (rỗng = acc Inbox đang chạy / acc mặc định).
+    shared_ids = gateway_config.get_shared_account_ids()
+    shared_accs = []
+    try:
+        for a in accs:
+            aid = str(a.get("accountId") or "")
+            if shared_ids and aid not in shared_ids:
+                continue
+            _cks = str(a.get("cookies") or "")
+            _enk = str(a.get("zpwEnk") or "").strip()
+            shared_accs.append({
+                "accountId": aid,
+                "name": str(a.get("name") or aid[:8]),
+                "ready": bool(a.get("loginCaptured") and _enk and "zpw_sek" in _cks),
+            })
+    except Exception:
+        pass
+    groups = []
+    if default_acc:
+        for g in (default_acc.get("personalGroups") or [])[:30]:
+            groups.append({"groupId": str(g.get("groupId") or ""), "name": str(g.get("name") or "")})
+    main_ip = lan_ips[0] if lan_ips else ""
+    lan_url = f"http://{main_ip}:5000" if main_ip else ""
+    public_url = gateway_tunnel.get_effective_public_url(gateway_config.get_public_url())
+    host_url = public_url or lan_url
+    include_token = gateway_config.get_include_token_in_link()
+    preset_enabled = gateway_config.get_preset_staff_enabled()
+    staff_profiles = gateway_config.get_staff_profiles()
+    preset_names = gateway_config.get_preset_staff_names()
+    preset_name = preset_names[0] if len(preset_names) == 1 else ", ".join(preset_names)
+    staff_sigs = {nm: gateway_config.sign_staff_name(nm, tok) for nm in preset_names} if loop else {}
+    share_staff_links = _build_staff_share_links(host_url, tok, loop, include_token, preset_names, staff_profiles) if (loop and preset_enabled) else []
+    share_inbox_link = _build_share_inbox_link(
+        host_url, tok, loop, include_token,
+        preset_enabled and len(preset_names) == 1,
+        preset_names[0] if len(preset_names) == 1 else "",
+    )
+    all_accs_meta = []
+    for a in accs:
+        aid = str(a.get("accountId") or "").strip()
+        if aid:
+            all_accs_meta.append({
+                "accountId": aid,
+                "name": str(a.get("name") or aid[:8]),
+                "ready": _ready(a),
+            })
+    return jsonify({
+        "success": True,
+        "isLoopback": loop,
+        "lanIps": lan_ips,
+        "mainIp": main_ip,
+        "preferredLanIp": gateway_config.get_preferred_lan_ip(),
+        "port": 5000,
+        "hostUrl": host_url,
+        "lanUrl": lan_url,
+        "publicUrl": public_url,
+        "allowWan": gateway_config.get_allow_wan(),
+        "includeTokenInLink": include_token,
+        "perStaffPassword": gateway_config.get_per_staff_password_enabled(),
+        "presetStaffEnabled": preset_enabled,
+        "presetStaffName": preset_name,
+        "presetStaffNames": preset_names,
+        "staffProfiles": staff_profiles if loop else [{k: v for k, v in p.items() if k != "password"} for p in staff_profiles],
+        "staffSignatures": staff_sigs,
+        "shareStaffLinks": share_staff_links,
+        "sharedAccountIds": shared_ids,
+        "sharedAccounts": shared_accs,
+        "allAccounts": all_accs_meta,
+        "shareInboxLink": share_inbox_link,
+        "internalToken": tok if loop else (tok[:4] + "***" + tok[-3:] if len(tok) > 8 else "***"),
+        "tokenFull": tok if loop else "",
+        "defaultAccountId": str((default_acc or {}).get("accountId") or ""),
+        "defaultAccountName": str((default_acc or {}).get("name") or ""),
+        "ready": bool(default_acc and _ready(default_acc)),
+        "groups": groups,
+        "sendGapSec": gateway_config.get_send_gap(),
+        "tunnel": gateway_tunnel.get_status(),
+    })
+
+
+@app.route("/api/gateway/tunnel/status", methods=["GET"])
+def api_gateway_tunnel_status():
+    from features.gateway.auth import client_ip, is_loopback as _lb
+    if not _lb(client_ip()):
+        return jsonify({"success": False, "error": "Chỉ xem trên chính máy Host."}), 403
+    return jsonify({"success": True, **gateway_tunnel.get_status()})
+
+
+@app.route("/api/gateway/tunnel/start", methods=["POST"])
+def api_gateway_tunnel_start():
+    from features.gateway.auth import client_ip, is_loopback as _lb
+    if not _lb(client_ip()):
+        return jsonify({"success": False, "error": "Chỉ bật link Public trên chính máy Host."}), 403
+    data = request.get_json(silent=True) or {}
+    st = gateway_tunnel.start_tunnel(port=5000, force=bool(data.get("force")))
+    return jsonify({"success": True, **st})
+
+
+@app.route("/api/gateway/tunnel/stop", methods=["POST"])
+def api_gateway_tunnel_stop():
+    from features.gateway.auth import client_ip, is_loopback as _lb
+    if not _lb(client_ip()):
+        return jsonify({"success": False, "error": "Chỉ tắt link Public trên chính máy Host."}), 403
+    st = gateway_tunnel.stop_tunnel()
+    return jsonify({"success": True, **st})
+
+
+@app.route("/api/gateway/doctor", methods=["GET"])
+def api_gateway_doctor():
+    """Chẩn đoán 1 chạm cho non-code: Host có nghe 0.0.0.0 không, firewall mở chưa, link share là gì.
+
+    Tất cả hiển thị bằng nút bấm trên /gateway, không cần chạy file .bat lẻ."""
+    import socket as _so
+    import subprocess as _sp
+    from features.gateway.auth import client_ip, is_loopback as _lb
+    lan_ips = _detect_lan_ips()
+    # 1) Host có nghe 0.0.0.0:5000 không
+    listening = ""
+    try:
+        _t = _so.socket(_so.AF_INET, _so.SOCK_STREAM)
+        _t.settimeout(1.0)
+        _t.connect(("127.0.0.1", 5000))
+        _t.close()
+        listening = "OK: Nexus đang nghe port 5000"
+    except Exception as e:
+        listening = f"LỖI: không nối được 127.0.0.1:5000 ({e}) — app chưa chạy?"
+    # 2) Firewall có rule mở 5000 không (chỉ đọc, không cần admin)
+    fw_rule = "không rõ"
+    fw_open = None
+    try:
+        _r = _sp.run(["netsh", "advfirewall", "firewall", "show", "rule", "name=Nexus 5000 LAN"],
+                     capture_output=True, text=True, timeout=8)
+        _out = ((_r.stdout or "") + (_r.stderr or "")).strip()
+        if "No rules match" in _out or "Không có quy tắc" in _out or not _out:
+            fw_rule = "CHƯA MỞ: chưa có rule Nexus 5000 LAN"
+            fw_open = False
+        else:
+            fw_rule = "ĐÃ MỞ: có rule Nexus 5000 LAN"
+            fw_open = True
+    except Exception as e:
+        fw_rule = f"không kiểm tra được firewall ({e})"
+    try:
+        tok = gateway_config.get_internal_token()
+        token_ok = bool(tok and len(tok) >= 8)
+    except Exception:
+        token_ok = False
+        tok = ""
+    main_ip = lan_ips[0] if lan_ips else ""
+    try:
+        public_url = gateway_tunnel.get_effective_public_url(gateway_config.get_public_url())
+    except Exception:
+        public_url = ""
+    host_url = public_url or (f"http://{main_ip}:5000" if main_ip else "")
+    try:
+        allow_wan = gateway_config.get_allow_wan()
+    except Exception:
+        allow_wan = True
+    share_link = _build_share_inbox_link(
+        host_url,
+        tok,
+        _lb(client_ip()),
+        gateway_config.get_include_token_in_link(),
+        gateway_config.get_preset_staff_enabled(),
+        gateway_config.get_preset_staff_name(),
+    ) if (host_url and token_ok) else (f"{host_url}/inbox" if host_url else "")
+    steps = []
+    if fw_open is False:
+        steps.append("Bấm nút 'Copy lệnh mở firewall' → chuột phải PowerShell → Run as administrator → dán → Enter → quay lại bấm 'Chạy chẩn đoán'.")
+    if not main_ip:
+        steps.append("Không tìm được IP LAN — kiểm tra WiFi máy Host.")
+    if not token_ok:
+        steps.append("Chưa có Token — mở lại trang /gateway 1 lần để tự sinh.")
+    if not public_url:
+        steps.append("Muốn share xa vài trăm km: mở tunnel (cloudflared/ngrok) trỏ về port 5000 rồi dán Public URL ở mục 1.")
+    return jsonify({
+        "success": True,
+        "listening": listening,
+        "firewall": fw_rule,
+        "firewallOpen": fw_open,
+        "lanIps": lan_ips,
+        "mainIp": main_ip,
+        "hostUrl": host_url,
+        "publicUrl": public_url,
+        "allowWan": allow_wan,
+        "tokenOk": token_ok,
+        "shareLink": share_link,
+        "clientIp": client_ip(),
+        "nextSteps": steps,
+        "fixCommand": 'netsh advfirewall firewall add rule name="Nexus 5000 LAN" dir=in action=allow protocol=TCP localport=5000',
+    })
+
+
+@app.route("/api/gateway/firewall/open", methods=["POST"])
+def api_gateway_firewall_open():
+    """Mở firewall cổng 5000 ngay trên giao diện (tự xin quyền Admin UAC nếu cần)."""
+    from features.gateway.auth import client_ip, is_loopback as _lb
+    if not _lb(client_ip()):
+        return jsonify({"success": False, "error": "Chỉ được mở firewall trên chính máy Host."}), 403
+    cmd = 'netsh advfirewall firewall add rule name="Nexus 5000 LAN" dir=in action=allow protocol=TCP localport=5000'
+    import subprocess as _sp
+    try:
+        _r = _sp.run(["netsh", "advfirewall", "firewall", "add", "rule",
+                      "name=Nexus 5000 LAN", "dir=in", "action=allow",
+                      "protocol=TCP", "localport=5000"],
+                     capture_output=True, text=True, timeout=15)
+        _out = ((_r.stdout or "") + (_r.stderr or "")).strip()
+        if _r.returncode == 0:
+            return jsonify({"success": True, "message": "Đã mở firewall port 5000 ✅", "output": _out[:500]})
+        if os.name == "nt" and ("elevation" in _out.lower() or "quyền admin" in _out.lower() or "run as administrator" in _out.lower()):
+            try:
+                _ps = (
+                    "Start-Process netsh -ArgumentList "
+                    "'advfirewall firewall add rule name=\"Nexus 5000 LAN\" dir=in action=allow protocol=TCP localport=5000' "
+                    "-Verb RunAs -Wait"
+                )
+                _sp.run(["powershell", "-NoProfile", "-Command", _ps],
+                        capture_output=True, text=True, timeout=25)
+                _chk = _sp.run(["netsh", "advfirewall", "firewall", "show", "rule", "name=Nexus 5000 LAN"],
+                               capture_output=True, text=True, timeout=8)
+                _chk_out = ((_chk.stdout or "") + (_chk.stderr or "")).strip()
+                if _chk.returncode == 0 and "Nexus 5000 LAN" in _chk_out:
+                    return jsonify({"success": True, "message": "Đã mở firewall port 5000 ✅"})
+            except Exception:
+                pass
+            return jsonify({"success": False, "needAdmin": True,
+                            "error": "Chưa mở được firewall (cần bấm Yes ở hộp thoại quyền Admin hoặc chạy lệnh bên dưới).",
+                            "fixCommand": cmd, "output": _out[:500]}), 200
+        return jsonify({"success": False, "error": _out[:500] or "Mở firewall thất bại.", "fixCommand": cmd}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)[:300], "fixCommand": cmd}), 200
 
 
 @app.route("/friends")
@@ -1642,6 +2813,912 @@ def api_delete_account(account_id):
 
 
 
+@app.route("/workspace")
+def workspace_page():
+    return render_template("workspace.html", active_page="workspace")
+
+
+@app.route("/api/workspace", methods=["GET"])
+def api_workspace_list():
+    """Danh sach khong gian kieu zDesk: Web + PC + Mobile moi acc."""
+    try:
+        from features.workspace import pc_status, find_zalo_exe
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+    try:
+        accs = load_accounts()
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+    zalo_exe = find_zalo_exe()
+    out = []
+    for a in accs or []:
+        aid = str(a.get("accountId") or "")
+        _cks = str(a.get("cookies") or "")
+        _enk = str(a.get("zpwEnk") or "").strip()
+        st = pc_status(aid)
+        out.append({
+            "accountId": aid,
+            "name": a.get("name") or "",
+            "avatarUrl": a.get("avatarUrl") or "",
+            "uid": a.get("uid") or "",
+            "proxy": a.get("proxy") or "",
+            "web": {"running": bool(a.get("remoteDebugPort")), "port": a.get("remoteDebugPort"),
+                    "ready": bool(a.get("loginCaptured") and _enk),
+                    "hasSession": bool(_enk and "zpw_sek" in _cks)},
+            "pc": {"running": st.get("running"), "pid": st.get("pid"),
+                   "dataDir": st.get("dataDir"), "exe": bool(zalo_exe)},
+            "mobile": {"running": False, "note": "Can gia lap — mo thu cong"},
+        })
+    return jsonify({"success": True, "workspaces": out, "zaloExe": zalo_exe,
+                    "zaloInstalled": bool(zalo_exe)})
+
+
+@app.route("/api/workspace/<account_id>/pc/open", methods=["POST"])
+def api_workspace_pc_open(account_id):
+    try:
+        from features.workspace import pc_launch
+        return jsonify({"success": True, **pc_launch(account_id)})
+    except FileNotFoundError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/workspace/<account_id>/pc/close", methods=["POST"])
+def api_workspace_pc_close(account_id):
+    try:
+        from features.workspace import pc_close
+        return jsonify({"success": True, **pc_close(account_id)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/workspace/<account_id>/backup", methods=["GET"])
+def api_workspace_backup(account_id):
+    """Tai zip 1-click: profiles/<id> + profiles-zalopc/<id> + account.json."""
+    try:
+        from flask import send_file
+        from features.workspace import workspace_backup
+        tmp = workspace_backup(account_id)
+        return send_file(tmp, mimetype="application/zip", as_attachment=True,
+                         download_name=f"workspace-{account_id[:8]}.zip")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/workspace/restore", methods=["POST"])
+def api_workspace_restore():
+    """Nap lai workspace tu file zip backup."""
+    try:
+        from features.workspace import workspace_restore
+        f = request.files.get("file")
+        if f is None:
+            return jsonify({"success": False, "error": "Thieu file zip."}), 400
+        import tempfile as _tf
+        tmp = _tf.mktemp(suffix=".zip")
+        f.save(tmp)
+        out = workspace_restore(tmp)
+        try:
+            os.remove(tmp)
+        except Exception:
+            pass
+        return jsonify({"success": True, **out})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+        return jsonify({"success": True, **out})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# INBOX CHUNG 5 MAY: 1 Host om session, 5 client dung chung giao dien web.
+# Realtime qua SSE rieng, claim chong tra loi trung, presence, audit.
+# ═══════════════════════════════════════════════════════════════════════════
+_inbox_sse_clients = []
+
+
+def inbox_broadcast(payload: str, kind: str = "inbox"):
+    data = json.dumps({"inbox": payload, "kind": kind}, ensure_ascii=False)
+    for q in _inbox_sse_clients[:]:
+        try:
+            q.put_nowait(data)
+        except Exception:
+            try:
+                _inbox_sse_clients.remove(q)
+            except Exception:
+                pass
+    try:
+        sse_broadcast(f"[inbox] {kind}", "info")
+    except Exception:
+        pass
+
+
+def _extract_candidate_staff():
+    """Lấy (name, sig) ứng viên theo thứ tự ưu tiên: query -> JSON/form -> header -> cookie."""
+    h_name = str(request.headers.get("X-Staff") or "").strip()
+    h_sig = str(request.headers.get("X-Staff-Sig") or "").strip()
+    c_name = str(request.cookies.get("ib_staff") or "").strip()
+    c_sig = str(request.cookies.get("ib_staff_sig") or "").strip()
+
+    def _fallback_sig(nm: str, sig: str) -> str:
+        if sig:
+            return sig
+        low = nm.lower()
+        if h_sig and (not h_name or h_name.lower() == low):
+            return h_sig
+        if c_sig and (not c_name or c_name.lower() == low):
+            return c_sig
+        return ""
+
+    q_name = str(request.args.get("name") or request.args.get("staff") or "").strip()
+    q_sig = str(request.args.get("nsig") or "").strip()
+    if q_name:
+        return q_name, _fallback_sig(q_name, q_sig)
+    body = request.get_json(silent=True) if request.is_json else None
+    if isinstance(body, dict):
+        b_name = str(body.get("staff") or body.get("name") or "").strip()
+        b_sig = str(body.get("staffSig") or body.get("nsig") or "").strip()
+        if b_name:
+            return b_name, _fallback_sig(b_name, b_sig)
+    f_name = str(request.form.get("staff") or request.form.get("name") or "").strip()
+    f_sig = str(request.form.get("staffSig") or request.form.get("nsig") or "").strip()
+    if f_name:
+        return f_name, _fallback_sig(f_name, f_sig)
+    if h_name:
+        return h_name, _fallback_sig(h_name, h_sig)
+    return c_name, c_sig
+
+
+def _resolve_client_staff():
+    """Trả về (staff_name, is_locked, error_msg) có xác thực link riêng từng nhân viên."""
+    from features.inbox import store as _st
+    cand_name, cand_sig = _extract_candidate_staff()
+    if gateway_auth.is_host_request():
+        if not cand_name or cand_name.strip().lower() in ("nv1", "admin"):
+            return "Super Admin", False, ""
+        return cand_name, False, ""
+    if gateway_config.get_preset_staff_enabled():
+        allowed = gateway_config.get_preset_staff_names()
+        if cand_name and cand_sig and gateway_config.verify_staff_name(cand_name, cand_sig):
+            std = gateway_config.resolve_allowed_staff_name(cand_name)
+            if not std:
+                return "", True, f"Nhân viên '{cand_name}' đã bị gỡ khỏi danh sách được cấp quyền."
+            mod = _st.staff_moderation_status(std)
+            if mod.get("banned"):
+                return "", True, f"Tài khoản '{std}' đã bị cấm truy cập hệ thống."
+            if mod.get("locked"):
+                return "", True, f"Tài khoản '{std}' đang bị tạm khóa bởi quản trị viên."
+            return std, True, ""
+        if len(allowed) == 1:
+            mod = _st.staff_moderation_status(allowed[0])
+            if mod.get("banned"):
+                return "", True, f"Tài khoản '{allowed[0]}' đã bị cấm truy cập hệ thống."
+            if mod.get("locked"):
+                return "", True, f"Tài khoản '{allowed[0]}' đang bị tạm khóa bởi quản trị viên."
+            return allowed[0], True, ""
+        return "", True, "Vui lòng mở đúng link riêng được cấp cho bạn (thiếu tên nhân viên hợp lệ)."
+    resolved = cand_name or "nv1"
+    mod = _st.staff_moderation_status(resolved)
+    if mod.get("banned"):
+        return "", True, f"Tài khoản '{resolved}' đã bị cấm truy cập hệ thống."
+    if mod.get("locked"):
+        return "", True, f"Tài khoản '{resolved}' đang bị tạm khóa bởi quản trị viên."
+    return resolved, False, ""
+
+
+def _locked_client_staff_name() -> str:
+    staff, locked, _err = _resolve_client_staff()
+    return staff if locked else ""
+
+
+def _inbox_scope_for_staff(staff: str, is_host: bool, fallback_acc: str = "") -> dict:
+    """Xác định vai trò ('super_admin'|'manager'|'sale') và danh sách tài khoản Zalo được phép truy cập."""
+    from features.inbox import store as _st
+    role = "super_admin" if is_host else _st.staff_role(staff)
+    if not is_host and role in ("admin", "super_admin"):
+        role = "manager"
+    can_supervise = is_host or role in ("super_admin", "admin", "manager")
+
+    all_accs = []
+    acc_meta = {}
+    try:
+        for a in (load_accounts() or []):
+            aid = str(a.get("accountId") or "").strip()
+            if not aid:
+                continue
+            _cks = str(a.get("cookies") or "")
+            _enk = str(a.get("zpwEnk") or "").strip()
+            ready = bool(a.get("loginCaptured") and _enk and "zpw_sek" in _cks)
+            meta = {
+                "id": aid,
+                "name": str(a.get("name") or aid[:8]),
+                "avatar": str(a.get("avatarUrl") or ""),
+                "ready": ready,
+                "running": bool(a.get("running")),
+            }
+            acc_meta[aid] = meta
+            all_accs.append(meta)
+    except Exception:
+        pass
+
+    shared_ids = gateway_config.get_shared_account_ids()
+    assigned_ids = [] if can_supervise else gateway_config.get_staff_account_ids(staff)
+    profile_acc_ids = []
+    for p in (gateway_config.get_staff_profiles() or []):
+        for aid in (p.get("accountIds") or []):
+            if aid and aid not in profile_acc_ids:
+                profile_acc_ids.append(aid)
+
+    if can_supervise:
+        allowed = []
+        for aid in (shared_ids + profile_acc_ids + [a["id"] for a in all_accs if a.get("ready")] + ([fallback_acc] if fallback_acc else [])):
+            s = str(aid or "").strip()
+            if s and s not in allowed:
+                allowed.append(s)
+        if not allowed:
+            allowed = [a["id"] for a in all_accs]
+    else:
+        if assigned_ids:
+            allowed = list(assigned_ids)
+        elif shared_ids:
+            allowed = list(shared_ids)
+        elif fallback_acc:
+            allowed = [fallback_acc]
+        else:
+            allowed = [a["id"] for a in all_accs if a.get("ready")] or [a["id"] for a in all_accs[:1]]
+
+    allowed_list = [acc_meta.get(aid) or {"id": aid, "name": aid[:8], "avatar": "", "ready": False, "running": False} for aid in allowed]
+    return {
+        "role": role,
+        "canSupervise": can_supervise,
+        "canTakeover": can_supervise,
+        "allowedIds": allowed,
+        "allowedAccounts": allowed_list,
+        "allAccounts": all_accs,
+        "accountMeta": acc_meta,
+    }
+
+
+@app.route("/inbox")
+def inbox_page():
+    is_host = gateway_auth.is_host_request()
+    staff, locked, err = _resolve_client_staff()
+    preset_staff = staff if (locked and not is_host and staff) else ""
+    preset_sig = gateway_config.sign_staff_name(preset_staff) if preset_staff else ""
+    eff_staff = staff or ("admin" if is_host else "nv1")
+    scope = _inbox_scope_for_staff(eff_staff, is_host)
+    html = render_template(
+        "inbox.html",
+        active_page="inbox",
+        is_host=is_host,
+        preset_staff=preset_staff,
+        preset_staff_sig=preset_sig,
+        staff_role=scope["role"],
+        can_supervise=scope["canSupervise"],
+        staff_link_required=bool(locked and not is_host and not staff and err),
+    )
+    resp = app.make_response(html)
+    if preset_staff and preset_sig:
+        resp.set_cookie("ib_staff", preset_staff, max_age=30 * 86400, samesite="Lax")
+        resp.set_cookie("ib_staff_sig", preset_sig, max_age=30 * 86400, samesite="Lax")
+    return resp
+
+
+def _inbox_staff():
+    staff, _locked, _err = _resolve_client_staff()
+    return staff or "nv1"
+
+
+@app.route("/api/inbox/conversations", methods=["GET"])
+@gateway_auth.gateway_auth_required
+def api_inbox_conversations():
+    try:
+        from features.inbox import store as _st
+        from features.inbox import worker as _iw
+        _iw.ensure_started()
+        is_host = gateway_auth.is_host_request()
+        staff, locked, err = _resolve_client_staff()
+        if locked and not staff:
+            return jsonify({"success": False, "staffLinkRequired": True, "error": err}), 403
+        staff = staff or ("admin" if is_host else "nv1")
+        _st.ensure_staff(staff)
+        _st.heartbeat(staff)
+        cfg = _st.get_config()
+        active_acc = str(cfg.get("accountId") or "").strip()
+        if not active_acc:
+            try:
+                active_acc = str(_iw._pick_account() or "").strip()
+                if active_acc:
+                    cfg = _st.save_config({"accountId": active_acc})
+            except Exception:
+                pass
+        scope = _inbox_scope_for_staff(staff, is_host, fallback_acc=active_acc)
+        req_acc = str(request.args.get("accountId") or request.args.get("account_id") or "").strip()
+        if req_acc and req_acc != "all":
+            if scope["allowedIds"] and req_acc not in scope["allowedIds"]:
+                return jsonify({"success": False, "error": "Bạn không có quyền xem tài khoản Zalo này."}), 403
+            filter_aids = [req_acc]
+            dir_acc = req_acc
+        else:
+            filter_aids = scope["allowedIds"] or ([active_acc] if active_acc else [])
+            dir_acc = filter_aids[0] if filter_aids else active_acc
+        gids = list(cfg.get("onlyGroupIds") or [])
+        fids = list(cfg.get("onlyFriendIds") or [])
+        hide_empty = bool(cfg.get("hideEmpty"))
+        convs = _st.list_conversations(
+            active_acc, gids, fids, hide_empty,
+            account_ids=filter_aids, account_meta=scope["accountMeta"],
+        )
+        return jsonify({
+            "success": True,
+            "conversations": convs,
+            "directory": _st.get_directory(dir_acc),
+            "config": cfg,
+            "accountId": active_acc,
+            "effectiveStaff": staff,
+            "staffRole": scope["role"],
+            "canSupervise": scope["canSupervise"],
+            "canTakeover": scope["canTakeover"],
+            "allowedAccounts": scope["allowedAccounts"],
+            "staffProfiles": gateway_config.get_staff_profiles() if scope["canSupervise"] else [],
+            "staffLocked": bool(locked),
+            "staffSig": (gateway_config.sign_staff_name(staff) if locked else ""),
+            "online": _st.online_staff(),
+            "presenceDetails": _st.presence_details(),
+            "users": _st.users_list(),
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/directory", methods=["GET"])
+@gateway_auth.gateway_auth_required
+def api_inbox_directory():
+    try:
+        from features.inbox import store as _st
+        from features.inbox import worker as _iw
+        _iw.ensure_started()
+        acc = ""
+        try:
+            acc = _iw._pick_account()
+            _iw._sync_directory(acc)
+        except Exception:
+            pass
+        return jsonify({"success": True, "directory": _st.get_directory(acc)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/sync", methods=["POST"])
+@gateway_auth.gateway_auth_required
+def api_inbox_sync():
+    try:
+        from features.inbox import worker as _iw
+        data = request.get_json(silent=True) or request.form or {}
+        account_id = str(data.get("accountId") or data.get("account_id") or "").strip()
+        return jsonify({"success": True, **_iw.force_sync(account_id)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/messages", methods=["GET"])
+@gateway_auth.gateway_auth_required
+def api_inbox_messages():
+    try:
+        from features.inbox import store as _st
+        is_host = gateway_auth.is_host_request()
+        staff, locked, err = _resolve_client_staff()
+        if locked and not staff:
+            return jsonify({"success": False, "staffLinkRequired": True, "error": err}), 403
+        staff = staff or ("admin" if is_host else "nv1")
+        conv_id = str(request.args.get("convId") or request.args.get("conv_id") or "").strip()
+        limit = int(request.args.get("limit") or 80)
+        out = _st.get_messages(conv_id, limit)
+        if out is None:
+            return jsonify({"success": False, "error": "Khong tim thay hoi thoai."}), 404
+        scope = _inbox_scope_for_staff(staff, is_host)
+        conv_acc = str(((out.get("conv") or {}).get("accountId")) or "").strip()
+        if not scope["canSupervise"] and scope["allowedIds"] and conv_acc and conv_acc not in scope["allowedIds"]:
+            return jsonify({"success": False, "error": "Bạn không có quyền xem hội thoại của tài khoản này."}), 403
+        return jsonify({"success": True, **out})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/send", methods=["POST"])
+@gateway_auth.gateway_auth_required
+def api_inbox_send():
+    try:
+        from features.inbox import store as _st
+        data = request.get_json(silent=True) or request.form or {}
+        conv_id = str(data.get("convId") or data.get("conv_id") or "").strip()
+        text = str(data.get("message") or data.get("msg") or data.get("text") or "")
+        is_host = gateway_auth.is_host_request()
+        staff, locked, err = _resolve_client_staff()
+        if locked and not staff:
+            return jsonify({"success": False, "staffLinkRequired": True, "error": err}), 403
+        staff = staff or ("admin" if is_host else "nv1")
+        _st.ensure_staff(staff)
+        scope = _inbox_scope_for_staff(staff, is_host)
+        conv = None
+        if conv_id:
+            from features.inbox.store import _load_inbox as _li
+            db = _li()
+            conv = (db.get("conversations") or {}).get(conv_id)
+        if conv is None:
+            return jsonify({"success": False, "error": "Khong tim thay hoi thoai."}), 404
+        conv_acc = str((conv or {}).get("accountId") or "").strip()
+        if not scope["canSupervise"] and scope["allowedIds"] and conv_acc and conv_acc not in scope["allowedIds"]:
+            return jsonify({"success": False, "error": "Bạn không có quyền nhắn trên tài khoản Zalo này."}), 403
+        claim = (conv or {}).get("claim")
+        claim_owner = str((claim or {}).get("staff") or "").strip() if isinstance(claim, dict) else ""
+        claim_active = isinstance(claim, dict) and float(claim.get("until") or 0) > time.time() and claim_owner and claim_owner != staff
+        if claim_active and not scope["canTakeover"]:
+            return jsonify({"success": False, "error": f"Dang do {claim_owner} xu ly. Xin xac nhan truoc khi gui chen.",
+                            "claimedBy": claim_owner, "needConfirm": True}), 409
+        if claim_active and scope["canTakeover"]:
+            _st.audit("takeover_send", staff, conv_id, f"nhắn thay {claim_owner}: {text[:40]}")
+        _st.heartbeat(staff, conv_id=conv_id, conv_name=str((conv or {}).get("name") or ""), action="send")
+        up_file = (
+            request.files.get("photo")
+            or request.files.get("image")
+            or request.files.get("file")
+            or request.files.get("attachment")
+        )
+        photo_bytes, photo_name = None, ""
+        file_bytes, file_name = None, ""
+        if up_file:
+            raw_bytes = up_file.read()
+            raw_name = os.path.basename(up_file.filename or "file.bin") or "file.bin"
+            ext = raw_name.rsplit(".", 1)[-1].lower() if "." in raw_name else ""
+            is_photo_field = ("photo" in (request.files or {}) or "image" in (request.files or {})) and ext in ("jpg", "jpeg", "png", "webp", "")
+            if ext in ("jpg", "jpeg", "png", "webp") or is_photo_field:
+                photo_bytes, photo_name = raw_bytes, raw_name
+                if len(photo_bytes) > 20 * 1024 * 1024:
+                    return jsonify({"success": False, "error": "Ảnh vượt quá 20MB."}), 400
+            else:
+                file_bytes, file_name = raw_bytes, raw_name
+                if len(file_bytes) > 50 * 1024 * 1024:
+                    return jsonify({"success": False, "error": "File vượt quá 50MB."}), 400
+        account_id = str(conv.get("accountId") or "").strip()
+        kind = str(conv.get("kind") or "group").strip()
+        key = str(conv.get("key") or "").strip()
+        out = gateway_queue.enqueue(
+            account_id, kind, key, text,
+            photo_bytes, photo_name, timeout=120,
+            file_bytes=file_bytes, file_name=file_name,
+        )
+        if not out.get("ok"):
+            code = 429 if ("429" in str(out.get("error") or "") or "ngat mach" in str(out.get("error") or "")) else 502
+            return jsonify({"success": False, **out}), code
+        meta = {
+            "mediaToken": "",
+            "zaloMsgId": str(out.get("zaloMsgId") or "").strip(),
+            "cliMsgId": str(out.get("cliMsgId") or "").strip(),
+        }
+        if photo_bytes:
+            try:
+                from features.inbox import media as _md
+                tok = _md.save_media(photo_bytes, photo_name, staff)
+                meta.update({
+                    "mediaToken": tok,
+                    "thumb": f"/media/{tok}" if tok else "",
+                    "msgType": "chat.photo",
+                    "fileName": photo_name,
+                    "fileSize": len(photo_bytes),
+                })
+            except Exception:
+                pass
+        elif file_bytes:
+            try:
+                from features.inbox import media as _md
+                tok = _md.save_media(file_bytes, file_name, staff)
+                meta.update({
+                    "mediaToken": tok,
+                    "thumb": "",
+                    "href": str(out.get("fileUrl") or "").strip(),
+                    "msgType": "share.file",
+                    "fileName": file_name,
+                    "fileSize": len(file_bytes),
+                })
+            except Exception:
+                pass
+        saved = _st.add_outbound(account_id, kind, key, staff, text, meta)
+        rd = _st.mark_read(saved["convId"], staff, saved["message"].get("msgId"))
+        try:
+            import json as _js
+            inbox_broadcast(_js.dumps({"convId": saved["convId"], "message": saved["message"]}, ensure_ascii=False), "sent")
+            inbox_broadcast(_js.dumps({"convId": saved["convId"], "staff": staff, "msgId": rd.get("msgId", ""), "at": rd.get("at", 0)}, ensure_ascii=False), "read")
+        except Exception:
+            pass
+        return jsonify({"success": True, **out, "inbox": saved})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/recall", methods=["POST"])
+@gateway_auth.gateway_auth_required
+def api_inbox_recall():
+    try:
+        from features.inbox import store as _st
+        from features.messaging.undo_msg import undo_message
+        data = request.get_json(silent=True) or request.form or {}
+        conv_id = str(data.get("convId") or data.get("conv_id") or "").strip()
+        msg_id = str(data.get("msgId") or data.get("msg_id") or "").strip()
+        staff, locked, err = _resolve_client_staff()
+        if locked and not staff:
+            return jsonify({"success": False, "staffLinkRequired": True, "error": err}), 403
+        staff = staff or "nv1"
+        if not conv_id or not msg_id:
+            return jsonify({"success": False, "error": "Thiếu convId hoặc msgId."}), 400
+        conv, msg = _st.find_message(conv_id, msg_id)
+        if not conv:
+            return jsonify({"success": False, "error": "Không tìm thấy hội thoại."}), 404
+        if not msg:
+            return jsonify({"success": False, "error": "Không tìm thấy tin nhắn."}), 404
+        msg_from = str(msg.get("from") or "")
+        if msg_from not in ("staff", "me"):
+            return jsonify({"success": False, "error": "Chỉ thu hồi được tin nhắn do bên mình gửi."}), 400
+        is_host = gateway_auth.is_host_request()
+        can_mgr_recall = is_host or _st.staff_role(staff) in ("admin", "manager")
+        msg_owner = str(msg.get("staff") or "").strip()
+        if msg_from == "staff":
+            if msg_owner and msg_owner.lower() != staff.strip().lower() and not can_mgr_recall:
+                return jsonify({"success": False, "error": f"Chỉ người gửi tin nhắn này ({msg_owner}) mới được phép thu hồi."}), 403
+        elif not can_mgr_recall:
+            return jsonify({"success": False, "error": "Chỉ máy chính hoặc Trưởng phòng mới được thu hồi tin nhắn gửi từ tài khoản gốc."}), 403
+        if msg.get("recalled") or str(msg.get("msgType") or "") == "chat.undo":
+            return jsonify({"success": False, "error": "Tin nhắn này đã được thu hồi trước đó."}), 400
+
+        account_id = str(conv.get("accountId") or "").strip()
+        kind = str(conv.get("kind") or "group").strip()
+        target_id = str(conv.get("key") or "").strip()
+        is_group = (kind != "sms")
+        _, cookies, zpw_enk, imei = _get_account_credentials(account_id, require_imei=True)
+
+        real_msg_id = "" if msg_id.startswith("staff-") else msg_id
+        cli_msg_id = str(msg.get("cliMsgId") or "").strip()
+
+        # Fallback: nếu tin nhắn cũ chưa lưu cliMsgId/real_msg_id, thử đồng bộ nhanh từ Zalo
+        if not real_msg_id or not cli_msg_id:
+            try:
+                from features.messaging.last_messages import fetch_last_messages
+                t_key = f"{target_id}_{1 if is_group else 0}"
+                res = fetch_last_messages({t_key: "0"}, cookies, zpw_enk, imei, zpw_ver=get_zpw_ver())
+                items = (res.get("groupMsgs") if is_group else res.get("userMsgs")) or []
+                txt_want = str(msg.get("text") or "").strip()
+                for item in reversed(items):
+                    if real_msg_id and str(item.get("msgId") or "") == real_msg_id:
+                        cli_msg_id = str(item.get("cliMsgId") or "").strip()
+                        break
+                    if not real_msg_id and txt_want and str(item.get("text") or "").strip() == txt_want and str(item.get("senderUid") or "") in ("", "0"):
+                        real_msg_id = str(item.get("msgId") or "").strip()
+                        cli_msg_id = str(item.get("cliMsgId") or "").strip()
+                        break
+            except Exception:
+                pass
+
+        if not real_msg_id or not cli_msg_id:
+            return jsonify({"success": False, "error": "Không tìm thấy mã tin nhắn Zalo (chỉ thu hồi được tin vừa gửi hoặc tin đã đồng bộ đầy đủ)."}), 400
+
+        out = undo_message(
+            cookies, zpw_enk, target_id, imei,
+            real_msg_id, cli_msg_id, is_group=is_group, zpw_ver=get_zpw_ver(),
+        )
+        if not out.get("ok"):
+            return jsonify({"success": False, "error": out.get("error") or "Zalo từ chối thu hồi tin nhắn."}), 502
+
+        recalled = _st.recall_message(conv_id, msg_id, staff)
+        try:
+            import json as _js
+            inbox_broadcast(_js.dumps({"convId": conv_id, "msgId": msg_id, "message": recalled.get("message")}, ensure_ascii=False), "recalled")
+        except Exception:
+            pass
+        return jsonify({"success": True, "recalled": recalled})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/claim", methods=["POST"])
+@gateway_auth.gateway_auth_required
+def api_inbox_claim():
+    try:
+        from features.inbox import store as _st
+        data = request.get_json(silent=True) or request.form or {}
+        conv_id = str(data.get("convId") or data.get("conv_id") or "").strip()
+        is_host = gateway_auth.is_host_request()
+        staff, locked, err = _resolve_client_staff()
+        if locked and not staff:
+            return jsonify({"success": False, "staffLinkRequired": True, "error": err}), 403
+        staff = staff or ("admin" if is_host else "nv1")
+        ttl = int(data.get("ttlSec") or data.get("ttl") or 600)
+        action = str(data.get("action") or "claim").strip()
+        can_takeover = is_host or _st.staff_role(staff) in ("admin", "manager")
+        if action == "release":
+            out = _st.release(conv_id, staff)
+        else:
+            force = bool(data.get("force")) and can_takeover
+            out = _st.claim(conv_id, staff, ttl, force=force)
+        if out.get("ok"):
+            try:
+                import json as _js
+                inbox_broadcast(_js.dumps({"convId": conv_id}, ensure_ascii=False), "claim")
+            except Exception:
+                pass
+            return jsonify({"success": True, **out})
+        return jsonify({"success": False, **out}), 409
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/read", methods=["POST"])
+@gateway_auth.gateway_auth_required
+def api_inbox_read():
+    try:
+        from features.inbox import store as _st
+        data = request.get_json(silent=True) or request.form or {}
+        conv_id = str(data.get("convId") or data.get("conv_id") or "").strip()
+        staff, locked, err = _resolve_client_staff()
+        if locked and not staff:
+            return jsonify({"success": False, "staffLinkRequired": True, "error": err}), 403
+        staff = staff or "nv1"
+        msg_id = str(data.get("msgId") or data.get("msg_id") or "").strip()
+        out = _st.mark_read(conv_id, staff, msg_id)
+        if out.get("ok"):
+            try:
+                import json as _js
+                inbox_broadcast(_js.dumps({
+                    "convId": conv_id,
+                    "staff": staff,
+                    "msgId": out.get("msgId", ""),
+                    "at": out.get("at", 0),
+                }, ensure_ascii=False), "read")
+            except Exception:
+                pass
+        return jsonify({"success": bool(out.get("ok")), **out})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/presence", methods=["GET", "POST"])
+@gateway_auth.gateway_auth_required
+def api_inbox_presence():
+    try:
+        from features.inbox import store as _st
+        if request.method == "POST":
+            data = request.get_json(silent=True) or request.form or {}
+            is_host = gateway_auth.is_host_request()
+            staff, locked, err = _resolve_client_staff()
+            if locked and not staff:
+                return jsonify({"success": False, "staffLinkRequired": True, "error": err}), 403
+            staff = staff or ("admin" if is_host else "nv1")
+            status = data.get("status")
+            conv_id = data.get("convId") if "convId" in data else None
+            conv_name = data.get("convName") if "convName" in data else None
+            action = data.get("action")
+            _st.heartbeat(staff, status=status, conv_id=conv_id, conv_name=conv_name, action=action)
+        return jsonify({
+            "success": True,
+            "online": _st.online_staff(),
+            "presenceDetails": _st.presence_details(),
+            "users": _st.users_list(),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/supervisor", methods=["GET"])
+@gateway_auth.gateway_auth_required
+def api_inbox_supervisor():
+    """Bảng giám sát real-time đội ngũ Sale + Admin cho Super Admin và Admin."""
+    try:
+        from features.inbox import store as _st
+        is_host = gateway_auth.is_host_request()
+        staff, locked, err = _resolve_client_staff()
+        if locked and not staff:
+            return jsonify({"success": False, "staffLinkRequired": True, "error": err}), 403
+        staff = staff or ("Super Admin" if is_host else "nv1")
+        scope = _inbox_scope_for_staff(staff, is_host)
+        if not scope["canSupervise"]:
+            return jsonify({"success": False, "error": "Chỉ Super Admin / Admin mới được xem bảng giám sát."}), 403
+        overview = _st.supervisor_overview(
+            profiles=gateway_config.get_staff_profiles(),
+            accounts=scope["allAccounts"],
+        )
+        return jsonify({"success": True, "viewerRole": scope["role"], "isHost": is_host, **overview})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/supervisor/action", methods=["POST"])
+@gateway_auth.gateway_auth_required
+def api_inbox_supervisor_action():
+    """Thao tác quản trị nhân sự: lock, unlock, ban, unban, release_claims, remove."""
+    try:
+        from features.inbox import store as _st
+        is_host = gateway_auth.is_host_request()
+        staff, locked, err = _resolve_client_staff()
+        if locked and not staff:
+            return jsonify({"success": False, "staffLinkRequired": True, "error": err}), 403
+        staff = staff or ("Super Admin" if is_host else "nv1")
+        scope = _inbox_scope_for_staff(staff, is_host)
+        if not scope["canSupervise"]:
+            return jsonify({"success": False, "error": "Chỉ Super Admin / Admin mới được thực hiện thao tác này."}), 403
+
+        data = request.get_json(silent=True) or {}
+        target = str(data.get("target") or data.get("staff") or "").strip()
+        action = str(data.get("action") or "").strip().lower()
+        if not target or not action:
+            return jsonify({"success": False, "error": "Thiếu tên nhân sự hoặc thao tác."}), 400
+        if target.lower() == "super admin":
+            return jsonify({"success": False, "error": "Không thể thao tác lên Super Admin."}), 403
+        if target.lower() == staff.lower() and action in ("lock", "ban", "remove"):
+            return jsonify({"success": False, "error": "Không thể tự khóa/cấm/xóa chính mình."}), 400
+
+        target_role = _st.staff_role(target)
+        if not is_host and target_role in ("super_admin", "admin", "manager"):
+            return jsonify({"success": False, "error": "Chỉ Super Admin (máy chính) mới có quyền khóa/cấm/xóa Admin."}), 403
+
+        if action == "remove":
+            cur_profiles = gateway_config.get_staff_profiles()
+            new_profiles = [p for p in cur_profiles if str(p.get("name") or "").strip().lower() != target.lower()]
+            gateway_config.save_staff_profiles(new_profiles)
+            released = _st.release_all_claims(target, actor=staff)
+            _st.audit("remove_staff", staff, "", f"hủy quyền & xóa {target}")
+            out = {"ok": True, "target": target, "action": "remove", "releasedClaims": released}
+        else:
+            out = _st.moderate_staff(target, action, actor=staff)
+            if not out.get("ok"):
+                return jsonify({"success": False, **out}), 400
+
+        if out.get("releasedClaims"):
+            try:
+                import json as _js
+                inbox_broadcast(_js.dumps({"convId": ""}, ensure_ascii=False), "claim")
+            except Exception:
+                pass
+        return jsonify({"success": True, **out})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/audit", methods=["GET"])
+@gateway_auth.gateway_auth_required
+def api_inbox_audit():
+    try:
+        from features.inbox import store as _st
+        limit = int(request.args.get("limit") or 100)
+        return jsonify({"success": True, "logs": _st.list_audit(limit)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/config", methods=["GET", "POST"])
+@gateway_auth.gateway_auth_required
+def api_inbox_config():
+    try:
+        from features.inbox import store as _st
+        if request.method == "GET":
+            cfg = _st.get_config()
+            try:
+                from features.accounts.account_manager import load_accounts as _la
+                accs = [{"accountId": str(a.get("accountId") or ""),
+                         "name": str(a.get("name") or a.get("accountId") or ""),
+                         "avatarUrl": str(a.get("avatarUrl") or a.get("avatar") or "")}
+                        for a in (_la() or [])]
+            except Exception:
+                accs = []
+            return jsonify({"success": True, "config": cfg, "accounts": accs})
+        data = request.get_json(silent=True) or request.form or {}
+        patch = {}
+        if "accountId" in data or "account_id" in data:
+            patch["accountId"] = str(data.get("accountId") or data.get("account_id") or "").strip()
+        if "onlyGroupIds" in data or "only_group_ids" in data:
+            patch["onlyGroupIds"] = data.get("onlyGroupIds", data.get("only_group_ids"))
+        if "onlyFriendIds" in data or "only_friend_ids" in data:
+            patch["onlyFriendIds"] = data.get("onlyFriendIds", data.get("only_friend_ids"))
+        if "hideEmpty" in data or "hide_empty" in data:
+            v = data.get("hideEmpty", data.get("hide_empty"))
+            patch["hideEmpty"] = v in (True, 1, "1", "true", "True", "on") if isinstance(v, str) else bool(v)
+        cfg = _st.save_config(patch)
+        pruned = 0
+        try:
+            from features.inbox import worker as _iw
+            _iw.ensure_started()
+            groups, friends = _iw._sync_directory(str(cfg.get("accountId") or ""), force=True)
+            pruned = _st.prune_stale_conversations(
+                str(cfg.get("accountId") or ""),
+                [g.get("groupId") for g in groups],
+                [f.get("userId") for f in friends])
+        except Exception:
+            pass
+        return jsonify({"success": True, "config": cfg, "pruned": pruned})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/prune", methods=["POST"])
+@gateway_auth.gateway_auth_required
+def api_inbox_prune():
+    try:
+        from features.inbox import store as _st
+        from features.inbox import worker as _iw
+        data = request.get_json(silent=True) or request.form or {}
+        account_id = str(data.get("accountId") or data.get("account_id") or "").strip() \
+            or str(_st.get_config().get("accountId") or "").strip() or _iw._pick_account()
+        groups, friends = _iw._sync_directory(account_id, force=True)
+        removed = _st.prune_stale_conversations(
+            account_id, [g.get("groupId") for g in groups], [f.get("userId") for f in friends])
+        return jsonify({"success": True, "accountId": account_id, "removed": removed,
+                        "totalGroups": len(groups), "totalFriends": len(friends)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/inbox/stream")
+@gateway_auth.gateway_auth_required
+def api_inbox_stream():
+    client_q = queue.Queue()
+    _inbox_sse_clients.append(client_q)
+
+    def event_stream():
+        try:
+            yield f"data: {json.dumps({'kind': 'hello'}, ensure_ascii=False)}\n\n"
+        except Exception:
+            pass
+        try:
+            while True:
+                try:
+                    msg = client_q.get(timeout=45)
+                    yield f"data: {msg}\n\n"
+                except queue.Empty:
+                    yield f"data: {json.dumps({'kind': 'heartbeat'}, ensure_ascii=False)}\n\n"
+        finally:
+            # Client disconnect -> phai GO khoi danh sach, neu khong se
+            # RO RON memory va moi lan broadcast deu lai loop qua client
+            # da dong (ton CPU + queue).
+            try:
+                _inbox_sse_clients.remove(client_q)
+            except Exception:
+                pass
+
+    resp = Response(event_stream(), mimetype='text/event-stream')
+    resp.headers['Cache-Control'] = 'no-cache'
+    resp.headers['X-Accel-Buffering'] = 'no'
+    return resp
+
+
+@app.route("/media/<token>", methods=["GET"])
+def inbox_media_file(token):
+    try:
+        from flask import send_file as _send
+        from features.inbox import media as _md
+        rec = _md.resolve(token)
+        if not rec:
+            return jsonify({"success": False, "error": "Link het han hoac khong ton tai."}), 404
+        return _send(rec["path"], as_attachment=False, download_name=rec.get("name") or "file")
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route("/api/log-stream")
 def log_stream():
     """SSE endpoint: stream log messages to UI in real-time."""
@@ -1649,12 +3726,20 @@ def log_stream():
     _sse_clients.append(client_q)
 
     def event_stream():
-        while True:
+        try:
+            while True:
+                try:
+                    msg = client_q.get(timeout=60)
+                    yield f"data: {msg}\n\n"
+                except queue.Empty:
+                    yield f"data: {json.dumps({'msg':'','type':'heartbeat'}, ensure_ascii=False)}\n\n"
+        finally:
+            # Client disconnect -> go khoi danh sach (tranh ro memory + loop
+            # broadcast qua client da dong).
             try:
-                msg = client_q.get(timeout=60)
-                yield f"data: {msg}\n\n"
-            except queue.Empty:
-                yield f"data: {json.dumps({'msg':'','type':'heartbeat'}, ensure_ascii=False)}\n\n"
+                _sse_clients.remove(client_q)
+            except Exception:
+                pass
 
     resp = Response(event_stream(), mimetype='text/event-stream')
     resp.headers['Cache-Control'] = 'no-cache'
@@ -1810,6 +3895,47 @@ def _emit_session_status(callback, message: str, kind: str = "loading"):
         pass
 
 
+def _get_account_friend_uids(account_id: str, account: dict = None, cookies: str = "", zpw_enk: str = "", imei: str = "") -> set:
+    """Trả về tập hợp UID bạn bè đã biết của tài khoản (từ cache danh bạ inbox hoặc tải an toàn)."""
+    friend_uids = set()
+    account_id = str(account_id or "").strip()
+    if not account_id:
+        return friend_uids
+    try:
+        from features.inbox.store import get_directory
+        d = get_directory(account_id) or {}
+        for f in (d.get("friends") or []):
+            fuid = str(f.get("userId") or f.get("uid") or "").strip()
+            if fuid:
+                friend_uids.add(fuid)
+    except Exception:
+        pass
+
+    if not friend_uids:
+        try:
+            from features.inbox.worker import _friend_cache_by_acc
+            cached = _friend_cache_by_acc.get(account_id) or {}
+            for f in (cached.get("friends") or []):
+                fuid = str(f.get("userId") or f.get("uid") or "").strip()
+                if fuid:
+                    friend_uids.add(fuid)
+        except Exception:
+            pass
+
+    if not friend_uids:
+        try:
+            from features.inbox.worker import _load_friends_safe
+            acc = account or get_account(account_id) or {}
+            flist = _load_friends_safe(acc, force=False) or []
+            for f in flist:
+                fuid = str(f.get("userId") or f.get("uid") or "").strip()
+                if fuid:
+                    friend_uids.add(fuid)
+        except Exception:
+            pass
+    return friend_uids
+
+
 def _fetch_group_members_session_safe(
     account_id: str,
     group_input: str,
@@ -1902,7 +4028,16 @@ def run():
                 log_func=sse_broadcast,
                 zpw_ver=zpw_ver,
             )
-            result = build_member_rows_from_uids(uid_list, profiles, member_map=member_map, group_info=group_info)
+            own_uid = str((account or {}).get("userId") or (account or {}).get("uid") or "").strip()
+            friend_uids = _get_account_friend_uids(account_id, account=account, cookies=cookies, zpw_enk=zpw_enk, imei=imei)
+            result = build_member_rows_from_uids(
+                uid_list,
+                profiles,
+                member_map=member_map,
+                group_info=group_info,
+                own_uid=own_uid,
+                friend_uids=friend_uids,
+            )
         finally:
             # Nếu hệ thống tự join ngầm thì LUÔN rời nhóm sau khi đã có UID,
             # kể cả khi lấy profile hoặc build bảng lỗi, để account không kẹt
@@ -2065,13 +4200,32 @@ def api_single_profile():
         is_batch = True
 
     try:
+        account = get_account(account_id) or {}
+        own_uid = str(account.get("userId") or account.get("uid") or "").strip()
         _, cookies, zpw_enk, imei = _get_account_credentials(account_id, require_imei=True)
         result = get_single_profile(uid_input, zpw_enk, cookies, imei=imei, zpw_ver=get_zpw_ver(), raise_on_rate_limit=True)
+        friend_uids = _get_account_friend_uids(account_id, account=account, cookies=cookies, zpw_enk=zpw_enk, imei=imei)
 
         if is_batch:
             # result dạng {uid: profile hoặc None}
             profiles = result if isinstance(result, dict) else {}
             profiles = {str(k): v for k, v in profiles.items() if v}
+            for r_uid, r_prof in profiles.items():
+                if not isinstance(r_prof, dict):
+                    continue
+                r_uid_str = str(r_uid).strip()
+                if own_uid and r_uid_str == own_uid:
+                    r_prof["isSelf"] = True
+                    r_prof["isFriend"] = False
+                    r_prof["isFr"] = 0
+                elif r_uid_str in friend_uids or r_prof.get("isFr") == 1 or str(r_prof.get("isFr")) == "1":
+                    r_prof["isSelf"] = False
+                    r_prof["isFriend"] = True
+                    r_prof["isFr"] = 1
+                else:
+                    r_prof["isSelf"] = False
+                    r_prof["isFriend"] = False
+                    r_prof["isFr"] = 0
             return jsonify({
                 "success": True,
                 "profiles": profiles,
@@ -2080,6 +4234,20 @@ def api_single_profile():
 
         if not result:
             return jsonify({"error": "Không lấy được profile của UID này."}), 400
+        if isinstance(result, dict):
+            s_uid_str = str(result.get("userId") or uid_input).strip()
+            if own_uid and s_uid_str == own_uid:
+                result["isSelf"] = True
+                result["isFriend"] = False
+                result["isFr"] = 0
+            elif s_uid_str in friend_uids or result.get("isFr") == 1 or str(result.get("isFr")) == "1":
+                result["isSelf"] = False
+                result["isFriend"] = True
+                result["isFr"] = 1
+            else:
+                result["isSelf"] = False
+                result["isFriend"] = False
+                result["isFr"] = 0
         return jsonify({"success": True, "profile": result})
     except ProfileRateLimitError as e:
         return jsonify({"error": str(e) or "Zalo đang giới hạn request profile. Vui lòng chờ rồi thử lại.", "error_code": getattr(e, "code", 221)}), 429
@@ -3060,8 +5228,6 @@ def _prepare_group_copy_job_worker(task, payload: dict):
         log_func=lambda msg, typ="info": task.log(msg, typ),
         zpw_ver=zpw_ver,
     )
-    members = build_member_rows_from_uids(uid_list, profiles, member_map=member_map, group_info=member_payload.get("groupInfo") or {})
-
     task.set_progress(58)
     task.log("Đang xác định thành viên đã là bạn bè để ưu tiên thêm vào nhóm trước...")
     friend_relations = fetch_friend_relations(
@@ -3072,6 +5238,40 @@ def _prepare_group_copy_job_worker(task, payload: dict):
         log_func=lambda msg, typ="info": task.log(msg, typ),
         zpw_ver=zpw_ver,
     )
+    # Danh sách bạn bè thật là nguồn chuẩn. Cờ isFr từ getmg có thể gắn "bạn bè"
+    # cho cả thành viên chung của nhóm khác, nếu dùng nó sẽ tưởng người lạ là
+    # bạn bè và gọi API thêm trực tiếp -> Zalo trả lỗi 314.
+    friend_uids = [uid for uid, is_friend in (friend_relations or {}).items() if is_friend]
+    members = build_member_rows_from_uids(
+        uid_list,
+        profiles,
+        member_map=member_map,
+        group_info=member_payload.get("groupInfo") or {},
+        friend_uids=friend_uids if friend_relations else None,
+    )
+
+    # Giới tính để xưng hô đúng (Anh/Chị) trong tin nhắn mời người lạ. Nguồn
+    # đáng tin nhất là danh sách bạn bè thật (đã có sẵn gender).
+    try:
+        friend_genders = fetch_friend_genders(
+            uid_list,
+            zpw_enk,
+            cookies,
+            imei=imei,
+            log_func=lambda msg, typ="info": task.log(msg, typ),
+            zpw_ver=zpw_ver,
+        )
+    except Exception as exc:
+        print(f"[group-copy] Không lấy được giới tính bạn bè: {exc}", flush=True)
+        friend_genders = {}
+    for member in members:
+        uid = str(member.get("userId") or "").strip()
+        if not uid:
+            continue
+        gender = member.get("gender")
+        if gender is None or gender == "":
+            gender = friend_genders.get(uid)
+        member["gender"] = gender
 
     account_uid = str(
         account.get("uid")
@@ -3102,6 +5302,9 @@ def _prepare_group_copy_job_worker(task, payload: dict):
         clean_members.append({
             "userId": uid,
             "zaloName": member.get("zaloName") or member.get("displayName") or uid,
+            "displayName": member.get("displayName") or member.get("zaloName") or uid,
+            # Giới tính để xưng hô đúng (Anh/Chị) trong tin nhắn mời người lạ.
+            "gender": member.get("gender"),
             "avatar": member.get("avatar") or "",
             # Quan hệ được dùng để ưu tiên thêm toàn bộ bạn bè trước.
             "isFriend": is_friend,
@@ -3210,7 +5413,8 @@ def _prepare_group_copy_job_worker(task, payload: dict):
     task.log(
         f"Đã lập lịch {len(clean_members)} thành viên"
         + (f" chia cho {n} tài khoản (mỗi tài khoản một khối liên tiếp, không trùng)." if is_multi else ".")
-        + f" Mỗi tài khoản gửi tối đa {payload.get('friendRequestDailyLimit', payload.get('dailyLimit'))} lời mời kết bạn/ngày."
+        + f" Mỗi tài khoản có tối đa {payload.get('friendRequestDailyLimit', payload.get('dailyLimit'))} lượt tiếp cận/ngày"
+        + " (lời mời kết bạn + tin nhắn gửi link nhóm cho người chưa kết bạn)."
     )
     first_job = jobs_created[0] if jobs_created else {}
     return {
@@ -3230,6 +5434,83 @@ def api_group_copy_jobs():
         return jsonify({"success": True, "jobs": list_group_copy_jobs(include_members=False)})
     except Exception as e:
         return jsonify({"success": False, "error": str(e), "jobs": []}), 500
+
+
+@app.route("/api/group-pending-members", methods=["GET", "POST"])
+def api_group_pending_members():
+    """Xem và duyệt thành viên đang chờ vào nhóm.
+
+    GET  ?accountId=..&groupId=..            -> danh sách UID đang chờ duyệt
+    POST {accountId, groupId, memberIds[], approve} -> duyệt (approve=true) hoặc từ chối
+
+    Đây là bước đóng nốt vòng "người lạ vào nhóm": khi nhóm bật chế độ phê duyệt
+    thành viên, người lạ bấm link sẽ nằm ở hàng đợi cho tới khi có người duyệt.
+    """
+    data = request.get_json(silent=True) or {}
+    account_id = str(
+        data.get("accountId")
+        or request.args.get("accountId")
+        or ""
+    ).strip()
+    group_id = str(
+        data.get("groupId")
+        or request.args.get("groupId")
+        or ""
+    ).strip()
+
+    if not account_id or not group_id:
+        return jsonify({"success": False, "error": "Thiếu accountId hoặc groupId."}), 400
+
+    try:
+        from features.groups.pending_members import (
+            list_pending_members,
+            review_pending_members,
+        )
+
+        _, cookies, zpw_enk, imei = _get_account_credentials(account_id, require_imei=True)
+        zpw_ver = get_zpw_ver()
+
+        if request.method == "GET":
+            result = list_pending_members(
+                group_id, imei, zpw_enk, cookies, zpw_ver=zpw_ver
+            )
+            return jsonify({
+                "success": bool(result.get("ok")),
+                "pending": result.get("pending") or [],
+                "count": len(result.get("pending") or []),
+                "errorCode": result.get("errorCode", -1),
+                "error": result.get("errorMessage") or "",
+            })
+
+        member_ids = data.get("memberIds") or data.get("members") or []
+        if isinstance(member_ids, str):
+            member_ids = [x.strip() for x in member_ids.split(",") if x.strip()]
+        clean_ids = [str(x or "").strip() for x in member_ids if str(x or "").strip()]
+        if not clean_ids:
+            return jsonify({"success": False, "error": "Thiếu danh sách memberIds cần duyệt."}), 400
+
+        approve = bool(data.get("approve", True))
+        result = review_pending_members(
+            group_id,
+            clean_ids,
+            imei,
+            zpw_enk,
+            cookies,
+            approve=approve,
+            zpw_ver=zpw_ver,
+        )
+        return jsonify({
+            "success": bool(result.get("ok")),
+            "approved": result.get("approved") or [],
+            "failed": result.get("failed") or [],
+            "results": result.get("results") or {},
+            "errorCode": result.get("errorCode", -1),
+            "error": result.get("errorMessage") or "",
+        })
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/api/group-copy/jobs/<job_id>", methods=["GET", "DELETE"])
@@ -3380,7 +5661,14 @@ def api_group_copy_start():
         "verifyIntervalMinutes": verify_minutes,
         "campaignDurationDays": campaign_days,
         "removeFriendAfterJoin": bool(data.get("removeFriendAfterJoin")),
+        # Gửi lời mời kết bạn kèm link ngay cùng đợt gửi thẻ link nhóm.
+        "friendRequestWithLink": data.get("friendRequestWithLink") is not False,
+        "statusPollMinutes": int(data.get("statusPollMinutes") or 2),
         "skipLeaders": bool(data.get("skipLeaders")),
+        # Nội dung tin nhắn mời người lạ + tối đa 2 link phụ (chỉ gửi 1 thẻ
+        # link card, luôn là link nhóm đích).
+        "inviteMessageTemplate": str(data.get("inviteMessageTemplate") or "").strip(),
+        "inviteExtraLinks": str(data.get("inviteExtraLinks") or "").strip(),
         "startAt": start_at,
         "consentConfirmed": True,
     }
@@ -3551,41 +5839,92 @@ def api_create_schedule_api():
 
         recipients = data.get("recipients") or []
         n = len(account_ids)
-
-        # Một tài khoản: giữ nguyên hành vi cũ.
-        if n <= 1:
-            if account_id:
-                nm = name_by_id.get(account_id)
-                if nm:
-                    data["accountName"] = nm
-                    data["senderName"] = nm
-            schedule = create_schedule(data)
-            return jsonify({"success": True, "schedule": schedule})
-
-        # Nhiều tài khoản: chia người nhận thành khối tuần tự, mỗi tài khoản 1 lịch.
-        k, m = divmod(len(recipients), n)
-        blocks = [recipients[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n)]
         base_title = str(data.get("title") or "Chiến dịch").strip()
+
+        raw_times = data.get("runTimes") or []
+        if isinstance(raw_times, str):
+            raw_times = [x.strip() for x in raw_times.split(",") if x.strip()]
+        run_times = []
+        for rt in raw_times:
+            rt_s = str(rt or "").strip()
+            if rt_s and rt_s not in run_times:
+                run_times.append(rt_s)
+        if not run_times:
+            single_rt = str(data.get("runAt") or "").strip()
+            if single_rt:
+                run_times = [single_rt]
+        if not run_times:
+            return jsonify({"error": "Thời gian gửi không được để trống"}), 400
+
+        raw_msgs = data.get("messages") if isinstance(data.get("messages"), list) else []
+        msg_items = []
+        for item in raw_msgs:
+            if isinstance(item, str) and item.strip():
+                msg_items.append({"text": item.strip(), "photoPath": "", "photoName": ""})
+            elif isinstance(item, dict):
+                txt = str(item.get("text") if "text" in item else (item.get("message") or "")).strip()
+                pp = str(item.get("photoPath") or "").strip()
+                pn = str(item.get("photoName") or "").strip()
+                if txt or pp:
+                    msg_items.append({"text": txt, "photoPath": pp, "photoName": pn})
+        req_mode = str(data.get("messageMode") or "sequence").strip()
+
         created = []
-        for idx, aid in enumerate(account_ids):
-            block = blocks[idx]
-            if not block:
+        total_waves = len(run_times)
+        for t_idx, rt in enumerate(run_times):
+            wave = dict(data)
+            wave.pop("runTimes", None)
+            wave["runAt"] = rt
+            if msg_items:
+                if req_mode == "per_time":
+                    chosen = msg_items[t_idx % len(msg_items)]
+                    wave["messages"] = [chosen]
+                    wave["message"] = chosen["text"]
+                    wave["photoPath"] = chosen["photoPath"]
+                    wave["photoName"] = chosen["photoName"]
+                    wave["messageMode"] = "sequence"
+                else:
+                    wave["messages"] = msg_items
+                    wave["message"] = msg_items[0]["text"]
+                    wave["photoPath"] = msg_items[0]["photoPath"]
+                    wave["photoName"] = msg_items[0]["photoName"]
+                    wave["messageMode"] = req_mode if req_mode in ("sequence", "rotate_recipient") else "sequence"
+            wave_title = f"{base_title} (Đợt {t_idx + 1}/{total_waves})" if total_waves > 1 else base_title
+
+            if n <= 1:
+                wave["title"] = wave_title
+                if account_id:
+                    nm = name_by_id.get(account_id)
+                    if nm:
+                        wave["accountName"] = nm
+                        wave["senderName"] = nm
+                created.append(create_schedule(wave))
                 continue
-            sub = dict(data)
-            sub.pop("accountIds", None)
-            sub["accountId"] = aid
-            nm = name_by_id.get(aid, aid[:8])
-            sub["accountName"] = nm
-            sub["senderName"] = nm
-            sub["title"] = f"{base_title} (TK {idx + 1}/{n} - {nm})"
-            sub["recipients"] = block
-            created.append(create_schedule(sub))
+
+            # Nhiều tài khoản: chia người nhận thành khối tuần tự, mỗi tài khoản 1 lịch.
+            k, m = divmod(len(recipients), n)
+            blocks = [recipients[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n)]
+            for idx, aid in enumerate(account_ids):
+                block = blocks[idx]
+                if not block:
+                    continue
+                sub = dict(wave)
+                sub.pop("accountIds", None)
+                sub["accountId"] = aid
+                nm = name_by_id.get(aid, aid[:8])
+                sub["accountName"] = nm
+                sub["senderName"] = nm
+                sub["title"] = f"{wave_title} (TK {idx + 1}/{n} - {nm})"
+                sub["recipients"] = block
+                created.append(create_schedule(sub))
+
         if not created:
             return jsonify({"error": "Không có người nhận để chia cho các tài khoản."}), 400
         return jsonify({
             "success": True,
             "schedules": created,
             "scheduleCount": len(created),
+            "timeCount": total_waves,
             "accountCount": n,
             "schedule": created[0],
         })
@@ -3928,6 +6267,259 @@ def api_lookup_phones_for_schedule():
         }), 500
 
 
+def _lookup_members_for_invite(
+    user_ids: list,
+    zpw_enk: str,
+    cookies: str,
+    imei: str = "",
+    zpw_ver=None,
+) -> dict:
+    """Lấy tên Zalo + giới tính của danh sách UID để soạn tin nhắn mời.
+
+    Nguồn:
+      - ``/api/social/friend/getfriends`` cho bạn bè (có gender chính xác).
+      - ``/api/social/friend/getprofiles/v2`` cho phần còn lại (thường không có
+        gender vì người lạ không nằm trong danh bạ) -> dùng xưng hô "Anh/Chị".
+
+    Trả về ``{uid: {zaloName, displayName, gender}}``.
+    """
+    result: dict = {}
+    uids = [str(uid or "").strip() for uid in (user_ids or []) if str(uid or "").strip()]
+    if not uids:
+        return result
+
+    try:
+        from features.friends.friend_service import get_friend_list
+
+        for item in get_friend_list(zpw_enk, cookies, imei=imei, zpw_ver=zpw_ver) or []:
+            if not isinstance(item, dict):
+                continue
+            uid = str(item.get("userId") or "").strip()
+            if not uid:
+                continue
+            result[uid] = {
+                "zaloName": str(item.get("zaloName") or item.get("displayName") or "").strip(),
+                "displayName": str(item.get("displayName") or item.get("zaloName") or "").strip(),
+                "gender": item.get("gender"),
+            }
+    except Exception as exc:
+        print(f"[groups/invite] Không lấy được danh sách bạn bè: {exc}", flush=True)
+
+    missing = [uid for uid in uids if uid not in result]
+    if missing:
+        try:
+            from features.profiles.get_single_profile import get_single_profile
+
+            profiles = get_single_profile(
+                missing,
+                zpw_enk,
+                cookies,
+                imei=imei,
+                zpw_ver=zpw_ver,
+            ) or {}
+            for uid, prof in profiles.items():
+                if not isinstance(prof, dict):
+                    continue
+                clean_uid = str(prof.get("userId") or uid or "").strip()
+                if not clean_uid:
+                    continue
+                result[clean_uid] = {
+                    "zaloName": str(prof.get("zaloName") or prof.get("displayName") or "").strip(),
+                    "displayName": str(prof.get("displayName") or prof.get("zaloName") or "").strip(),
+                    "gender": prof.get("gender"),
+                }
+        except Exception as exc:
+            print(f"[groups/invite] Không lấy được profile: {exc}", flush=True)
+
+    return result
+
+
+def _invite_strangers_via_group_link(
+    account_id: str,
+    group_ids: list,
+    user_ids: list,
+    imei: str,
+    zpw_enk: str,
+    cookies: str,
+    zpw_ver,
+    members_by_uid: dict = None,
+    template: str = "",
+    extra_links: str = "",
+    group_name: str = "",
+) -> list:
+    """Gửi thẻ link nhóm cho người lạ qua tin nhắn 1-1.
+
+    Zalo không cho add trực tiếp người chưa kết bạn vào nhóm (mã 314/269), nhưng
+    vẫn cho gửi thẻ link nhóm trong tin nhắn 1-1 (``/api/message/link``, code 0).
+    Người nhận chỉ cần bấm vào link là vào nhóm, không cần kết bạn trước.
+
+    Chỉ MỘT thẻ link được gửi và thẻ đó luôn là link nhóm đích. Nội dung tin
+    nhắn dựng từ ``template`` với tên Zalo và xưng hô theo giới tính thật.
+
+    Trả về danh sách kết quả từng người: {userId, ok, code, message, groupId}.
+    """
+    results = []
+    if not group_ids or not user_ids:
+        return results
+
+    members_by_uid = members_by_uid if isinstance(members_by_uid, dict) else {}
+
+    try:
+        from features.groups.group_link import get_group_link_detail
+        from features.messaging.invite_message import (
+            DEFAULT_INVITE_TEMPLATE,
+            extract_extra_links,
+            render_invite_template,
+        )
+        from features.messaging.send_link import resolve_group_link_info, send_message_smart
+    except Exception as exc:
+        print(f"[groups/invite] Không nạp được module gửi link: {exc}", flush=True)
+        return [
+            {
+                "userId": uid,
+                "ok": False,
+                "code": -1,
+                "message": f"Không nạp được module gửi link: {exc}",
+            }
+            for uid in user_ids
+        ]
+
+    for group_id in group_ids:
+        group_id = str(group_id or "").strip()
+        if not group_id:
+            continue
+
+        # Lấy link tham gia của nhóm (có cache sẵn trong tài khoản).
+        link = ""
+        try:
+            detail = get_group_link_detail(
+                group_id,
+                imei,
+                zpw_enk,
+                cookies,
+                zpw_ver=zpw_ver,
+            )
+            link = str(detail.get("link") or "").strip()
+        except Exception as exc:
+            print(f"[groups/invite] Không lấy được link nhóm {group_id}: {exc}", flush=True)
+
+        if not link:
+            # Thử link đã lưu trong tài khoản.
+            try:
+                account = get_account(account_id) or {}
+                raw_groups = account.get("personalGroups") or []
+                if isinstance(raw_groups, dict):
+                    raw_groups = list(raw_groups.values())
+                for item in raw_groups:
+                    if not isinstance(item, dict):
+                        continue
+                    gid = str(item.get("groupId") or item.get("gridId") or item.get("id") or "").strip()
+                    if gid != group_id:
+                        continue
+                    link = str(
+                        item.get("groupLink")
+                        or item.get("group_link")
+                        or item.get("inviteLink")
+                        or item.get("link")
+                        or ""
+                    ).strip()
+                    if link:
+                        break
+            except Exception:
+                link = ""
+
+        if not link:
+            for uid in user_ids:
+                results.append(
+                    {
+                        "userId": uid,
+                        "ok": False,
+                        "code": -1,
+                        "message": "Chưa có link tham gia của nhóm nên không gửi được cho người lạ.",
+                        "groupId": group_id,
+                    }
+                )
+            continue
+
+        link_info = None
+        try:
+            link_info = resolve_group_link_info(
+                link,
+                zpw_enk,
+                cookies,
+                zpw_ver=zpw_ver,
+                imei=imei,
+            )
+        except Exception as exc:
+            print(f"[groups/invite] Không lấy được metadata link nhóm: {exc}", flush=True)
+
+        message = f"Mời bạn tham gia nhóm. Bấm vào link bên dưới để vào nhóm: {link}"
+        for uid in user_ids:
+            uid = str(uid or "").strip()
+            if not uid:
+                continue
+            member = members_by_uid.get(uid) or {}
+            text = render_invite_template(
+                template or DEFAULT_INVITE_TEMPLATE,
+                name=str(
+                    member.get("zaloName")
+                    or member.get("displayName")
+                    or member.get("dName")
+                    or ""
+                ).strip(),
+                gender=member.get("gender"),
+                link=link,
+                group_name=group_name,
+                extra_links=extract_extra_links(extra_links, limit=2),
+            )
+            try:
+                outcome = send_message_smart(
+                    uid,
+                    text,
+                    zpw_enk,
+                    cookies,
+                    imei,
+                    is_group=False,
+                    zpw_ver=zpw_ver,
+                    link_info=link_info,
+                    # Ép thẻ card là link nhóm đích, không phải link phụ.
+                    link=link,
+                )
+                ok = bool(outcome.get("ok"))
+                decoded = outcome.get("decoded") if isinstance(outcome, dict) else None
+                code = -1
+                detail = ""
+                if isinstance(decoded, dict):
+                    try:
+                        code = int(decoded.get("error_code", -1))
+                    except (TypeError, ValueError):
+                        code = -1
+                    detail = str(decoded.get("error_message") or decoded.get("message") or "").strip()
+                if not ok and not detail:
+                    detail = str((outcome or {}).get("error") or "").strip()
+                results.append(
+                    {
+                        "userId": uid,
+                        "ok": ok,
+                        "code": code,
+                        "message": detail,
+                        "groupId": group_id,
+                        "sentAsLink": bool(outcome.get("sentAsLink")),
+                    }
+                )
+            except Exception as exc:
+                results.append(
+                    {
+                        "userId": uid,
+                        "ok": False,
+                        "code": -1,
+                        "message": str(exc),
+                        "groupId": group_id,
+                    }
+                )
+    return results
+
+
 @app.route("/api/groups/invite", methods=["POST"])
 def api_invite_members_to_groups():
     """API: Mời danh sách thành viên đã chọn vào một hoặc nhiều nhóm cá nhân."""
@@ -3976,6 +6568,58 @@ def api_invite_members_to_groups():
         _, cookies, zpw_enk, imei = _get_account_credentials(account_id, require_imei=True)
         zpw_ver = get_zpw_ver()
 
+        # Zalo chỉ cho thêm trực tiếp vào nhóm những người ĐÃ LÀ BẠN BÈ.
+        # Nếu gộp người lạ vào cùng batch, Zalo trả lỗi 314 cho cả batch và
+        # không ai được thêm. Vì vậy tách bạn bè (add trực tiếp được) và người
+        # lạ (chỉ có thể gửi link/lời mời) thành hai lần gọi riêng.
+        friend_uids = set()
+        try:
+            from features.friends.friend_service import get_friend_uid_set
+
+            friend_uids = get_friend_uid_set(zpw_enk, cookies, imei=imei, zpw_ver=zpw_ver)
+        except Exception as exc:
+            print(f"[groups/invite] Không lấy được danh sách bạn bè: {exc}", flush=True)
+
+        known_friends = [uid for uid in clean_user_ids if uid in friend_uids]
+        known_strangers = [uid for uid in clean_user_ids if uid not in friend_uids]
+        if friend_uids and known_friends and known_strangers:
+            print(
+                f"[groups/invite] Tách {len(known_friends)} bạn bè và "
+                f"{len(known_strangers)} người lạ.",
+                flush=True,
+            )
+
+        # Người lạ: Zalo chặn add trực tiếp (mã 314/269). Hai đường Zalo chấp
+        # nhận với người chưa kết bạn:
+        #   1. Thẻ link nhóm trong tin nhắn 1-1 (/api/message/link, code 0) —
+        #      người nhận bấm là vào nhóm ngay, KHÔNG cần kết bạn trước.
+        #   2. Lời mời kết bạn kèm link nhóm — sau khi họ chấp nhận thì add
+        #      trực tiếp được.
+        # Nếu không tách riêng, Zalo trả 314 cho CẢ batch và không ai vào nhóm.
+        stranger_link_results = []
+        if known_strangers:
+            # Lấy tên Zalo + giới tính để xưng hô đúng trong tin nhắn mời.
+            members_by_uid = _lookup_members_for_invite(
+                known_strangers,
+                zpw_enk,
+                cookies,
+                imei=imei,
+                zpw_ver=zpw_ver,
+            )
+            stranger_link_results = _invite_strangers_via_group_link(
+                account_id,
+                clean_group_ids,
+                known_strangers,
+                imei,
+                zpw_enk,
+                cookies,
+                zpw_ver,
+                members_by_uid=members_by_uid,
+                template=str(data.get("inviteMessageTemplate") or "").strip(),
+                extra_links=str(data.get("inviteExtraLinks") or "").strip(),
+                group_name=str(data.get("groupName") or "").strip(),
+            )
+
         results = []
         total_accepted = 0
         total_invited = 0
@@ -3986,7 +6630,7 @@ def api_invite_members_to_groups():
         for group_id in clean_group_ids:
             invite_result = _invite_members_to_group(
                 group_id,
-                clean_user_ids,
+                known_friends or clean_user_ids,
                 imei,
                 zpw_enk,
                 cookies,
@@ -4017,14 +6661,27 @@ def api_invite_members_to_groups():
             total_failed += group_result["failed"]
             results.append(group_result)
 
+        stranger_link_sent = sum(1 for item in stranger_link_results if item.get("ok"))
+        stranger_link_failed = len(stranger_link_results) - stranger_link_sent
         all_success = total_failed == 0
         message = (
             f"Zalo đã nhận {total_accepted} lượt mời"
             + (f", trong đó {total_inbox} lượt vào tin nhắn chờ" if total_inbox else "")
             + (f"; lỗi {total_failed} lượt." if total_failed else ".")
         )
+        if known_strangers:
+            if stranger_link_sent:
+                message += (
+                    f" {stranger_link_sent}/{len(known_strangers)} người chưa kết bạn "
+                    "đã nhận thẻ link nhóm — họ bấm là vào nhóm được ngay, không cần kết bạn trước."
+                )
+            else:
+                message += (
+                    f" {len(known_strangers)} người chưa kết bạn không thể thêm trực tiếp "
+                    "(Zalo chỉ cho thêm bạn bè) và chưa gửi được link nhóm cho họ."
+                )
         return jsonify({
-            "success": all_success,
+            "success": all_success and stranger_link_failed == 0,
             "partial": not all_success and total_accepted > 0,
             "message": message,
             "totalGroups": len(clean_group_ids),
@@ -4034,8 +6691,14 @@ def api_invite_members_to_groups():
             "totalJoined": total_joined,
             "totalInbox": total_inbox,
             "totalFailed": total_failed,
+            "friendCount": len(known_friends),
+            "strangerCount": len(known_strangers),
+            "strangerUserIds": known_strangers,
+            "strangerLinkSentCount": stranger_link_sent,
+            "strangerLinkFailedCount": stranger_link_failed,
+            "strangerLinkResults": stranger_link_results,
             "results": results,
-        }), 200 if total_accepted > 0 or all_success else 400
+        }), 200 if total_accepted > 0 or all_success or stranger_link_sent > 0 else 400
 
     except ValueError as e:
         return jsonify({"success": False, "error": str(e)}), 400
@@ -4061,9 +6724,54 @@ def _chrome_debug_port_alive(port) -> bool:
         return False
 
 
+_GROUPS_COUNT_REFRESH_LOCK = threading.Lock()
+_GROUPS_COUNT_REFRESH_AT: dict = {}
+
+
+def _schedule_member_count_refresh(account_id: str, account: dict) -> None:
+    """Hẹn giờ làm mới số thành viên của các nhóm (nền, không chặn request).
+
+    Chỉ chạy lại sau mỗi 2 phút và mỗi tài khoản chỉ một luồng tại một thời
+    điểm -> tránh spam API Zalo khi frontend poll liên tục.
+    """
+    try:
+        if not str(account.get("zpwEnk") or "").strip():
+            return
+        if not str(account.get("cookies") or "").strip():
+            return
+        if not (account.get("personalGroups") or []):
+            return
+
+        now = time.time()
+        with _GROUPS_COUNT_REFRESH_LOCK:
+            last = float(_GROUPS_COUNT_REFRESH_AT.get(account_id) or 0)
+            if now - last < 120:
+                return
+            _GROUPS_COUNT_REFRESH_AT[account_id] = now
+
+        def _worker() -> None:
+            try:
+                from features.groups.group_manager import refresh_member_counts
+                refresh_member_counts(account_id)
+            except Exception as exc:
+                print(f"[groups-count-refresh] Lỗi: {exc}", flush=True)
+
+        threading.Thread(
+            target=_worker,
+            daemon=True,
+            name=f"groups-count-{str(account_id)[:8]}",
+        ).start()
+    except Exception as exc:
+        print(f"[groups-count-refresh] Không lên lịch được: {exc}", flush=True)
+
+
 @app.route("/api/groups/personal", methods=["GET"])
 def api_get_account_groups():
-    """API: Lay danh sach personalGroups da luu trong data/accounts.json theo account dang chon."""
+    """API: Lay danh sach personalGroups da luu trong data/accounts.json theo account dang chon.
+
+    Nếu số thành viên đã cũ quá 2 phút thì làm mới nền (không chặn request)
+    để con số "N thành viên" trên UI luôn sát thực tế.
+    """
     account_id = (
         request.args.get("accountId")
         or request.args.get("account_id")
@@ -4175,6 +6883,10 @@ def api_get_account_groups():
 
         print("[api_get_account_groups] account_id=", account_id, "groups=", len(groups))
 
+        # Làm mới số thành viên ở nền nếu đã cũ quá 2 phút. Không chặn
+        # request UI -> lần poll sau sẽ có số liệu mới.
+        _schedule_member_count_refresh(account_id, account)
+
         return jsonify({
             "success": True,
             "accountId": account_id,
@@ -4239,11 +6951,40 @@ def api_get_or_create_group_link():
         }), 500
 
 
+def _auto_close_headless_after_groups_sync(account_id: str, timeout_sec: float = 45.0):
+    """Đợi đồng bộ nhóm (getlg/v4) xong trên Chrome headless rồi tự đóng để giải phóng RAM/profile."""
+    try:
+        from features.accounts.account_manager import close_account, is_account_chrome_headless
+        deadline = time.time() + float(timeout_sec or 45.0)
+        while time.time() < deadline:
+            if not is_account_chrome_headless(account_id):
+                return
+            acc = get_account(account_id) or {}
+            if str(acc.get("groupsSyncStatus") or "") == "done":
+                # Cho monitor ~2s hoàn tất bắt cookie/userinfo bổ sung nếu đang tới sau getlg/v4
+                grace_end = min(deadline, time.time() + 2.5)
+                while time.time() < grace_end:
+                    acc2 = get_account(account_id) or {}
+                    if acc2.get("loginCaptured") and acc2.get("cookies"):
+                        break
+                    time.sleep(0.4)
+                break
+            time.sleep(0.8)
+        if is_account_chrome_headless(account_id):
+            close_account(account_id)
+            print(f"[groups-sync] Đã tự đóng Chrome headless cho account={account_id}", flush=True)
+    except Exception as e:
+        print(f"[groups-sync] Lỗi auto-close headless account={account_id}: {e}", flush=True)
+
+
 @app.route("/api/groups/refresh-account", methods=["POST"])
 def api_refresh_account_groups():
     """
-    Mở hoặc kích hoạt lại tài khoản Zalo đang chọn để monitor bắt getlg/v4,
-    giải mã danh sách nhóm và cập nhật personalGroups.
+    Đồng bộ lại danh sách nhóm cho tài khoản Zalo đang chọn.
+
+    Ưu tiên gọi API trực tiếp (``getlg/v4`` + ``getmg``) với zpwEnk/cookies đã
+    lưu: nhanh (~0.6s) và số thành viên luôn mới. Chỉ khi thiếu credential
+    mới mở Chrome headless để bắt session mới như luồng cũ.
     """
     data = request.get_json(silent=True) or request.form or {}
     account_id = str(
@@ -4262,6 +7003,55 @@ def api_refresh_account_groups():
             return jsonify({"success": False, "error": "Không tìm thấy tài khoản."}), 404
 
         started_at = int(time.time() * 1000)
+
+        # ── Nhanh: gọi thẳng API Zalo, không cần Chrome ──────────────────
+        zpw_enk = str(account.get("zpwEnk") or "").strip()
+        cookies = str(account.get("cookies") or "").strip()
+        imei = str(account.get("imei") or "").strip()
+        if zpw_enk and cookies:
+            try:
+                from features.groups.group_sync_api import (
+                    fetch_group_ids,
+                    fetch_group_summaries,
+                )
+                from features.groups.group_manager import merge_group_summaries
+
+                group_ids = fetch_group_ids(zpw_enk, cookies)
+                if group_ids:
+                    summaries = fetch_group_summaries(
+                        group_ids, zpw_enk, cookies, imei
+                    )
+                    merged = merge_group_summaries(
+                        group_ids,
+                        summaries,
+                        account.get("personalGroups") or [],
+                    )
+
+                    update_account(
+                        account_id,
+                        personalGroups=merged,
+                        groupsSyncedAt=int(time.time() * 1000),
+                        groupsSyncStatus="details_done",
+                    )
+                    print(
+                        f"[groups-sync] API trực tiếp: {len(merged)} nhóm "
+                        f"trong {int(time.time() * 1000) - started_at}ms",
+                        flush=True,
+                    )
+                    return jsonify({
+                        "success": True,
+                        "accountId": account_id,
+                        "startedAt": started_at,
+                        "reusedRunningBrowser": False,
+                        "headless": False,
+                        "directApi": True,
+                        "account": get_account(account_id) or account,
+                        "message": f"Đã đồng bộ {len(merged)} nhóm trực tiếp qua API.",
+                    })
+            except Exception as exc:
+                print(f"[groups-sync] API trực tiếp lỗi, chuyển sang Chrome: {exc}", flush=True)
+
+        # ── Dự phòng: mở Chrome để bắt session mới ────────────────────────
         port = account.get("remoteDebugPort")
         reused_running_browser = False
 
@@ -4283,15 +7073,27 @@ def api_refresh_account_groups():
             account = get_account(account_id) or account
             reused_running_browser = True
         else:
-            account = open_account(account_id, clear_groups=True)
+            account = open_account(account_id, clear_groups=True, headless=True)
+            threading.Thread(
+                target=_auto_close_headless_after_groups_sync,
+                args=(account_id, 45.0),
+                daemon=True,
+                name=f"headless-groups-{account_id[:8]}",
+            ).start()
 
         return jsonify({
             "success": True,
             "accountId": account_id,
             "startedAt": started_at,
             "reusedRunningBrowser": reused_running_browser,
+            "headless": not reused_running_browser,
+            "directApi": False,
             "account": account,
-            "message": "Đã mở tài khoản Zalo và bật monitor đồng bộ nhóm.",
+            "message": (
+                "Đang đồng bộ lại danh sách nhóm từ trình duyệt đang mở."
+                if reused_running_browser
+                else "Đang chạy ngầm đồng bộ danh sách nhóm (headless)..."
+            ),
         })
 
     except ValueError as e:
@@ -4413,7 +7215,16 @@ def api_get_group_members_for_manager():
             log_func=None,
             zpw_ver=zpw_ver,
         )
-        members = build_member_rows_from_uids(uid_list, profiles, member_map=member_map, group_info=group_info)
+        own_uid = str((account or {}).get("userId") or (account or {}).get("uid") or "").strip()
+        friend_uids = _get_account_friend_uids(account_id, account=account, cookies=cookies, zpw_enk=zpw_enk, imei=imei)
+        members = build_member_rows_from_uids(
+            uid_list,
+            profiles,
+            member_map=member_map,
+            group_info=group_info,
+            own_uid=own_uid,
+            friend_uids=friend_uids,
+        )
 
         return jsonify({
             "success": True,
@@ -4893,26 +7704,19 @@ def _start_backend_server():
     try:
         _enable_windows_terminal_copy_mode()
 
-        # Kiểm tra/kích hoạt thiết bị trước khi cho worker chạy nền.
-        if DEVICE_TRACKING_ENABLED:
-            try:
-                register_device_on_startup(verbose=True)
-                is_valid, days_remaining, message = validate_activation_code()
-                print(message, flush=True)
-                if is_valid:
-                    ensure_schedule_worker_started()
-                    print(f"✅ License còn {days_remaining} ngày", flush=True)
-                else:
-                    print("🔐 Phần mềm chưa kích hoạt. Mở giao diện /activation để chọn thời gian kích hoạt và nhận mã 12 ký tự qua email.", flush=True)
-            except Exception as e:
-                print(f"⚠️  Lỗi kiểm tra/kích hoạt thiết bị: {str(e)}", flush=True)
-        else:
-            ensure_schedule_worker_started()
+        # DEV MODE: bo check kich hoat — chay thang worker.
+        ensure_schedule_worker_started()
+        print("✅ Dev mode: bo check kich hoat, worker da chay", flush=True)
 
         print("✅ Backend đã sẵn sàng", flush=True)
         print("🌐 Giao diện: http://127.0.0.1:5000/policy", flush=True)
         print("👉 Bấm nút 'Mở giao diện' để mở trình duyệt.", flush=True)
-        app.run(debug=False, port=5000, host="127.0.0.1", use_reloader=False, threaded=True)
+        # Share LAN: mac dinh mo 0.0.0.0 de Client LAN goi duoc ngay (1-2 click).
+        # An toan nho X-Internal-Token + whitelist LAN (xem features/gateway/auth.py).
+        _host = (os.environ.get("NEXUS_HOST") or "0.0.0.0").strip() or "0.0.0.0"
+        if _host == "0.0.0.0":
+            print("🌐 Share LAN: mo port 5000 cho LAN tin cay (can X-Internal-Token).", flush=True)
+        app.run(debug=False, port=5000, host=_host, use_reloader=False, threaded=True)
     except Exception as e:
         print(f"❌ Lỗi khởi động backend: {e}", flush=True)
         import traceback
@@ -4934,7 +7738,7 @@ def _cleanup_update_script():
         pass
 
 
-NEXUS_UI_URL = "http://127.0.0.1:5000/policy"
+NEXUS_UI_URL = "http://127.0.0.1:5000/guide"
 NEXUS_UI_ORIGIN = "http://127.0.0.1:5000"
 NEXUS_UI_EDGE_DEBUG_PORT = 9322
 
@@ -5025,6 +7829,60 @@ def _activate_edge_target(target):
         return False
 
 
+def _maximize_edge_target_window(target):
+    """Phóng to (maximize) cửa sổ Edge chứa target qua CDP để app luôn mở full màn hình."""
+    target_id = str((target or {}).get("id") or "").strip()
+    if not target_id:
+        return False
+    ws = None
+    try:
+        import websocket
+
+        ver_res = requests.get(
+            f"http://127.0.0.1:{NEXUS_UI_EDGE_DEBUG_PORT}/json/version",
+            timeout=1.0,
+        )
+        if ver_res.status_code != 200:
+            return False
+        ws_url = str((ver_res.json() or {}).get("webSocketDebuggerUrl") or "").strip()
+        if not ws_url:
+            return False
+
+        ws = websocket.create_connection(ws_url, timeout=2.0)
+
+        def _cdp_call(req_id, method, params):
+            ws.send(json.dumps({"id": req_id, "method": method, "params": params}))
+            for _ in range(10):
+                raw = ws.recv()
+                msg = json.loads(raw) if raw else {}
+                if msg.get("id") == req_id:
+                    return msg
+            return {}
+
+        win_msg = _cdp_call(1, "Browser.getWindowForTarget", {"targetId": target_id})
+        result = win_msg.get("result") or {}
+        window_id = result.get("windowId")
+        if window_id is None:
+            return False
+        bounds = result.get("bounds") or {}
+        if bounds.get("windowState") == "maximized":
+            return True
+        set_msg = _cdp_call(
+            2,
+            "Browser.setWindowBounds",
+            {"windowId": window_id, "bounds": {"windowState": "maximized"}},
+        )
+        return "error" not in set_msg
+    except Exception:
+        return False
+    finally:
+        if ws is not None:
+            try:
+                ws.close()
+            except Exception:
+                pass
+
+
 def _create_edge_ui_target():
     """Tạo tab UI chỉ khi Edge đã chạy nhưng chưa hề có tab Nexus."""
     try:
@@ -5045,6 +7903,7 @@ def _open_nexus_ui_in_edge():
     """Mở Nexus bằng Edge App mode: không tab/địa chỉ/thanh điều hướng và không mở trùng cửa sổ."""
     existing = _find_existing_nexus_ui_target()
     if existing and _activate_edge_target(existing):
+        _maximize_edge_target_window(existing)
         return True, str(existing.get("url") or NEXUS_UI_URL), True
 
     edge_exe = _find_edge_executable()
@@ -5065,6 +7924,7 @@ def _open_nexus_ui_in_edge():
         "--no-first-run",
         "--no-default-browser-check",
         "--disable-session-crashed-bubble",
+        "--start-maximized",
         f"--app={NEXUS_UI_URL}",
     ]
     creationflags = 0
@@ -5081,6 +7941,7 @@ def _open_nexus_ui_in_edge():
         target = _find_existing_nexus_ui_target()
         if target:
             _activate_edge_target(target)
+            _maximize_edge_target_window(target)
             return True, str(target.get("url") or NEXUS_UI_URL), False
 
     # Edge có thể khởi động chậm hơn thời gian chờ nhưng lệnh --app đã được gửi thành công.
@@ -5183,10 +8044,12 @@ def _launch_wait_window():
 
         def worker():
             with ui_open_lock:
+                opened_ok = False
                 try:
                     root.after(0, lambda: open_button.configure(text="Đang mở Edge…", state="disabled"))
                     success, detail, reused = _open_nexus_ui_in_edge()
                     if success:
+                        opened_ok = True
                         action = "Đã chuyển tới giao diện Edge đang mở" if reused else "Đã mở giao diện bằng Edge"
                         print(f"{action}: {detail}", flush=True)
                     else:
@@ -5195,7 +8058,12 @@ def _launch_wait_window():
                     print(f"Không thể mở giao diện bằng Edge: {error}", flush=True)
                 finally:
                     try:
-                        root.after(0, lambda: open_button.configure(text="Mở giao diện", state="normal"))
+                        if opened_ok:
+                            # Mo Edge xong -> an launcher di, backend van chay ngam.
+                            # Can mo lai: bam lai icon Nexus (neu exe) hoac chay lai python app.py.
+                            root.after(0, lambda: (open_button.configure(text="Đã mở — ẩn launcher"), root.withdraw()))
+                        else:
+                            root.after(0, lambda: open_button.configure(text="Mở giao diện", state="normal"))
                     except Exception:
                         pass
 
