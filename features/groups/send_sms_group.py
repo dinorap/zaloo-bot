@@ -36,6 +36,7 @@ def send_group_msg(
     ttl: int = 0,
     zpw_ver: str = None,
     client_id: int = None,
+    mention_info: str | list | None = None,
 ) -> tuple:
     """
     Gửi tin nhắn text vào nhóm Zalo qua API Zalo Web.
@@ -47,6 +48,7 @@ def send_group_msg(
         imei: IMEI phiên hiện tại
         message: nội dung tin nhắn
         ttl: thời gian tự hủy, mặc định 0
+        mention_info: thông tin tag mention (danh sách [{"uid":..., "pos":0, "len":...}] hoặc chuỗi JSON)
 
     Returns:
         Tuple (response_json, decoded_data)
@@ -62,6 +64,11 @@ def send_group_msg(
         "visibility": 0,
         "grid": str(grid),
     }
+    if mention_info:
+        if isinstance(mention_info, list):
+            payload["mentionInfo"] = json.dumps(mention_info, ensure_ascii=False, separators=(",", ":"))
+        else:
+            payload["mentionInfo"] = str(mention_info)
 
     plaintext = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     params = zalo_encode(plaintext, zpw_enk, url_encode=True)

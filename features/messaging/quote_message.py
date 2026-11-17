@@ -67,6 +67,7 @@ def quote_message(
     qmsg_ts="",
     qmsg_text="",
     qmsg_attach="",
+    mention_info="",
     zpw_ver=None,
     timeout=30,
 ):
@@ -98,7 +99,10 @@ def quote_message(
     if is_group:
         payload["grid"] = thread_id
         payload["visibility"] = 0
-        payload["mentionInfo"] = ""
+        if isinstance(mention_info, list):
+            payload["mentionInfo"] = json.dumps(mention_info, ensure_ascii=False, separators=(",", ":"))
+        else:
+            payload["mentionInfo"] = str(mention_info or "")
         url = QUOTE_GROUP_URL
     else:
         payload["toid"] = thread_id

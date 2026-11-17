@@ -783,3 +783,106 @@
                 padding: 14px 14px;
             }
         }
+
+/* ===== CUSTOM COMMANDS & SPECIAL RULES ===== */
+.cb-cmd-card {
+    background: #ffffff;
+    border: 1px solid #ebd8c8;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(43,26,16,.04);
+    transition: all .2s ease;
+    overflow: hidden;
+}
+.cb-cmd-card:hover {
+    border-color: #ff9d70;
+    box-shadow: 0 4px 14px rgba(255,117,66,.12);
+}
+.cb-cmd-card.is-disabled {
+    opacity: 0.65;
+    background: #faf6f2;
+}
+.cb-cmd-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #fff8f1;
+    border-bottom: 1px solid #f0d9c4;
+    flex-wrap: wrap;
+}
+.cb-cmd-head-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 220px;
+}
+.cb-cmd-badge {
+    background: linear-gradient(135deg, #ff7542, #e8451f);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 8px;
+    letter-spacing: 0.3px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: monospace;
+}
+.cb-cmd-head-title {
+    font-size: 14px;
+    font-weight: 750;
+    color: #2b1a10;
+}
+.cb-cmd-head-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cb-cmd-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.cb-cmd-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+@media (max-width: 768px) {
+    .cb-cmd-row {
+        grid-template-columns: 1fr;
+    }
+}
+.cb-cmd-test-panel {
+    background: #fdfaf6;
+    border: 1px solid #ecd7c5;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 6px;
+}
+.cb-cmd-test-res {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: #ffffff;
+    border-left: 3px solid #ff7542;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #2b1a10;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.cb-btn-orange {
+    background: linear-gradient(135deg, #ff8a52, #e8451f) !important;
+    color: #ffffff !important;
+    border-color: #e8451f !important;
+}
+.cb-btn-orange:hover {
+    background: linear-gradient(135deg, #ff7542, #c93a18) !important;
+    color: #ffffff !important;
+}
+

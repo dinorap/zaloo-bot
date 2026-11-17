@@ -288,6 +288,7 @@
                 <h2>Hệ thống 3 loại Key License Jimmy BOT CHAT</h2>
                 <p>Phần mềm được phân quyền nghiêm ngặt thành 3 gói bản quyền. Khi kích hoạt từng loại key, hệ thống tự động mở các tính năng tương ứng và chặn/ẩn hoàn toàn các phân hệ không thuộc gói.</p>
                 <p>Thời hạn license: <b>{% if license_info.isPermanent %}Vĩnh viễn{% elif license_info.daysRemaining == 0 %}Dưới 1 ngày{% else %}Còn {{ license_info.daysRemaining }} ngày{% endif %}</b> | Mã hiện tại: <code>{{ license_info.key or 'Chưa lưu mã' }}</code></p>
+                <p style="margin-top:6px; font-size:12px; color:var(--text-muted);">Mã máy (HWID): <code>{{ license_info.hwid }}</code> | Windows GUID: <code>{{ license_info.machineGuid }}</code> | Máy chủ: <b>{{ license_info.serverUrl }}</b> (Quét định kỳ 2h/lần)</p>
             </section>
 
             <!-- Bảng so sánh 3 loại License -->
@@ -380,8 +381,9 @@
                 <p style="color:var(--text-muted); font-size:13px; margin:0 0 12px;">Dán mã License Key bạn được cấp (hoặc mã kích hoạt 12 ký tự từ email) vào ô bên dưới rồi bấm <b>Kích hoạt License</b>:</p>
 
                 <div class="key-input-row">
-                    <input id="activationCode" class="activation-code-box" autocomplete="off" spellcheck="false" placeholder="NHẬP MÃ KÍCH HOẠT (VD: JM1-..., JM2-..., HOẶC MÃ 12 KÝ TỰ)" />
+                    <input id="activationCode" class="activation-code-box" autocomplete="off" spellcheck="false" placeholder="NHẬP MÃ KEY MÁY CHỦ (VD: MÃ 16 KÝ TỰ HOẶC JM1-..., JM2-..., JM3-...)" />
                     <button id="saveActivationBtn" class="btn-activate" type="button">Kích hoạt License</button>
+                    <button id="verifyOnlineBtn" class="btn btn-secondary" style="height:48px; border-radius:10px; font-weight:700; white-space:nowrap;" type="button" onclick="verifyLicenseOnline()">Kiểm tra trực tuyến</button>
                 </div>
                 <div id="activationResult"></div>
 

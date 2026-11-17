@@ -340,6 +340,347 @@ function chatbotStrictChanged(){
   if(wrap) wrap.style.opacity=on?'1':'0.72';
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   LỆNH TÙY CHỈNH & QUY TẮC CHUYÊN BIỆT (vd: /sanpham, /lichsu...)
+   ══════════════════════════════════════════════════════════════════════ */
+let cbCustomCommandsList = [];
+
+const CB_COMMAND_PRESETS = {
+  sanpham: {
+    command: "/sanpham",
+    name: "Tư vấn sản phẩm & Dịch vụ",
+    enabled: true,
+    rule: "Tập trung tư vấn thông số kỹ thuật, cấu hình, giá thành, hỏi thăm nhu cầu của khách để giới thiệu đúng mẫu phù hợp. Giữ giọng điệu nhiệt tình, chuyên nghiệp, gợi mở khách đặt mua.",
+    context: "Danh sách sản phẩm nổi bật:\n- iPhone 15 Pro Max 256GB: 28.500.000đ (Bảo hành 12 tháng, tặng combo sạc nhanh 20W)\n- iPhone 14 Pro 128GB: 19.200.000đ (Tình trạng 99%, pin 100%)\n- Samsung S24 Ultra 256GB: 26.900.000đ (Bút S-Pen, AI thông minh)\nChính sách giao hàng: Freeship toàn quốc, kiểm tra hàng trước khi thanh toán.",
+    responseType: "ai",
+    fixedReply: "Dạ em gửi Anh/Chị thông tin sản phẩm của shop. Anh/Chị có thể gõ /sanpham kèm tên sản phẩm hoặc nhu cầu để em tư vấn chi tiết nhất nhé!"
+  },
+  lichsu: {
+    command: "/lichsu",
+    name: "Lịch sử & Uy tín thương hiệu",
+    enabled: true,
+    rule: "Giới thiệu cô đọng, tự hào về lịch sử hình thành, uy tín và các mốc phát triển của thương hiệu. Khẳng định cam kết chất lượng với khách hàng.",
+    context: "Thương hiệu thành lập từ năm 2018 với hơn 6 năm phục vụ 50.000+ khách hàng trên toàn quốc. Đạt chứng chỉ dịch vụ uy tín và chính sách bảo hành 1 đổi 1 trong 30 ngày.",
+    responseType: "ai",
+    fixedReply: "Dạ shop được thành lập từ năm 2018 với 6 năm phục vụ hơn 50.000 khách hàng trên toàn quốc. Anh/Chị cần tìm hiểu thêm thông tin gì cứ nhắn em nhé!"
+  },
+  banggia: {
+    command: "/banggia",
+    name: "Bảng giá & Chiết khấu",
+    enabled: true,
+    rule: "Báo giá rõ ràng, minh bạch, nhấn mạnh các chương trình khuyến mãi, quà tặng và chiết khấu khi mua số lượng nhiều.",
+    context: "Bảng giá niêm yết mới nhất (Đã gồm VAT):\n- Gói Cơ bản: 500.000đ/tháng\n- Gói Nâng cao: 1.200.000đ/tháng (Giảm 15% khi thanh toán 6 tháng)\n- Gói Doanh nghiệp: 2.500.000đ/tháng (Tặng thêm 2 tháng)",
+    responseType: "ai",
+    fixedReply: "Dạ bảng giá dịch vụ mới nhất đã được cập nhật. Anh/Chị quan tâm gói nào em tư vấn chi tiết và gửi mã giảm giá nhé!"
+  },
+  chinhsach: {
+    command: "/chinhsach",
+    name: "Chính sách bảo hành & Đổi trả",
+    enabled: true,
+    rule: "Giải thích các điều khoản bảo hành, đổi trả, cam kết hỗ trợ khách hàng nhanh chóng, rõ ràng và uy tín.",
+    context: "Chính sách bảo hành:\n- 1 đổi 1 trong 30 ngày đầu nếu có lỗi nhà sản xuất\n- Bảo hành phần cứng 12 tháng chính hãng\n- Hỗ trợ kỹ thuật trọn đời miễn phí",
+    responseType: "ai",
+    fixedReply: "Dạ chính sách của shop cam kết 1 đổi 1 trong 30 ngày và bảo hành chính hãng 12 tháng. Anh/Chị hoàn toàn yên tâm sử dụng ạ!"
+  }
+};
+
+function cbRenderCommands(items) {
+  cbCustomCommandsList = Array.isArray(items) ? items : [];
+  const container = document.getElementById('cbCommandsList');
+  const countBadge = document.getElementById('cbCommandsCount');
+  if (countBadge) {
+    const activeCount = cbCustomCommandsList.filter(x => x.enabled !== false).length;
+    countBadge.textContent = `${activeCount}/${cbCustomCommandsList.length} lệnh đang bật`;
+  }
+  if (!container) return;
+
+  if (!cbCustomCommandsList.length) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:28px 16px; background:#fffdfa; border:1px dashed #e8d3bf; border-radius:12px; color:#7a6455;">
+        <svg class="cb-ico" style="width:28px;height:28px;margin-bottom:8px;color:#c93a18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div style="font-weight:700; font-size:14px; color:#2b1a10; margin-bottom:4px;">Chưa có lệnh tùy chỉnh nào</div>
+        <div style="font-size:12.5px;">Bấm vào nút <b>«+ Thêm lệnh mới»</b> hoặc chọn mẫu nhanh <b>/sanpham</b>, <b>/lichsu</b> ở trên để tạo lệnh ngay.</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = cbCustomCommandsList.map((cmd, idx) => {
+    const id = cmd.id || `cmd_${idx}_${Date.now()}`;
+    const enabled = cmd.enabled !== false;
+    const command = cbEsc(cmd.command || `/lenh${idx + 1}`);
+    const name = cbEsc(cmd.name || 'Lệnh mới');
+    const rule = cbEsc(cmd.rule || '');
+    const context = cbEsc(cmd.context || '');
+    const responseType = cmd.responseType === 'fixed' ? 'fixed' : 'ai';
+    const fixedReply = cbEsc(cmd.fixedReply || '');
+
+    return `
+      <div class="cb-cmd-card ${enabled ? '' : 'is-disabled'}" id="card_${id}" data-id="${id}">
+        <div class="cb-cmd-head">
+          <div class="cb-cmd-head-left">
+            <span class="cb-cmd-badge" id="badge_${id}">${command}</span>
+            <input type="text" class="cb-cmd-name-input" id="name_${id}" value="${name}" placeholder="Tên gợi nhớ của lệnh"
+              style="padding:5px 9px; font-weight:700; font-size:13.5px; border:1px solid transparent; background:transparent; border-radius:6px;"
+              onfocus="this.style.background='#fff';this.style.borderColor='#ff7542'"
+              onblur="this.style.background='transparent';this.style.borderColor='transparent'"
+              oninput="cbSyncCmdHeader('${id}')">
+          </div>
+          <div class="cb-cmd-head-right">
+            <label class="cb-switch-row" style="padding:4px 8px; margin:0; background:#fff; border-radius:8px; font-size:12px; gap:6px;">
+              <span style="font-weight:600; color:#5b4133">${enabled ? 'Đang bật' : 'Đã tắt'}</span>
+              <input type="checkbox" id="enabled_${id}" ${enabled ? 'checked' : ''} onchange="cbToggleCmdCard('${id}')">
+            </label>
+            <button type="button" class="cb-btn cb-btn-sm" onclick="cbToggleCmdTest('${id}')" title="Chạy thử lệnh này">
+              <svg class="cb-ico" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> Test thử
+            </button>
+            <button type="button" class="cb-btn cb-btn-sm" onclick="cbDeleteCommand('${id}')" title="Xóa lệnh này" style="color:#dc2626; border-color:#fca5a5;">
+              <svg class="cb-ico" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="cb-cmd-body">
+          <div class="cb-cmd-row">
+            <div class="cb-field">
+              <label for="kw_${id}">
+                <span>Từ khóa / Lệnh gọi bot (bắt đầu bằng dấu /)</span>
+              </label>
+              <input type="text" id="kw_${id}" value="${command}" placeholder="vd: /sanpham hoặc /lichsu"
+                oninput="cbSyncCmdBadge('${id}')">
+              <small>Khách hàng gõ từ khóa này (ví dụ <code>${command}</code>) thì bot sẽ áp dụng kịch bản bên dưới.</small>
+            </div>
+            <div class="cb-field">
+              <label for="type_${id}">
+                <span>Chế độ phản hồi</span>
+              </label>
+              <select id="type_${id}" onchange="cbCmdTypeChanged('${id}')">
+                <option value="ai" ${responseType === 'ai' ? 'selected' : ''}>AI trả lời theo Rule &amp; Context riêng (Khuyên dùng)</option>
+                <option value="fixed" ${responseType === 'fixed' ? 'selected' : ''}>Chỉ gửi câu trả lời cố định (Không gọi AI)</option>
+              </select>
+              <small id="typeHint_${id}">${responseType === 'ai' ? 'AI sẽ sử dụng quy tắc và thông tin context của lệnh này để trả lời thông minh.' : 'Chỉ gửi tin nhắn mẫu cố định bên dưới, tiết kiệm tối đa token AI.'}</small>
+            </div>
+          </div>
+
+          <div class="cb-field full" id="ruleWrap_${id}">
+            <label for="rule_${id}">
+              <span>Quy tắc ứng xử riêng cho AI khi gặp lệnh này (Rule / Prompt chỉ thị)</span>
+            </label>
+            <textarea id="rule_${id}" rows="3" placeholder="vd: Tập trung tư vấn thông số kỹ thuật, cấu hình, giá thành, hỏi thăm nhu cầu của khách để giới thiệu đúng mẫu phù hợp. Giữ giọng điệu nhiệt tình, gợi mở khách đặt mua...">${rule}</textarea>
+            <small>Chỉ thị AI cách nói chuyện, góc nhìn và mục tiêu giao tiếp khi khách hàng gõ lệnh này.</small>
+          </div>
+
+          <div class="cb-field full" id="ctxWrap_${id}">
+            <label for="ctx_${id}">
+              <span>Tài liệu / Dữ liệu Context riêng của lệnh (Thông tin sản phẩm, lịch sử, dữ liệu tra cứu...)</span>
+            </label>
+            <textarea id="ctx_${id}" rows="4" placeholder="vd: Dán danh sách sản phẩm, bảng giá chi tiết, thông số kỹ thuật, khuyến mãi của riêng chủ đề này... AI sẽ đọc tài liệu này để trả lời chuẩn xác.">${context}</textarea>
+            <small>Kho thông tin chuyên sâu của riêng lệnh này. AI sẽ ưu tiên tài liệu này lên hàng đầu để trả lời chính xác.</small>
+          </div>
+
+          <div class="cb-field full">
+            <label for="fixed_${id}">
+              <span>Tin nhắn mẫu / Câu chào cố định (Fixed Reply / Fallback)</span>
+            </label>
+            <input type="text" id="fixed_${id}" value="${fixedReply}" placeholder="vd: Dạ em gửi Anh/Chị thông tin sản phẩm của shop. Anh/Chị cần hỏi gì cứ nhắn em nhé!">
+            <small>Được gửi ngay khi khách chỉ gõ trần câu lệnh (chưa có câu hỏi kèm theo), hoặc dùng làm câu trả lời cố định.</small>
+          </div>
+
+          <!-- Khung test trực tiếp câu lệnh -->
+          <div class="cb-cmd-test-panel" id="testPanel_${id}" style="display:none;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+              <strong style="font-size:13px; color:#2b1a10; display:flex; align-items:center; gap:6px;">
+                <svg class="cb-ico" style="color:#ff7542" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Thử nghiệm phản hồi của lệnh: <code style="color:#c93a18" id="testKw_${id}">${command}</code>
+              </strong>
+              <button type="button" class="cb-btn cb-btn-sm" onclick="cbToggleCmdTest('${id}')" style="padding:2px 8px;font-size:11px;">Đóng test</button>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="testQuery_${id}" placeholder="Nhập câu hỏi test, vd: ${command} có mẫu nào rẻ không?" style="flex:1;">
+              <button type="button" class="cb-btn cb-btn-sm cb-btn-orange" id="testBtn_${id}" onclick="cbRunTestCommand('${id}')">
+                Gửi câu hỏi thử
+              </button>
+            </div>
+            <div id="testOutput_${id}" style="display:none;" class="cb-cmd-test-res"></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function cbSyncCmdHeader(id) {
+  const nameVal = document.getElementById(`name_${id}`)?.value || '';
+  const item = cbCustomCommandsList.find(x => x.id === id);
+  if (item) item.name = nameVal;
+}
+
+function cbSyncCmdBadge(id) {
+  let kw = document.getElementById(`kw_${id}`)?.value || '';
+  kw = kw.trim();
+  if (kw && !kw.startsWith('/')) kw = '/' + kw;
+  const badge = document.getElementById(`badge_${id}`);
+  if (badge) badge.textContent = kw || '/lenh';
+  const testKw = document.getElementById(`testKw_${id}`);
+  if (testKw) testKw.textContent = kw || '/lenh';
+  const item = cbCustomCommandsList.find(x => x.id === id);
+  if (item) item.command = kw;
+}
+
+function cbCmdTypeChanged(id) {
+  const type = document.getElementById(`type_${id}`)?.value || 'ai';
+  const hint = document.getElementById(`typeHint_${id}`);
+  if (hint) {
+    hint.textContent = type === 'ai'
+      ? 'AI sẽ sử dụng quy tắc và thông tin context của lệnh này để trả lời thông minh.'
+      : 'Chỉ gửi tin nhắn mẫu cố định bên dưới, tiết kiệm tối đa token AI.';
+  }
+}
+
+function cbToggleCmdCard(id) {
+  const checked = !!document.getElementById(`enabled_${id}`)?.checked;
+  const card = document.getElementById(`card_${id}`);
+  if (card) card.classList.toggle('is-disabled', !checked);
+  const item = cbCustomCommandsList.find(x => x.id === id);
+  if (item) item.enabled = checked;
+  const countBadge = document.getElementById('cbCommandsCount');
+  if (countBadge) {
+    const activeCount = cbCustomCommandsList.filter(x => x.enabled !== false).length;
+    countBadge.textContent = `${activeCount}/${cbCustomCommandsList.length} lệnh đang bật`;
+  }
+}
+
+function cbToggleCmdTest(id) {
+  const panel = document.getElementById(`testPanel_${id}`);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    const kw = document.getElementById(`kw_${id}`)?.value || '/lenh';
+    const queryInput = document.getElementById(`testQuery_${id}`);
+    if (queryInput && !queryInput.value) {
+      queryInput.value = `${kw} tư vấn giúp mình nhé`;
+    }
+  }
+}
+
+async function cbRunTestCommand(id) {
+  const queryEl = document.getElementById(`testQuery_${id}`);
+  const outputEl = document.getElementById(`testOutput_${id}`);
+  const testBtn = document.getElementById(`testBtn_${id}`);
+  const text = (queryEl?.value || '').trim();
+  if (!text) {
+    cbToast('Vui lòng nhập câu hỏi test.');
+    return;
+  }
+
+  let kw = (document.getElementById(`kw_${id}`)?.value || '').trim();
+  if (kw && !kw.startsWith('/')) kw = '/' + kw;
+  const cmd = {
+    id: id,
+    command: kw,
+    name: document.getElementById(`name_${id}`)?.value || kw,
+    enabled: !!document.getElementById(`enabled_${id}`)?.checked,
+    responseType: document.getElementById(`type_${id}`)?.value || 'ai',
+    rule: document.getElementById(`rule_${id}`)?.value || '',
+    context: document.getElementById(`ctx_${id}`)?.value || '',
+    fixedReply: document.getElementById(`fixed_${id}`)?.value || ''
+  };
+
+  if (testBtn) { testBtn.disabled = true; testBtn.textContent = 'Đang xử lý...'; }
+  if (outputEl) {
+    outputEl.style.display = 'block';
+    outputEl.textContent = '🤖 Đang suy nghĩ và tạo câu trả lời...';
+  }
+
+  try {
+    const res = await fetch('/api/chatbot/test-command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, cmd, sender_name: 'Khách hàng Test' })
+    });
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error || 'Lỗi xử lý phản hồi');
+    if (outputEl) {
+      outputEl.innerHTML = `<strong>🤖 Bot trả lời:</strong>\n${cbEsc(d.reply || 'Không có phản hồi')}`;
+    }
+  } catch (err) {
+    if (outputEl) outputEl.innerHTML = `<span style="color:#dc2626">❌ Lỗi: ${cbEsc(err.message)}</span>`;
+  } finally {
+    if (testBtn) { testBtn.disabled = false; testBtn.textContent = 'Gửi câu hỏi thử'; }
+  }
+}
+
+function cbCollectCommands() {
+  const container = document.getElementById('cbCommandsList');
+  if (!container) return cbCustomCommandsList || [];
+  const cards = container.querySelectorAll('.cb-cmd-card');
+  const list = [];
+  cards.forEach(card => {
+    const id = card.dataset.id;
+    if (!id) return;
+    let kw = (document.getElementById(`kw_${id}`)?.value || '').trim();
+    if (kw && !kw.startsWith('/')) kw = '/' + kw;
+    if (!kw) return;
+    list.push({
+      id: id,
+      command: kw,
+      name: (document.getElementById(`name_${id}`)?.value || kw).trim(),
+      enabled: !!document.getElementById(`enabled_${id}`)?.checked,
+      responseType: document.getElementById(`type_${id}`)?.value || 'ai',
+      rule: (document.getElementById(`rule_${id}`)?.value || '').trim(),
+      context: (document.getElementById(`ctx_${id}`)?.value || '').trim(),
+      fixedReply: (document.getElementById(`fixed_${id}`)?.value || '').trim()
+    });
+  });
+  cbCustomCommandsList = list;
+  return list;
+}
+
+function cbAddNewCommand() {
+  const current = cbCollectCommands();
+  const newId = `cmd_${Date.now()}`;
+  current.unshift({
+    id: newId,
+    command: `/lenh${current.length + 1}`,
+    name: `Lệnh mới ${current.length + 1}`,
+    enabled: true,
+    responseType: "ai",
+    rule: "",
+    context: "",
+    fixedReply: ""
+  });
+  cbRenderCommands(current);
+  cbToast('Đã thêm 1 lệnh mới. Hãy điền quy tắc và bấm "Lưu lệnh".');
+}
+
+function cbAddCommandPreset(type) {
+  const preset = CB_COMMAND_PRESETS[type];
+  if (!preset) return;
+  const current = cbCollectCommands();
+  const existing = current.find(x => x.command.toLowerCase() === preset.command.toLowerCase());
+  if (existing) {
+    cbToast(`Lệnh ${preset.command} đã có trong danh sách.`);
+    const el = document.getElementById(`card_${existing.id}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  const newId = `cmd_${Date.now()}`;
+  current.unshift({
+    ...preset,
+    id: newId
+  });
+  cbRenderCommands(current);
+  cbToast(`Đã thêm mẫu ${preset.command} (${preset.name}).`);
+}
+
+function cbDeleteCommand(id) {
+  if (!confirm('Bạn có chắc chắn muốn xóa lệnh này không?')) return;
+  const current = cbCollectCommands().filter(x => x.id !== id);
+  cbRenderCommands(current);
+  cbToast('Đã xóa lệnh.');
+}
+
 /* Gom phần cấu hình dùng chung để gửi đi. */
 function cbCollectShared(){
   const keyItems=cbCollectKeyRows().filter(x=>x.key);
@@ -352,6 +693,7 @@ function cbCollectShared(){
     triggerEnabled:document.getElementById('cbTriggerEnabled').checked,
     triggerKeywords:document.getElementById('cbTriggerKeywords').value.trim(),
     triggerMode:document.getElementById('cbTriggerMode').value||'prefix',
+    customCommands: cbCollectCommands(),
   };
 }
 
@@ -393,6 +735,7 @@ async function cbLoadShared(){
       : (cfg.geminiApiKey?[{label:'Tài khoản 1',key:cfg.geminiApiKey,limited:false}]:[]);
     cbRenderKeyRows(apiKeys);
     document.getElementById('cbCascade').value=(cfg.modelCascade||[]).join(', ');
+    cbRenderCommands(cfg.customCommands || []);
   }catch(e){}
 }
 

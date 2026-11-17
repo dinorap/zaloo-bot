@@ -341,6 +341,7 @@ from features.messages.unread_manager import (
 from core.zalo.zalo_config import get_zpw_ver
 from features.chatbot import store as chatbot_store
 from features.chatbot import worker as chatbot_worker
+from features.chatbot import brain as chatbot_brain
 from features.telegram import store as telegram_store
 from features.telegram import worker as telegram_worker
 from features.telegram import telegram_client
@@ -917,14 +918,9 @@ def _update_action_plan_batch_status(plan_type: str, plan_id: str, batch_day, pa
     _save_action_plan_store(plan_type, plans)
     return plan, batch
 
-# ─── Device Activation / Info (optional - for device management) ─────────────
-# DEV MODE: tat hoan toan check kich hoat — mo la chay, khong can ma.
-DEVICE_TRACKING_ENABLED = False
 # ─── Device Activation / Info (Hệ thống kích hoạt máy & License) ─────────────
 DEVICE_TRACKING_ENABLED = True
 
-def validate_activation_code():
-    return True, 9999, "Dev mode: bo check kich hoat"
 try:
     from authencation.send_info_device import (
         validate_activation_code as _device_validate_activation_code,
@@ -936,8 +932,6 @@ try:
     def validate_activation_code():
         return _device_validate_activation_code()
 
-def save_user_activation_code(code_text):
-    return True, "Dev mode: bo check kich hoat"
     def save_user_activation_code(code_text):
         return _device_save_user_activation_code(code_text)
 
@@ -1180,11 +1174,32 @@ def require_activation_before_use():
     # ─── BẢO VỆ PHÂN HỆ THEO 3 LOẠI KEY LICENSE (LOẠI 1, 2, 3) ───
     from features.license import license_manager
     path = request.path or "/"
+    info = license_manager.get_license_info()
+
+    # 1. Kiểm tra trạng thái kích hoạt license
+    if not info.get("activated"):
+        is_public_activation = (
+            path == "/activation" or path.startswith("/api/activation")
+            or path.startswith("/static/") or path.startswith("/media/")
+            or path == "/policy" or path.startswith("/api/policy")
+            or path == "/favicon.ico"
+        )
+        if not is_public_activation:
+            if path.startswith("/api/") or path == "/run" or request.method not in ("GET", "HEAD"):
+                return jsonify({
+                    "success": False,
+                    "error": info.get("failMessage") or "Bản quyền chưa được kích hoạt hoặc đã hết hạn.",
+                    "code": "LICENSE_NOT_ACTIVATED",
+                    "reason": info.get("failReason") or "inactive",
+                }), 403
+            return redirect(url_for("activation_page"))
+
+    # 2. Kiểm tra phân hệ được phép theo loại key (Tier 1, 2, 3)
     if not license_manager.is_path_allowed(path, endpoint=request.endpoint):
         if path.startswith("/api/") or path == "/run" or request.method not in ("GET", "HEAD"):
             return jsonify({
                 "success": False,
-                "error": f"Phân hệ này không thuộc {license_manager.get_license_info()['tierName']}.",
+                "error": f"Phân hệ này không thuộc {info['tierName']}.",
                 "code": "FEATURE_RESTRICTED_BY_LICENSE",
                 "tier": license_manager.get_current_tier(),
             }), 403
@@ -1317,6 +1332,21 @@ def api_activation_save():
         "status_message": message,
         "license_info": info,
     }), 200 if ok else 400
+
+
+@app.route("/api/activation/verify", methods=["POST"])
+def api_activation_verify():
+    """Kiểm tra bản quyền trực tiếp với máy chủ online."""
+    from features.license import license_manager
+    ok, message, info = license_manager.check_license_online()
+    return jsonify({
+        "success": bool(ok),
+        "message": message,
+        "activated": bool(info.get("activated")),
+        "tier": info.get("tier"),
+        "tierName": info.get("tierName"),
+        "license_info": info,
+    }), (200 if ok else 400)
 
 
 @app.route("/api/activation/switch-tier", methods=["POST"])
@@ -1495,7 +1525,8 @@ def api_chatbot_save():
     for k in ("enabled", "accountId", "targetGroupIds", "destGroupId", "mode",
               "geminiApiKey", "geminiApiKeys", "pollIntervalSec", "allowSelfReply", "sendGapSec",
               "systemPrompt", "globalContext", "modelCascade", "strictDoc", "handoffText",
-              "replyToSource", "includeSenderName", "triggerEnabled", "triggerMode", "triggerKeywords"):
+              "replyToSource", "includeSenderName", "triggerEnabled", "triggerMode", "triggerKeywords",
+              "customCommands"):
         if k in data:
             patch[k] = data[k]
     if "enabled" in patch:
@@ -1555,6 +1586,42 @@ def api_chatbot_knowledge_save():
         info = chatbot_store.save_knowledge(text)
         chatbot_worker.log(f"[knowledge] da luu {info.get('chars')} ky tu vao {info.get('path')}")
         return jsonify({"success": True, **info})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/chatbot/test-command", methods=["POST"])
+def api_chatbot_test_command():
+    """Test nhanh phản hồi của 1 lệnh tùy chỉnh kèm câu hỏi trực tiếp trên giao diện."""
+    data = request.get_json(silent=True) or {}
+    text = str(data.get("text") or "").strip()
+    cmd = data.get("cmd") or {}
+    sender_name = str(data.get("sender_name") or "Khách hàng Test").strip()
+    cfg = chatbot_store.load_config()
+
+    if not cmd and text:
+        matched_cmd, cmd_query = chatbot_brain.find_matching_custom_command(text, cfg.get("customCommands"))
+        if matched_cmd:
+            cmd = matched_cmd
+            text = cmd_query
+
+    try:
+        reply = chatbot_brain.answer(
+            text,
+            mode=cfg.get("mode") or "gemini",
+            api_key=cfg.get("geminiApiKey") or "",
+            sender="test_user",
+            group_id="test_group",
+            cfg=cfg,
+            sender_name=sender_name,
+            cmd=cmd,
+        )
+        return jsonify({
+            "success": True,
+            "reply": reply,
+            "cmd": cmd.get("command") if cmd else "",
+            "query": text
+        })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -7704,9 +7771,15 @@ def _start_backend_server():
     try:
         _enable_windows_terminal_copy_mode()
 
-        # DEV MODE: bo check kich hoat — chay thang worker.
         ensure_schedule_worker_started()
-        print("✅ Dev mode: bo check kich hoat, worker da chay", flush=True)
+        
+        # Khởi động kiểm tra bản quyền định kỳ mỗi 2 giờ với server (1 máy 1 key)
+        try:
+            from features.license import license_manager
+            license_manager.start_periodic_license_check(interval_hours=2)
+            print("🛡️ Đã bật cơ chế quét kiểm tra bản quyền định kỳ mỗi 2 giờ (1 máy 1 key)", flush=True)
+        except Exception as lic_err:
+            print(f"⚠️ Không thể khởi động kiểm tra định kỳ: {lic_err}", flush=True)
 
         print("✅ Backend đã sẵn sàng", flush=True)
         print("🌐 Giao diện: http://127.0.0.1:5000/policy", flush=True)

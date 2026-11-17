@@ -85,3 +85,57 @@
     </div>
   </div>
 </section>
+
+<!-- ══════ BƯỚC 1.1: DANH SÁCH LỆNH TÙY CHỈNH & QUY TẮC RIÊNG (vd: /sanpham, /lichsu...) ══════ -->
+<section class="cb-card" id="botCommandsCard" style="margin-top: 14px;">
+  <div class="cb-step-head">
+    <span class="cb-step-num" style="background: linear-gradient(135deg, #ff7542, #e8451f); color:#fff;">⚡</span>
+    <div style="flex:1;">
+      <h3 style="margin:0; font-size:16px; font-weight:800; color:#2b1a10;">
+        Lệnh tùy chỉnh &amp; Quy tắc chuyên biệt (vd: /sanpham, /lichsu, /banggia...)
+      </h3>
+      <p style="margin:3px 0 0; font-size:12.5px; color:#5b4133;">
+        Thiết lập các lệnh gọi riêng với <b>Rule chỉ thị riêng cho AI</b> và <b>Tài liệu Context chuyên biệt</b> cho từng chủ đề (Sản phẩm, Lịch sử, Báo giá, Bảo hành...).
+      </p>
+    </div>
+    <span class="cb-step-badge" id="cbCommandsCount">0 lệnh</span>
+  </div>
+
+  <!-- Thanh công cụ thêm lệnh & mẫu gợi ý nhanh -->
+  <div class="cb-cmd-toolbar" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px; padding:10px 14px; background:#fffaf3; border:1px dashed #f0d9c4; border-radius:12px;">
+    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+      <span style="font-size:12px; font-weight:700; color:#7a6455;">Thêm nhanh mẫu:</span>
+      <button type="button" class="cb-chip-btn" onclick="cbAddCommandPreset('sanpham')">
+        <svg class="cb-ico" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        + Mẫu /sanpham
+      </button>
+      <button type="button" class="cb-chip-btn" onclick="cbAddCommandPreset('lichsu')">
+        <svg class="cb-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        + Mẫu /lichsu
+      </button>
+      <button type="button" class="cb-chip-btn" onclick="cbAddCommandPreset('banggia')">
+        <svg class="cb-ico" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        + Mẫu /banggia
+      </button>
+      <button type="button" class="cb-chip-btn" onclick="cbAddCommandPreset('chinhsach')">
+        <svg class="cb-ico" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        + Mẫu /chinhsach
+      </button>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button type="button" class="cb-btn cb-btn-sm cb-btn-orange" onclick="cbAddNewCommand()">
+        <svg class="cb-ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        <b>+ Thêm lệnh mới</b>
+      </button>
+      <button type="button" class="cb-btn cb-btn-sm" onclick="cbSaveShared(true)" title="Lưu danh sách lệnh">
+        <svg class="cb-ico" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+        Lưu lệnh
+      </button>
+    </div>
+  </div>
+
+  <!-- Danh sách thẻ lệnh -->
+  <div id="cbCommandsList" class="cb-commands-list" style="display:flex; flex-direction:column; gap:14px;">
+    <!-- Render động các thẻ lệnh tại đây -->
+  </div>
+</section>

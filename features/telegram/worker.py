@@ -76,7 +76,7 @@ def _resolve_ai_config(cfg: dict) -> dict:
     return ai
 
 
-def _answer(text: str, cfg: dict, chat_title: str, sender_name: str) -> str:
+def _answer(text: str, cfg: dict, chat_title: str, sender_name: str, cmd: dict | None = None) -> str:
     """Tra loi mot tin nhan Telegram bang tai lieu va phong cach rieng cua Telegram."""
     ai = _resolve_ai_config(cfg)
     knowledge = ""
@@ -91,6 +91,37 @@ def _answer(text: str, cfg: dict, chat_title: str, sender_name: str) -> str:
             knowledge = ""
     if _brain is None:
         return f"Jimmy BOT CHAT nhan duoc: {text}"
+
+    # Xử lý Custom Command nếu có
+    if cmd and isinstance(cmd, dict):
+        resp_type = str(cmd.get("responseType") or "ai").strip().lower()
+        fixed = str(cmd.get("fixedReply") or "").strip()
+        cmd_kw = str(cmd.get("command") or "").strip()
+        cmd_name = str(cmd.get("name") or cmd_kw).strip()
+        if resp_type == "fixed" or (not text and fixed):
+            salutation = f"Dạ Anh/Chị {sender_name}, " if sender_name else ""
+            reply_body = fixed or str(cmd.get("context") or "").strip()
+            if reply_body:
+                return f"{salutation}{reply_body}"
+
+        cmd_rule = str(cmd.get("rule") or "").strip()
+        if cmd_rule:
+            ai["systemPrompt"] = (
+                f"{str(ai.get('systemPrompt') or '')}\n\n"
+                f"[QUY TẮC & CHỈ THỊ RIÊNG CHO LỆNH {cmd_kw} - {cmd_name}]:\n"
+                f"{cmd_rule}\n"
+                f"Hãy áp dụng triệt để quy tắc trên cho câu trả lời này."
+            ).strip()
+
+        cmd_ctx = str(cmd.get("context") or "").strip()
+        if cmd_ctx:
+            if knowledge:
+                knowledge = f"[TÀI LIỆU CHUYÊN SÂU LỆNH {cmd_kw} - {cmd_name}]:\n{cmd_ctx}\n\n---\n[TÀI LIỆU KHÁC]:\n{knowledge}".strip()
+            else:
+                knowledge = f"[TÀI LIỆU CHUYÊN SÂU LỆNH {cmd_kw} - {cmd_name}]:\n{cmd_ctx}".strip()
+
+        if not text:
+            text = f"Khách hàng vừa gọi lệnh {cmd_kw} ({cmd_name}). Hãy chào hỏi và giới thiệu ngắn gọn các thông tin chính theo tài liệu trên, gợi mở khách đặt câu hỏi."
 
     mode = str(ai.get("mode") or "echo").strip().lower()
     if mode == "gemini":
@@ -149,6 +180,7 @@ def _answer(text: str, cfg: dict, chat_title: str, sender_name: str) -> str:
             models=ai.get("models"),
             strict_doc=bool(ai.get("strictDoc")),
             handoff_text=ai.get("handoffText") or "",
+            cmd=cmd,
         )
         if out:
             return str(out)
@@ -266,11 +298,26 @@ def _loop():
                 if not _chat_allowed_by_type(cfg, rec):
                     continue
 
-                matched, query = _apply_trigger(cfg, text)
+                custom_cmd = None
+                if _brain is not None:
+                    try:
+                        cmds = (shared.get("customCommands") if shared else None) or cfg.get("customCommands")
+                        custom_cmd, cmd_query = _brain.find_matching_custom_command(text, cmds)
+                    except Exception:
+                        custom_cmd = None
+
+                if custom_cmd:
+                    matched = True
+                    query = cmd_query
+                    matched_cmd = custom_cmd
+                else:
+                    matched, query = _apply_trigger(cfg, text)
+                    matched_cmd = None
+
                 if not matched:
                     continue
 
-                answer = _answer(query, cfg, rec.get("chatTitle") or "", rec.get("senderName") or "")
+                answer = _answer(query, cfg, rec.get("chatTitle") or "", rec.get("senderName") or "", cmd=matched_cmd)
                 if not answer:
                     continue
 
@@ -282,7 +329,18 @@ def _loop():
                 wait = gap - (time.time() - _last_send_ts)
                 if wait > 0:
                     _stop.wait(wait)
-                send_res = _tg.send_message(token, rec["chatId"], answer)
+
+                s_name = str(rec.get("senderName") or "").strip()
+                tagged_answer = answer
+                if s_name and not tagged_answer.startswith(f"@{s_name}"):
+                    tagged_answer = f"@{s_name}\n{answer}"
+
+                send_res = _tg.send_message(
+                    token,
+                    rec["chatId"],
+                    tagged_answer,
+                    reply_to_message_id=rec.get("messageId"),
+                )
                 _last_send_ts = time.time()
                 if send_res.get("ok"):
                     log(f"Da tra loi cho {rec.get('chatTitle')} ({rec.get('chatId')}): {text[:60]}")

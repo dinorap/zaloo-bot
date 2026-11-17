@@ -39,6 +39,36 @@ def parse_trigger_keywords(raw) -> list[str]:
     return out
 
 
+def find_matching_custom_command(text: str, custom_commands: list | None = None) -> tuple[dict | None, str]:
+    """Tìm lệnh tùy chỉnh (ví dụ /sanpham, /lichsu) khớp với tin nhắn đầu vào.
+
+    Returns:
+        (matched_command_dict, cleaned_query_text)
+    """
+    src = (text or "").strip()
+    if not src or not custom_commands:
+        return None, ""
+
+    active_cmds = [
+        c for c in custom_commands
+        if isinstance(c, dict) and c.get("enabled", True) and str(c.get("command") or "").strip()
+    ]
+    # Sắp xếp các lệnh dài trước để tránh prefix ngắn đè prefix dài
+    active_cmds.sort(key=lambda x: len(str(x.get("command") or "")), reverse=True)
+
+    low_src = src.lower()
+    for cmd in active_cmds:
+        kw = str(cmd.get("command") or "").strip()
+        low_kw = kw.lower()
+        if low_src.startswith(low_kw):
+            rest = src[len(kw):]
+            if (kw[-1].isalnum() or kw[-1] == "_") and rest and (rest[0].isalnum() or rest[0] == "_"):
+                continue
+            cleaned = re.sub(r"^[\s,:;\-–—]+", "", rest).strip()
+            return cmd, cleaned
+    return None, ""
+
+
 def extract_triggered_query(text: str, cfg: dict | None = None) -> tuple[bool, str, str]:
     """Kiem tra tin nhan co khop tu khoa kich hoat hay khong va tach phan cau hoi.
 
@@ -102,16 +132,57 @@ def echo_answer(text: str, sender: str = "", group_id: str = "", sender_name: st
 def answer(text: str, mode: str = "echo", api_key: str = "", sender: str = "",
            group_id: str = "", system_prompt: str = "", global_context: str = "",
            knowledge: str = "", models=None, strict_doc: bool = False,
-           handoff_text: str = "", cfg: dict | None = None, sender_name: str = "") -> str:
+           handoff_text: str = "", cfg: dict | None = None, sender_name: str = "",
+           cmd: dict | None = None) -> str:
     t = (text or "").strip()
-    if not t:
-        return ""
     c = dict(cfg or {})
     if _store is not None and not c:
         try:
             c = _store.load_config()
         except Exception:
             c = {}
+
+    s_name = str(sender_name or "").strip()
+
+    # Xử lý trường hợp có lệnh tùy chỉnh (cmd)
+    if cmd and isinstance(cmd, dict):
+        resp_type = str(cmd.get("responseType") or "ai").strip().lower()
+        fixed_reply = str(cmd.get("fixedReply") or "").strip()
+        cmd_name = str(cmd.get("name") or cmd.get("command") or "").strip()
+        cmd_kw = str(cmd.get("command") or "").strip()
+
+        # Nếu là chế độ trả lời cố định (fixed) hoặc khách chỉ gõ trần lệnh mà có câu cố định
+        if resp_type == "fixed" or (not t and fixed_reply):
+            salutation = f"Dạ Anh/Chị {s_name}, " if s_name else ""
+            reply_body = fixed_reply or str(cmd.get("context") or "").strip()
+            if reply_body:
+                return f"{salutation}{reply_body}"
+
+        # Bổ sung Rule riêng cho AI khi xử lý lệnh này
+        cmd_rule = str(cmd.get("rule") or "").strip()
+        if cmd_rule:
+            system_prompt = (
+                f"{system_prompt or str(c.get('systemPrompt') or '')}\n\n"
+                f"[QUY TẮC & CHỈ THỊ RIÊNG CHO LỆNH {cmd_kw} - {cmd_name}]:\n"
+                f"{cmd_rule}\n"
+                f"Hãy tuân thủ nghiêm ngặt quy tắc trên cho câu trả lời này."
+            ).strip()
+
+        # Đặt tài liệu Context riêng của lệnh lên vị trí ưu tiên số 1
+        cmd_ctx = str(cmd.get("context") or "").strip()
+        if cmd_ctx:
+            if knowledge:
+                knowledge = f"[TÀI LIỆU CHUYÊN SÂU CHO LỆNH {cmd_kw} - {cmd_name}]:\n{cmd_ctx}\n\n---\n[TÀI LIỆU KHÁC]:\n{knowledge}".strip()
+            else:
+                knowledge = f"[TÀI LIỆU CHUYÊN SÂU CHO LỆNH {cmd_kw} - {cmd_name}]:\n{cmd_ctx}".strip()
+
+        # Nếu khách chỉ gõ trần lệnh (ví dụ /sanpham hoặc /lichsu) mà chưa có câu hỏi kèm theo
+        if not t:
+            t = f"Khách hàng vừa gọi lệnh {cmd_kw} ({cmd_name}). Hãy chào hỏi và giới thiệu ngắn gọn các thông tin chính theo tài liệu trên, gợi mở khách đặt câu hỏi."
+
+    if not t:
+        return ""
+
     mode = str(mode or c.get("mode") or "echo").strip().lower()
     api_key = (api_key or c.get("geminiApiKey") or "").strip()
     system_prompt = system_prompt or str(c.get("systemPrompt") or "")

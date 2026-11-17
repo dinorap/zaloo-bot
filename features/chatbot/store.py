@@ -68,6 +68,29 @@ DEFAULTS = {
     "triggerEnabled": True,
     "triggerMode": "prefix",  # prefix | contains
     "triggerKeywords": "/bot",
+    # --- Danh sách lệnh tùy chỉnh & quy tắc chuyên biệt (vd: /sanpham, /lichsu, /banggia...) ---
+    "customCommands": [
+        {
+            "id": "cmd_sanpham",
+            "command": "/sanpham",
+            "name": "Tư vấn sản phẩm & Dịch vụ",
+            "enabled": True,
+            "rule": "Tập trung tư vấn thông số kỹ thuật, cấu hình, giá thành, hỏi thăm nhu cầu của khách để giới thiệu đúng mẫu phù hợp. Giữ giọng điệu nhiệt tình, chuyên nghiệp, gợi mở khách đặt mua.",
+            "context": "Danh sách sản phẩm nổi bật:\n- iPhone 15 Pro Max 256GB: 28.500.000đ (Bảo hành 12 tháng, tặng combo sạc nhanh 20W)\n- iPhone 14 Pro 128GB: 19.200.000đ (Tình trạng 99%, pin 100%)\n- Samsung S24 Ultra 256GB: 26.900.000đ (Bút S-Pen, AI thông minh)\nChính sách giao hàng: Freeship toàn quốc, kiểm tra hàng trước khi thanh toán.",
+            "responseType": "ai",
+            "fixedReply": "Dạ em gửi Anh/Chị thông tin sản phẩm của shop. Anh/Chị có thể gõ /sanpham kèm tên sản phẩm hoặc nhu cầu để em tư vấn chi tiết nhất nhé!",
+        },
+        {
+            "id": "cmd_lichsu",
+            "command": "/lichsu",
+            "name": "Lịch sử & Uy tín thương hiệu",
+            "enabled": True,
+            "rule": "Giới thiệu cô đọng, tự hào về lịch sử hình thành, uy tín và các mốc phát triển của thương hiệu. Khẳng định cam kết chất lượng với khách hàng.",
+            "context": "Thương hiệu thành lập từ năm 2018 với hơn 6 năm phục vụ 50.000+ khách hàng trên toàn quốc. Đạt chứng chỉ dịch vụ uy tín và chính sách bảo hành 1 đổi 1 trong 30 ngày.",
+            "responseType": "ai",
+            "fixedReply": "Dạ shop được thành lập từ năm 2018 với 6 năm phục vụ hơn 50.000 khách hàng trên toàn quốc. Anh/Chị cần tìm hiểu thêm thông tin gì cứ nhắn em nhé!",
+        }
+    ],
 }
 
 KNOWLEDGE_MAX_CHARS = 60000
@@ -86,6 +109,7 @@ SHARED_KEYS = (
     "triggerEnabled",
     "triggerMode",
     "triggerKeywords",
+    "customCommands",
 )
 
 
@@ -334,6 +358,32 @@ def _normalize_config(cfg: dict) -> dict:
     for k in ("systemPrompt", "globalContext", "handoffText"):
         if not isinstance(cfg.get(k), str):
             cfg[k] = str(cfg.get(k) or "")
+
+    # Chuẩn hóa danh sách lệnh tùy chỉnh & quy tắc riêng
+    raw_cmds = cfg.get("customCommands")
+    if not isinstance(raw_cmds, list):
+        raw_cmds = list(DEFAULTS.get("customCommands") or [])
+    norm_cmds = []
+    for c in raw_cmds:
+        if not isinstance(c, dict):
+            continue
+        raw_kw = str(c.get("command") or "").strip()
+        if not raw_kw:
+            continue
+        if not raw_kw.startswith("/"):
+            raw_kw = "/" + raw_kw
+        norm_cmds.append({
+            "id": str(c.get("id") or f"cmd_{int(time.time() * 1000)}_{len(norm_cmds) + 1}"),
+            "command": raw_kw,
+            "name": str(c.get("name") or raw_kw).strip(),
+            "enabled": bool(c.get("enabled", True)),
+            "rule": str(c.get("rule") or "").strip(),
+            "context": str(c.get("context") or "").strip(),
+            "responseType": "fixed" if str(c.get("responseType") or "").strip().lower() == "fixed" else "ai",
+            "fixedReply": str(c.get("fixedReply") or "").strip(),
+        })
+    cfg["customCommands"] = norm_cmds
+
     _sync_key_fields(cfg)
     return cfg
 

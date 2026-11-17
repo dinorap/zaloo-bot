@@ -61,6 +61,27 @@ async function generateSampleKey(tier, days) {
     }
 }
 
+async function verifyLicenseOnline() {
+    const btn = document.getElementById('verifyOnlineBtn');
+    const originalText = btn ? btn.textContent : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Đang kiểm tra...';
+    }
+    try {
+        const data = await postJson('/api/activation/verify', {});
+        setResult(data.message || `Đã xác thực máy chủ! Gói: ${data.tierName || ''}.`, true);
+        setTimeout(() => window.location.reload(), 900);
+    } catch (err) {
+        setResult('Kiểm tra thất bại: ' + (err.message || 'Lỗi server'), false);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText || 'Kiểm tra trực tuyến';
+        }
+    }
+}
+
 // ─── Các hàm cho hệ thống check key thiết bị cũ (mã 12 ký tự qua email) ───────
 function selectDurationOption(key, label, el) {
     selectedDurationKey = key;

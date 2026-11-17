@@ -190,7 +190,17 @@ def _loop():
                 if own_uid and sender == own_uid and not bool(cfg.get("allowSelfReply", True)):
                     continue
 
-                matched, query_text, matched_kw = _brain.extract_triggered_query(text, cfg)
+                # 1. Kiem tra xem co khop Custom Command nao khong (vd /sanpham, /lichsu...)
+                custom_cmd, cmd_query = _brain.find_matching_custom_command(text, cfg.get("customCommands"))
+                if custom_cmd:
+                    matched = True
+                    query_text = cmd_query
+                    matched_kw = custom_cmd.get("command") or ""
+                    active_cmd = custom_cmd
+                else:
+                    matched, query_text, matched_kw = _brain.extract_triggered_query(text, cfg)
+                    active_cmd = None
+
                 if not matched:
                     log(f"[skip] group={gid} khong co tu khoa kich hoat -> bo qua")
                     continue
@@ -202,42 +212,105 @@ def _loop():
                 if bool(cfg.get("includeSenderName", True)):
                     sender_name = _resolve_sender_name(sender, cookies=cookies, zpw_enk=zpw_enk, imei=imei)
 
-                if matched_kw and not query_text:
+                if matched_kw and not query_text and not active_cmd:
                     log(f"[trigger] group={gid} kw={matched_kw} thieu cau hoi -> gui huong dan")
                     name_prefix = f"Chào Anh/Chị {sender_name}! " if sender_name else ""
                     reply = f"🤖 {name_prefix}Bạn hãy nhập câu hỏi sau lệnh {matched_kw} (vd: {matched_kw} giá sản phẩm này bao nhiêu) để mình hỗ trợ nhé."
                 else:
                     sender_label = f"{sender} ({sender_name})" if sender_name else sender
-                    log(f"[new] group={gid} sender={sender_label} -> dest={dest} kw={matched_kw or '*'} text={query_text[:160]}")
+                    cmd_label = f" cmd={active_cmd.get('name')}" if active_cmd else ""
+                    log(f"[new] group={gid} sender={sender_label} -> dest={dest} kw={matched_kw or '*'}{cmd_label} text={query_text[:160]}")
                     reply = _brain.answer(query_text, mode=cfg.get("mode") or "echo",
                                           api_key=cfg.get("geminiApiKey") or "",
                                           sender=sender, group_id=gid, cfg=cfg,
-                                          sender_name=sender_name)
+                                          sender_name=sender_name, cmd=active_cmd)
                 if not reply:
                     continue
                 # Neu mode=gemini ma van ra Echo -> Gemini loi, bao ro de user biet
                 if str(cfg.get("mode") or "").strip().lower() == "gemini" and (
                         reply.startswith("Echo:") or reply.startswith("Bot Zalo Nexus online")):
                     log(f"[warn] Gemini loi -> fallback echo. Kiem tra key (phai bat dau bang AIza) o log [gemini] trong terminal.")
+                # ── Tag người hỏi và Quote tin nhắn gốc (như Zalo Web/Desktop) ──
+                s_name = str(sender_name or "").strip()
+                tagged_reply = reply
+                mention_info = []
+
+                if s_name:
+                    tag_prefix = f"@{s_name}"
+                    # Tránh lặp lại tag nếu reply đã bắt đầu bằng @tên
+                    if not tagged_reply.startswith(tag_prefix):
+                        tagged_reply = f"{tag_prefix} {reply}"
+                    if sender and sender not in ("", "0"):
+                        mention_info = [{
+                            "uid": str(sender),
+                            "pos": 0,
+                            "len": len(tag_prefix),
+                            "type": 0,
+                        }]
+
+                qmsg_id = str(m.get("msgId") or "").strip()
+                qmsg_cli_id = str(m.get("cliMsgId") or m.get("msgId") or "").strip()
+                qmsg_owner = str(sender or gid)
+                qmsg_ts = str(m.get("ts") or "")
+                qmsg_text = str(text or "")[:300]
+                qmsg_type = str(m.get("msgType") or "webchat")
+
                 # gian cach gui chong ban / trung clientId
                 gap = max(0.5, float(cfg.get("sendGapSec") or 1.2))
                 wait_gap = gap - (time.time() - _last_send_ts)
                 if wait_gap > 0:
                     time.sleep(wait_gap)
-                try:
-                    out = send_message_smart(dest, reply, zpw_enk, cookies, imei, is_group=True)
-                    _last_send_ts = time.time()
-                    ok = bool(out.get("ok"))
-                    log(f"[reply] src={gid} -> dest={dest} ok={ok} err={out.get('error') or ''} rep={reply[:120]}")
-                    if ok:
-                        q = recent_replies_by_group.setdefault(gid, deque(maxlen=15))
-                        q.append((reply, time.time()))
-                        # Luu khop text de chong loop kiem tra chinh xac noi dung.
-                        kq = recent_reply_keys.setdefault(gid, deque(maxlen=15))
-                        kq.append(_norm_text(reply))
-                        last_reply_at[gid] = time.time()
-                except Exception as e:
-                    log(f"[reply] loi: {e}")
+
+                ok = False
+                out = {}
+
+                # 1. Ưu tiên Quote tin nhắn người hỏi (hiển thị khung trả lời gốc + tag tên)
+                if dest == gid and qmsg_id and qmsg_cli_id:
+                    try:
+                        from features.messaging.quote_message import quote_message
+                        out = quote_message(
+                            cookies,
+                            zpw_enk,
+                            imei,
+                            thread_id=dest,
+                            message=tagged_reply,
+                            is_group=True,
+                            qmsg_owner=qmsg_owner,
+                            qmsg_id=qmsg_id,
+                            qmsg_cli_id=qmsg_cli_id,
+                            qmsg_type=qmsg_type,
+                            qmsg_ts=qmsg_ts,
+                            qmsg_text=qmsg_text,
+                            mention_info=mention_info,
+                        )
+                        ok = bool(out.get("ok"))
+                        if ok:
+                            log(f"[quote] Da tra loi quote tin cua {sender_name or sender} trong nhom {dest}")
+                    except Exception as q_err:
+                        log(f"[quote] Loi quote tin nhan ({q_err}) -> Chuyen sang gui thuong")
+                        ok = False
+
+                # 2. Fallback: nếu quote không thành công hoặc gom sang nhóm khác
+                if not ok:
+                    try:
+                        out = send_message_smart(dest, tagged_reply, zpw_enk, cookies, imei, is_group=True)
+                        _last_send_ts = time.time()
+                        ok = bool(out.get("ok"))
+                    except Exception as s_err:
+                        log(f"[reply] send_message_smart loi: {s_err}")
+                        ok = False
+
+                _last_send_ts = time.time()
+                log(f"[reply] src={gid} -> dest={dest} tag={s_name or 'none'} ok={ok} err={out.get('error') or ''} rep={tagged_reply[:120]}")
+                if ok:
+                    q = recent_replies_by_group.setdefault(gid, deque(maxlen=15))
+                    q.append((tagged_reply, time.time()))
+                    q.append((reply, time.time()))
+                    # Luu khop text de chong loop kiem tra chinh xac noi dung.
+                    kq = recent_reply_keys.setdefault(gid, deque(maxlen=15))
+                    kq.append(_norm_text(tagged_reply))
+                    kq.append(_norm_text(reply))
+                    last_reply_at[gid] = time.time()
             if changed:
                 _store.save_cursor(cursor)
         except Exception as e:

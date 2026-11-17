@@ -90,10 +90,15 @@ def get_updates(token: str, offset: int = 0, timeout: int = 25) -> dict:
     return {"ok": True, "result": data.get("result") or []}
 
 
-def send_message(token: str, chat_id: str, text: str, parse_mode: str = "") -> dict:
+def send_message(token: str, chat_id: str, text: str, parse_mode: str = "", reply_to_message_id: int | str | None = None) -> dict:
     payload = {"chat_id": str(chat_id or ""), "text": str(text or "")}
     if parse_mode:
         payload["parse_mode"] = parse_mode
+    if reply_to_message_id:
+        try:
+            payload["reply_to_message_id"] = int(reply_to_message_id)
+        except Exception:
+            pass
     return _post(token, "sendMessage", payload)
 
 

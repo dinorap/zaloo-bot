@@ -17,7 +17,12 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Dict, Any, Tuple, Set, Optional
 
-# Secret key dùng để ký mã bản quyền (có thể đọc từ .env hoặc fallback cố định)
+from .license_core import LicenseGuard
+
+# Khởi tạo LicenseGuard kết nối đến hệ thống máy chủ bản quyền
+_guard = LicenseGuard(product_id="mkt_zalo")
+
+# Secret key dùng để ký mã bản quyền dự phòng (offline)
 LICENSE_SECRET = os.getenv("LICENSE_SECRET_KEY") or os.getenv("SECRET_KEY") or "JIMMY_BOT_CHAT_LICENSE_SIGNING_KEY_2026"
 
 # Đường dẫn file lưu bản quyền
@@ -199,6 +204,11 @@ def get_license_info() -> Dict[str, Any]:
         "isPermanent": is_perm,
         "daysRemaining": days_rem,
         "expiry": data.get("expiry", "Vĩnh viễn" if is_perm else ""),
+        "hwid": _guard.hwid[:16] + "..." if _guard.hwid else "",
+        "machineGuid": _guard.machine_guid or "",
+        "serverUrl": _guard.server_url,
+        "failReason": data.get("fail_reason", ""),
+        "failMessage": data.get("fail_message", ""),
         "allowedFeatures": sorted(list(tier_meta["allowed_features"])),
         "defaultUrl": tier_meta["default_url"],
         "defaultEndpoint": tier_meta["default_endpoint"],
@@ -377,26 +387,136 @@ def validate_license_key(key_text: str) -> Tuple[bool, Optional[Dict[str, Any]],
 
 
 def activate_license_key(key_text: str) -> Tuple[bool, str, Dict[str, Any]]:
-    """Kích hoạt mã bản quyền và lưu vào data/license.json."""
-    ok, payload, message = validate_license_key(key_text)
-    if not ok or not payload:
-        return False, message, get_license_info()
+    """
+    Kích hoạt mã bản quyền:
+    1. Ưu tiên xác thực và gán HWID qua máy chủ bản quyền (1 máy 1 key).
+    2. Nếu mất mạng hoặc gặp key test offline, hỗ trợ xác thực dự phòng HMAC.
+    """
+    clean_key = (key_text or "").strip()
+    if not clean_key:
+        return False, "Vui lòng nhập key bản quyền.", get_license_info()
 
-    tier = payload["tier"]
-    save_data = {
-        "tier": tier,
-        "tier_name": payload["tier_name"],
-        "key": payload["key"],
-        "activated": True,
-        "is_permanent": payload["is_permanent"],
-        "days_remaining": payload["days"],
-        "expiry": payload["expiry"],
-        "activated_at": datetime.now().isoformat(timespec="seconds"),
-    }
+    # 1. Thử kích hoạt trực tiếp với máy chủ bản quyền
+    server_ok, server_msg, signed = _guard.activate(clean_key)
+    if server_ok and signed:
+        # Xác định tier từ ui_mode hoặc product name
+        tier = int(signed.get("ui_mode") or 1)
+        if tier not in (1, 2, 3):
+            prod = str(signed.get("product") or "").lower()
+            if "pro" in prod:
+                tier = 1
+            elif "cskh" in prod:
+                tier = 2
+            elif "group" in prod:
+                tier = 3
+            else:
+                tier = 1
 
-    if _save_license_data(save_data):
-        return True, message, get_license_info()
-    return False, "Không thể lưu dữ liệu bản quyền vào hệ thống.", get_license_info()
+        expiry = signed.get("expire_at")
+        is_perm = not bool(expiry)
+        days_rem = 99999
+        if not is_perm and expiry:
+            try:
+                exp_dt = datetime.fromisoformat(expiry)
+                now_dt = datetime.now()
+                days_rem = max(0, int((exp_dt - now_dt).total_seconds() // 86400))
+            except Exception:
+                pass
+
+        save_data = {
+            "tier": tier,
+            "tier_name": TIER_INFO[tier]["name"],
+            "key": clean_key,
+            "activated": True,
+            "is_permanent": is_perm,
+            "days_remaining": days_rem,
+            "expiry": expiry or "Vĩnh viễn",
+            "activated_at": datetime.now().isoformat(timespec="seconds"),
+            "hwid": _guard.hwid,
+            "machine_guid": _guard.machine_guid,
+            "server_mode": "online",
+        }
+        _save_license_data(save_data)
+        return True, f"Kích hoạt thành công gói {TIER_INFO[tier]['name']} qua máy chủ bản quyền!", get_license_info()
+
+    # 2. Xử lý khi server từ chối:
+    # Nếu server báo lỗi rõ ràng (máy khác, hết hạn, thu hồi, không tồn tại key) -> Báo lỗi ngay, không lách offline
+    fail_reasons_hard = ("hwid_mismatch", "revoked", "expired", "license_not_found", "session_conflict")
+    last_reason = (signed or {}).get("reason") if isinstance(signed, dict) else ""
+    if last_reason in fail_reasons_hard or ("máy khác" in server_msg) or ("thu hồi" in server_msg) or ("hết hạn" in server_msg):
+        return False, server_msg, get_license_info()
+
+    # 3. Khi server mất kết nối / lỗi mạng: Thử kiểm tra chế độ offline fallback (cho mã test dev/offline)
+    offline_ok, payload, offline_msg = validate_license_key(clean_key)
+    if offline_ok and payload:
+        tier = payload["tier"]
+        save_data = {
+            "tier": tier,
+            "tier_name": payload["tier_name"],
+            "key": payload["key"],
+            "activated": True,
+            "is_permanent": payload["is_permanent"],
+            "days_remaining": payload["days"],
+            "expiry": payload["expiry"],
+            "activated_at": datetime.now().isoformat(timespec="seconds"),
+            "server_mode": "offline_fallback",
+        }
+        _save_license_data(save_data)
+        return True, f"{offline_msg} (Kích hoạt chế độ dự phòng)", get_license_info()
+
+    # Nếu không phải key offline hợp lệ, trả lại thông báo lỗi của server
+    return False, server_msg or "Không thể kích hoạt license. Vui lòng kiểm tra lại key và kết nối mạng.", get_license_info()
+
+
+def check_license_online() -> Tuple[bool, str, Dict[str, Any]]:
+    """Kiểm tra bản quyền trực tuyến với server (dùng cho startup hoặc nút Kiểm tra)."""
+    res = _guard.check_license()
+    if res.get("ok"):
+        signed = res.get("signed") or {}
+        tier = int(res.get("ui_mode") or signed.get("ui_mode") or 1)
+        if tier not in (1, 2, 3):
+            tier = 1
+        data = _load_license_data()
+        data["tier"] = tier
+        data["tier_name"] = TIER_INFO[tier]["name"]
+        data["activated"] = True
+        data["expiry"] = res.get("expire_at") or data.get("expiry")
+        data["is_permanent"] = not bool(res.get("expire_at")) if res.get("expire_at") is not None else data.get("is_permanent", True)
+        data["last_checked_at"] = datetime.now().isoformat()
+        _save_license_data(data)
+        return True, res.get("message", "Bản quyền hợp lệ"), get_license_info()
+    else:
+        reason = res.get("reason", "unknown")
+        if reason not in ("network_error",):
+            data = _load_license_data()
+            data["activated"] = False
+            data["fail_reason"] = reason
+            data["fail_message"] = res.get("message")
+            _save_license_data(data)
+        return False, res.get("message", "Kiểm tra bản quyền thất bại"), get_license_info()
+
+
+def start_periodic_license_check(interval_hours=2, on_fail=None):
+    """Khởi động luồng kiểm tra bản quyền ngầm mỗi 2 giờ (2h quét 1 lần)."""
+    def _default_on_fail(reason, message):
+        print(f"[LICENSE WARNING] Kiểm tra bản quyền định kỳ thất bại: {reason} - {message}", flush=True)
+        data = _load_license_data()
+        data["activated"] = False
+        data["fail_reason"] = reason
+        data["fail_message"] = message
+        _save_license_data(data)
+        if on_fail:
+            try:
+                on_fail(reason, message)
+            except Exception:
+                pass
+
+    return _guard.start_periodic_check(interval_hours=interval_hours, on_fail=_default_on_fail)
+
+
+def get_guard_instance() -> LicenseGuard:
+    """Lấy singleton LicenseGuard instance."""
+    return _guard
 
 
 # ─── HỖ TRỢ DÒNG LỆNH (CLI) ────────────────────────────────────────────────
