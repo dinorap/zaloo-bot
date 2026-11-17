@@ -280,6 +280,7 @@ def send_message_smart(
     zpw_ver: str = None,
     link_info: dict = None,
     link: str = None,
+    mention_info: str | list | None = None,
 ) -> dict:
     """Gửi tin nhắn thông minh: nội dung chứa link nhóm Zalo -> gửi link card
     (lấy thông tin nhóm trước); không có link hoặc lỗi -> gửi text thường.
@@ -325,7 +326,7 @@ def send_message_smart(
     # Text thường (hoặc fallback khi link card lỗi).
     if is_group:
         from features.groups.send_sms_group import send_group_msg
-        _, decoded = send_group_msg(cookies, zpw_enk, to_id, imei, message, zpw_ver=zpw_ver)
+        _, decoded = send_group_msg(cookies, zpw_enk, to_id, imei, message, zpw_ver=zpw_ver, mention_info=mention_info)
     else:
         from features.messaging.send_sms import send_sms
         _, decoded = send_sms(cookies, zpw_enk, to_id, imei, message, zpw_ver=zpw_ver)

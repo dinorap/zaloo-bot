@@ -99,10 +99,11 @@ def quote_message(
     if is_group:
         payload["grid"] = thread_id
         payload["visibility"] = 0
-        if isinstance(mention_info, list):
-            payload["mentionInfo"] = json.dumps(mention_info, ensure_ascii=False, separators=(",", ":"))
-        else:
-            payload["mentionInfo"] = str(mention_info or "")
+        if mention_info:
+            if isinstance(mention_info, list):
+                payload["mentionInfo"] = json.dumps(mention_info, ensure_ascii=False, separators=(",", ":"))
+            else:
+                payload["mentionInfo"] = str(mention_info)
         url = QUOTE_GROUP_URL
     else:
         payload["toid"] = thread_id

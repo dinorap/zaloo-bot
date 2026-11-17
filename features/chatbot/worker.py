@@ -44,11 +44,13 @@ def _norm_text(t: str) -> str:
 _sender_names_cache: dict[str, tuple[str, float]] = {}
 
 
-def _resolve_sender_name(sender_uid: str, cookies: str = "", zpw_enk: str = "", imei: str = "") -> str:
+def _resolve_sender_name(sender_uid: str, cookies: str = "", zpw_enk: str = "", imei: str = "", own_uid: str = "", own_name: str = "") -> str:
     """Tra cứu tên hiển thị của người gửi (cache bộ nhớ 24h, unread store, profile API)."""
     s = str(sender_uid or "").strip()
-    if not s or s in ("0", ""):
-        return ""
+    if not s or s == "0":
+        return own_name or ""
+    if own_uid and s == own_uid:
+        return own_name or ""
     cached = _sender_names_cache.get(s)
     if cached and (time.time() - cached[1]) < 86400:
         return cached[0]
@@ -69,8 +71,10 @@ def _resolve_sender_name(sender_uid: str, cookies: str = "", zpw_enk: str = "", 
         try:
             from features.profiles.get_single_profile import get_single_profile
             res = get_single_profile([s], zpw_enk, cookies, imei=imei)
-            if isinstance(res, dict) and s in res:
-                prof = res.get(s) or {}
+            if isinstance(res, dict):
+                prof = res.get(s) or res.get(str(s)) or {}
+                if not prof and len(res) == 1:
+                    prof = next(iter(res.values())) or {}
                 name = str(prof.get("displayName") or prof.get("zaloName") or prof.get("dName") or "").strip()
                 if name:
                     _sender_names_cache[s] = (name, time.time())
@@ -208,9 +212,15 @@ def _loop():
                 # Nhóm đích: mặc định trả lời đúng nhóm nguồn (multi-nhóm).
                 # Chỉ dồn về 1 nhóm cố định khi user tắt "trả lời đúng nhóm nguồn".
                 dest = gid if reply_to_source else (dest_fixed or gid)
+                actual_sender = own_uid if is_self else sender
                 sender_name = ""
-                if bool(cfg.get("includeSenderName", True)):
-                    sender_name = _resolve_sender_name(sender, cookies=cookies, zpw_enk=zpw_enk, imei=imei)
+                if is_self:
+                    sender_name = str(acc.get("name") or "").strip() or "Bạn"
+                elif bool(cfg.get("includeSenderName", True)):
+                    sender_name = _resolve_sender_name(
+                        sender, cookies=cookies, zpw_enk=zpw_enk, imei=imei,
+                        own_uid=own_uid, own_name=str(acc.get("name") or "").strip()
+                    )
 
                 if matched_kw and not query_text and not active_cmd:
                     log(f"[trigger] group={gid} kw={matched_kw} thieu cau hoi -> gui huong dan")
@@ -231,28 +241,28 @@ def _loop():
                         reply.startswith("Echo:") or reply.startswith("Bot Zalo Nexus online")):
                     log(f"[warn] Gemini loi -> fallback echo. Kiem tra key (phai bat dau bang AIza) o log [gemini] trong terminal.")
                 # ── Tag người hỏi và Quote tin nhắn gốc (như Zalo Web/Desktop) ──
-                s_name = str(sender_name or "").strip()
+                s_name = str(sender_name or "").strip() or "Bạn"
+                tag_prefix = f"@{s_name}"
                 tagged_reply = reply
-                mention_info = []
+                if not tagged_reply.startswith(tag_prefix):
+                    tagged_reply = f"{tag_prefix} {reply}"
 
-                if s_name:
-                    tag_prefix = f"@{s_name}"
-                    # Tránh lặp lại tag nếu reply đã bắt đầu bằng @tên
-                    if not tagged_reply.startswith(tag_prefix):
-                        tagged_reply = f"{tag_prefix} {reply}"
-                    if sender and sender not in ("", "0"):
-                        mention_info = [{
-                            "uid": str(sender),
-                            "pos": 0,
-                            "len": len(tag_prefix),
-                            "type": 0,
-                        }]
+                mention_info = []
+                if actual_sender and actual_sender not in ("", "0"):
+                    mention_info = [{
+                        "uid": str(actual_sender),
+                        "pos": 0,
+                        "len": len(tag_prefix),
+                        "type": 0,
+                    }]
 
                 qmsg_id = str(m.get("msgId") or "").strip()
                 qmsg_cli_id = str(m.get("cliMsgId") or m.get("msgId") or "").strip()
-                qmsg_owner = str(sender or gid)
+                qmsg_owner = str(actual_sender or own_uid or gid)
+                if qmsg_owner in ("", "0"):
+                    qmsg_owner = str(own_uid or gid)
                 qmsg_ts = str(m.get("ts") or "")
-                qmsg_text = str(text or "")[:300]
+                qmsg_text = str(text or "")[:300] or "[Tin nhắn]"
                 qmsg_type = str(m.get("msgType") or "webchat")
 
                 # gian cach gui chong ban / trung clientId
@@ -293,7 +303,7 @@ def _loop():
                 # 2. Fallback: nếu quote không thành công hoặc gom sang nhóm khác
                 if not ok:
                     try:
-                        out = send_message_smart(dest, tagged_reply, zpw_enk, cookies, imei, is_group=True)
+                        out = send_message_smart(dest, tagged_reply, zpw_enk, cookies, imei, is_group=True, mention_info=mention_info)
                         _last_send_ts = time.time()
                         ok = bool(out.get("ok"))
                     except Exception as s_err:
