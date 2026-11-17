@@ -24,8 +24,8 @@ from tkinter import ttk
 
 APP_NAME = "Nexus"
 APP_VERSION = "1.0.0"
-PUBLISHER = "AnhTuan2003ml"
-REPOSITORY = "AnhTuan2003ml/mkt_zalo"
+PUBLISHER = "dinorap"
+REPOSITORY = "dinorap/zaloo-bot"
 PREFERRED_ASSET_NAME = "Nexus.zip"
 LATEST_RELEASE_API_URL = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
 EXPECTED_EXE_NAME = "Nexus.exe"
