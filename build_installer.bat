@@ -11,7 +11,7 @@ set /p APP_VERSION=<"%VERSION_FILE%"
 if not defined APP_VERSION set "APP_VERSION=1.0.0"
 set "SCRIPT=%CD%\installer.py"
 set "OUTPUT_DIR=%CD%\installer_output"
-set "OUTPUT=%OUTPUT_DIR%\Nexus_Setup_v%APP_VERSION%.exe"
+set "OUTPUT=%OUTPUT_DIR%\Jimmy_Chat_Bot_Setup_v%APP_VERSION%.exe"
 set "WORK_DIR=%CD%\build\installer"
 set "ICON=%CD%\static\ico\app.ico"
 set "PYTHON_CMD="
@@ -67,7 +67,7 @@ if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
 if not exist "%WORK_DIR%" mkdir "%WORK_DIR%"
 
-echo [BUILD] Dang tao Nexus_Setup_v%APP_VERSION%.exe...
+echo [BUILD] Dang tao Jimmy_Chat_Bot_Setup_v%APP_VERSION%.exe...
 if exist "%ICON%" (
     %PYTHON_CMD% -m PyInstaller ^
         --noconfirm ^
@@ -76,7 +76,7 @@ if exist "%ICON%" (
         --hidden-import certifi ^
         --onefile ^
         --windowed ^
-        --name "Nexus_Setup_v%APP_VERSION%" ^
+        --name "Jimmy_Chat_Bot_Setup_v%APP_VERSION%" ^
         --distpath "%OUTPUT_DIR%" ^
         --workpath "%WORK_DIR%" ^
         --specpath "%WORK_DIR%" ^
@@ -92,7 +92,7 @@ if exist "%ICON%" (
         --hidden-import certifi ^
         --onefile ^
         --windowed ^
-        --name "Nexus_Setup_v%APP_VERSION%" ^
+        --name "Jimmy_Chat_Bot_Setup_v%APP_VERSION%" ^
         --distpath "%OUTPUT_DIR%" ^
         --workpath "%WORK_DIR%" ^
         --specpath "%WORK_DIR%" ^

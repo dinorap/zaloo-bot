@@ -22,14 +22,14 @@ except ImportError:  # Fallback vẫn dùng kho chứng chỉ mặc định củ
 from tkinter import BOTH, DISABLED, END, LEFT, NORMAL, RIGHT, X, Y, Tk, StringVar, BooleanVar, filedialog, messagebox
 from tkinter import ttk
 
-APP_NAME = "Nexus"
+APP_NAME = "Jimmy Chat Bot"
 APP_VERSION = "1.0.0"
 PUBLISHER = "dinorap"
 REPOSITORY = "dinorap/zaloo-bot"
-PREFERRED_ASSET_NAME = "Nexus.zip"
+PREFERRED_ASSET_NAME = "Jimmy_Chat_Bot.zip"
 LATEST_RELEASE_API_URL = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
-EXPECTED_EXE_NAME = "Nexus.exe"
-USER_AGENT = f"{APP_NAME}-Installer/{APP_VERSION}"
+EXPECTED_EXE_NAME = "Jimmy Chat Bot.exe"
+USER_AGENT = f"Jimmy-Chat-Bot-Installer/{APP_VERSION}"
 CHUNK_SIZE = 1024 * 256
 
 

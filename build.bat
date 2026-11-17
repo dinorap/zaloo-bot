@@ -14,15 +14,15 @@ echo Building with %PYTHON_CMD%
 %PYTHON_CMD% -m PyInstaller --clean --noconfirm ".\ZaloMemberTool.spec"
 if errorlevel 1 exit /b %errorlevel%
 
-if not exist "dist\Nexus.exe" (
-    echo Missing dist\Nexus.exe build output.
+if not exist "dist\Jimmy Chat Bot.exe" (
+    echo Missing dist\Jimmy Chat Bot.exe build output.
     exit /b 1
 )
 
-%PYTHON_CMD% build_check.py "dist\Nexus.exe"
+%PYTHON_CMD% build_check.py "dist\Jimmy Chat Bot.exe"
 if errorlevel 1 (
     echo Build check FAILED - see messages above.
     exit /b 1
 )
 
-echo Built dist\Nexus.exe
+echo Built dist\Jimmy Chat Bot.exe

@@ -107,7 +107,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='Nexus',
+    name='Jimmy Chat Bot',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

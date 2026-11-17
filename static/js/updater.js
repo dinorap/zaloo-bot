@@ -87,7 +87,7 @@
         if (!state.canApply) return;
 
         setBusy(true, 'Đang cập nhật...');
-        setStatus('Đang tải Nexus.zip và chuẩn bị thay Nexus.exe...', 'loading');
+        setStatus('Đang tải gói cập nhật và chuẩn bị cài đặt...', 'loading');
 
         try {
             var res = await fetch('/api/updater/apply', { method: 'POST' });
@@ -107,7 +107,7 @@
             } else {
                 state.canApply = false;
                 setText('nexusUpdateHint', 'Đã cập nhật');
-                setStatus(data.message || 'Đã cập nhật Nexus.exe.', 'success');
+                setStatus(data.message || 'Đã cập nhật Jimmy Chat Bot thành công.', 'success');
             }
         } catch (err) {
             setStatus(err.message || 'Cập nhật thất bại.', 'error');

@@ -359,9 +359,9 @@ USER_POLICY_VERSION = "2026-07-28-nexus-masterise-v8-compact-session"
 VERSION_FILE = os.path.join(app_root, "VERSION")
 APP_VERSION = "1.0.0"
 UPDATE_REPO = "dinorap/zaloo-bot"
-UPDATE_ASSET_NAME = "Nexus.zip"
+UPDATE_ASSET_NAME = "Jimmy_Chat_Bot.zip"
 UPDATE_HASH_ASSET_NAME = UPDATE_ASSET_NAME + ".sha256"
-UPDATE_EXE_NAME = "Nexus.exe"
+UPDATE_EXE_NAME = "Jimmy Chat Bot.exe"
 
 
 def _read_app_version():
@@ -486,10 +486,10 @@ def _validate_update_zip(update_zip, expected_size=0):
             normalized = info.filename.replace("\\", "/")
             if normalized.startswith("/") or ".." in normalized.split("/"):
                 raise ValueError("Gói cập nhật chứa đường dẫn không an toàn.")
-            if os.path.basename(normalized).lower() == UPDATE_EXE_NAME.lower():
+            if os.path.basename(normalized).lower() in (UPDATE_EXE_NAME.lower(), "nexus.exe"):
                 exe_members.append(info)
         if not exe_members:
-            raise ValueError("Nexus.zip không chứa Nexus.exe.")
+            raise ValueError(f"{UPDATE_ASSET_NAME} không chứa {UPDATE_EXE_NAME}.")
 
 def _install_zip_update(update_zip, version):
     install_dir = app_root
@@ -512,8 +512,8 @@ set "INSTALL_DIR=%~3"
 set "UPDATE_DIR=%~4"
 set "VERSION_VALUE=%~5"
 set "STAGE_DIR=%UPDATE_DIR%\stage"
-set "RUN_EXE=%INSTALL_DIR%\Nexus.exe"
-set "NEW_EXE=%INSTALL_DIR%\Nexus.exe.new"
+set "RUN_EXE=%INSTALL_DIR%\Jimmy Chat Bot.exe"
+set "NEW_EXE=%INSTALL_DIR%\Jimmy Chat Bot.exe.new"
 
 if not "%PID_TO_WAIT%"=="0" (
     powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "try { Wait-Process -Id %PID_TO_WAIT% -Timeout 45 -ErrorAction SilentlyContinue } catch {}" >nul 2>&1
@@ -529,9 +529,9 @@ mkdir "%STAGE_DIR%" || goto :fail
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath $env:ZIP_PATH -DestinationPath $env:STAGE_DIR -Force" >nul 2>&1
 if errorlevel 1 goto :fail
 
-set "EXE_PATH=%STAGE_DIR%\Nexus.exe"
+set "EXE_PATH=%STAGE_DIR%\Jimmy Chat Bot.exe"
 if not exist "%EXE_PATH%" (
-    for /r "%STAGE_DIR%" %%F in (Nexus.exe) do (
+    for /r "%STAGE_DIR%" %%F in ("Jimmy Chat Bot.exe" Nexus.exe) do (
         set "EXE_PATH=%%~fF"
         goto :found_exe
     )

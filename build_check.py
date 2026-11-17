@@ -13,7 +13,7 @@ from PyInstaller.archive.readers import CArchiveReader
 
 
 def main() -> int:
-    exe_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join("dist", "Nexus.exe")
+    exe_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join("dist", "Jimmy Chat Bot.exe")
     if not os.path.isfile(exe_path):
         print(f"[CHECK] Khong tim thay {exe_path}")
         return 1
